@@ -2,13 +2,16 @@ package main
 
 import (
 	"crypto/md5"
+	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 func hash_file(basepath string, filename string, c chan string) {
-	filepath := fmt.Sprintf("%s/%s", basepath, filename)
+	filepath := filepath.Join(basepath, filename)
 	input, err := os.ReadFile(filepath)
 	
 	if err != nil {
@@ -35,29 +38,28 @@ func get_human_reabable_size(size int64, c chan string) {
 	c <- fmt.Sprintf("%v %2s", file_size, sizes_array[size_index])	
 }
 
-func process_file_entry(basedir string, entry os.DirEntry, c chan string) {
-	info, err := entry.Info()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func process_file_entry(basedir string, entry fs.FileInfo, c chan string) {
 	hash_channel := make(chan string)
 	size_channel := make(chan string)
-	go hash_file(basedir, info.Name(), hash_channel)
-	go get_human_reabable_size(info.Size(), size_channel)
+	go hash_file(basedir, entry.Name(), hash_channel)
+	go get_human_reabable_size(entry.Size(), size_channel)
 
 	human_reabable_size := <- size_channel 
 	hash := <- hash_channel
 
 	c <- fmt.Sprintf(
-		"file: %s/%-25s %6s    %v\n", 
-		basedir, info.Name(), human_reabable_size, hash,
+		"file: %-55s %6s    %v\n", 
+		filepath.Join(basedir, entry.Name()), 
+		human_reabable_size, hash,
 	)
 }
 
 func main() {
-	basedir := "/home/davide"
+	var basedir string
+
+	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
+	flag.Parse()
+
 	entries, err := os.ReadDir(basedir)
     
     	if err != nil {
@@ -68,8 +70,14 @@ func main() {
     	counter := 0
  
     	for _, entry := range entries {
-		if(!entry.Type().IsDir()) {
-			go process_file_entry(basedir, entry, channel)
+		entry_info, err := entry.Info()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if(entry_info.Mode().IsRegular()) {
+			go process_file_entry(basedir, entry_info, channel)
 			counter++
 		}
     	}
