@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/sha256"
+	"crypto/md5"
 	"fmt"
 	"log"
 	"os"
@@ -15,11 +15,24 @@ func hash_file(basepath string, filename string, c chan string) {
 		fmt.Print(err)
 	}
 
-	hash := sha256.New()
+	hash := md5.New()
 	hash.Write(input)
 	sum := hash.Sum(nil)
 
 	c <- fmt.Sprintf("%x", sum)
+}
+
+func get_human_reabable_size(size int64, c chan string) {
+	file_size := size
+	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
+	size_index := 0
+
+	for size_index < 4 && file_size > 1000 {
+		file_size /= 1000
+		size_index++
+	}
+
+	c <- fmt.Sprintf("%v %2s", file_size, sizes_array[size_index])	
 }
 
 func process_file_entry(basedir string, entry os.DirEntry, c chan string) {
@@ -31,15 +44,17 @@ func process_file_entry(basedir string, entry os.DirEntry, c chan string) {
 		}
 
 		hash_channel := make(chan string)
+		size_channel := make(chan string)
 		go hash_file(basedir, info.Name(), hash_channel)
+		go get_human_reabable_size(info.Size(), size_channel)
 
+		human_reabable_size := <- size_channel 
 		hash := <- hash_channel
 
 		c <- fmt.Sprintf(
-			"file: %s/%-25s %6v Kb    %v\n", 
-			basedir,
-			info.Name(), 
-			info.Size()/1000,
+			"file: %s/%-25s %6s    %v\n", 
+			basedir, info.Name(), 
+			human_reabable_size,
 			hash,
 		)
 	} else {
