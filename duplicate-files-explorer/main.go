@@ -36,30 +36,24 @@ func get_human_reabable_size(size int64, c chan string) {
 }
 
 func process_file_entry(basedir string, entry os.DirEntry, c chan string) {
-	if(!entry.Type().IsDir()) {
-		info, err := entry.Info()
+	info, err := entry.Info()
 
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		hash_channel := make(chan string)
-		size_channel := make(chan string)
-		go hash_file(basedir, info.Name(), hash_channel)
-		go get_human_reabable_size(info.Size(), size_channel)
-
-		human_reabable_size := <- size_channel 
-		hash := <- hash_channel
-
-		c <- fmt.Sprintf(
-			"file: %s/%-25s %6s    %v\n", 
-			basedir, info.Name(), 
-			human_reabable_size,
-			hash,
-		)
-	} else {
-		c <- ""
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	hash_channel := make(chan string)
+	size_channel := make(chan string)
+	go hash_file(basedir, info.Name(), hash_channel)
+	go get_human_reabable_size(info.Size(), size_channel)
+
+	human_reabable_size := <- size_channel 
+	hash := <- hash_channel
+
+	c <- fmt.Sprintf(
+		"file: %s/%-25s %6s    %v\n", 
+		basedir, info.Name(), human_reabable_size, hash,
+	)
 }
 
 func main() {
@@ -74,10 +68,12 @@ func main() {
     	counter := 0
  
     	for _, entry := range entries {
-		go process_file_entry(basedir, entry, channel)
-		counter++
+		if(!entry.Type().IsDir()) {
+			go process_file_entry(basedir, entry, channel)
+			counter++
+		}
     	}
-    
+
     	for i := 0; i < counter; i++ {
 		data := <-channel
 		if(data != "") {
