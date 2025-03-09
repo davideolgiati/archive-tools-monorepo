@@ -31,6 +31,16 @@ func process_file_entry(basedir string, entry fs.FileInfo, c chan commons.File) 
 	c <- output
 }
 
+func display_file_info_from_channel(file_channel chan commons.File, file_count int) {
+	for i := 0; i < file_count; i++ {
+		data := <-file_channel
+		fmt.Printf(
+			"file: %-55s %6d %2s    %v\n",
+			data.Name, data.Size.Value, data.Size.Unit, data.Hash,
+		)
+	}
+}
+
 func main() {
 	var basedir string
 
@@ -55,8 +65,8 @@ func main() {
 			log.Fatal(read_dir_err)
 		}
 
-		channel := make(chan commons.File)
-		counter := 0
+		file_channel := make(chan commons.File)
+		file_counter := 0
 	
 		for _, entry := range entries {
 			entry_info, file_info_err := entry.Info()
@@ -66,8 +76,8 @@ func main() {
 			}
 
 			if(entry_info.Mode().IsRegular()) {
-				go process_file_entry(current_dir, entry_info, channel)
-				counter++
+				go process_file_entry(current_dir, entry_info, file_channel)
+				file_counter++
 			} else {
 				datastructures.Push_into_stack(
 					&directories_stack, 
@@ -76,12 +86,6 @@ func main() {
 			}
 		}
 
-		for i := 0; i < counter; i++ {
-			data := <-channel
-			fmt.Printf(
-				"file: %-55s %6d %2s    %v\n",
-				data.Name, data.Size.Value, data.Size.Unit, data.Hash,
-			)
-		}
+		go display_file_info_from_channel(file_channel, file_counter)
 	}
 }
