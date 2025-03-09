@@ -10,6 +10,17 @@ import (
 	"path/filepath"
 )
 
+type FileSize struct {
+	value int16;
+	unit string;
+}
+
+type File struct {
+	name string;
+	size FileSize;
+	hash string;
+}
+
 func hash_file(basepath string, filename string, c chan string) {
 	filepath := filepath.Join(basepath, filename)
 	input, err := os.ReadFile(filepath)
@@ -25,7 +36,7 @@ func hash_file(basepath string, filename string, c chan string) {
 	c <- fmt.Sprintf("%x", sum)
 }
 
-func get_human_reabable_size(size int64, c chan string) {
+func get_human_reabable_size(size int64, c chan FileSize) {
 	file_size := size
 	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
 	size_index := 0
@@ -35,23 +46,35 @@ func get_human_reabable_size(size int64, c chan string) {
 		size_index++
 	}
 
-	c <- fmt.Sprintf("%v %2s", file_size, sizes_array[size_index])	
+	output := FileSize{value: int16(file_size), unit: sizes_array[size_index]}
+
+	c <- output	
 }
 
-func process_file_entry(basedir string, entry fs.FileInfo, c chan string) {
+func process_file_entry(basedir string, entry fs.FileInfo, c chan File) {
 	hash_channel := make(chan string)
-	size_channel := make(chan string)
+	size_channel := make(chan FileSize)
 	go hash_file(basedir, entry.Name(), hash_channel)
 	go get_human_reabable_size(entry.Size(), size_channel)
 
-	human_reabable_size := <- size_channel 
+	file_size_info := <- size_channel 
 	hash := <- hash_channel
 
+	output := File{
+		name: filepath.Join(basedir, entry.Name()),
+		size: file_size_info,
+		hash: hash,
+	}
+
+	c <- output
+
+	/*
 	c <- fmt.Sprintf(
 		"file: %-55s %6s    %v\n", 
 		filepath.Join(basedir, entry.Name()), 
 		human_reabable_size, hash,
 	)
+	*/
 }
 
 func main() {
@@ -66,7 +89,7 @@ func main() {
 		log.Fatal(err)
     	}
 
-    	channel := make(chan string)
+    	channel := make(chan File)
     	counter := 0
  
     	for _, entry := range entries {
@@ -84,8 +107,9 @@ func main() {
 
     	for i := 0; i < counter; i++ {
 		data := <-channel
-		if(data != "") {
-			fmt.Print(data)
-		}
+		fmt.Printf(
+			"file: %-55s %6d %2s    %v\n",
+			data.name, data.size.value, data.size.unit, data.hash,
+		)
     	}
 }
