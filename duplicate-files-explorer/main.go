@@ -1,19 +1,31 @@
 package main
 
 import (
+	"archive-tools-monorepo/commons"
+	"archive-tools-monorepo/commons/datastructures"
 	"flag"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
-	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/datastructures"
 )
 
 
 
 func process_file_entry(basedir string, entry fs.FileInfo, c chan commons.File) {
+	info, err := os.Stat(path.Join(basedir, entry.Name()))
+	
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	if info.Mode().Perm()&0444 != 0444 {
+		return
+	}
+
 	hash_channel := make(chan string)
 	size_channel := make(chan commons.FileSize)
 	go commons.Hash_file(basedir, entry.Name(), hash_channel)
@@ -59,33 +71,49 @@ func main() {
 
 		datastructures.Pop_from_stack(&directories_stack)
 
-		entries, read_dir_err := os.ReadDir(current_dir)
-	
-		if read_dir_err != nil {
-			log.Fatal(read_dir_err)
-		}
-
-		file_channel := make(chan commons.File)
-		file_counter := 0
-	
-		for _, entry := range entries {
-			entry_info, file_info_err := entry.Info()
-
-			if file_info_err != nil {
-				log.Fatal(file_info_err)
-			}
-
-			if(entry_info.Mode().IsRegular()) {
-				go process_file_entry(current_dir, entry_info, file_channel)
-				file_counter++
-			} else {
-				datastructures.Push_into_stack(
-					&directories_stack, 
-					filepath.Join(current_dir, entry.Name()),
-				)
-			}
-		}
-
-		go display_file_info_from_channel(file_channel, file_counter)
+		process_directory(current_dir, &directories_stack)
 	}
+}
+
+func process_directory(current_dir string, directories_stack *datastructures.Stack) bool {
+	info, err := os.Stat(current_dir)
+
+	if err != nil {
+		log.Fatal(err)
+		return true
+	}
+
+	if info.Mode().Perm()&0444 != 0444 {
+		return true
+	}
+
+	entries, read_dir_err := os.ReadDir(current_dir)
+
+	if read_dir_err != nil {
+		log.Fatal(read_dir_err)
+	}
+
+	file_channel := make(chan commons.File)
+	file_counter := 0
+
+	for _, entry := range entries {
+		entry_info, file_info_err := entry.Info()
+
+		if file_info_err != nil {
+			log.Fatal(file_info_err)
+		}
+
+		if entry_info.Mode().IsRegular() {
+			go process_file_entry(current_dir, entry_info, file_channel)
+			file_counter++
+		} else if entry_info.Mode().IsDir() {
+			datastructures.Push_into_stack(
+				directories_stack,
+				filepath.Join(current_dir, entry.Name()),
+			)
+		}
+	}
+
+	go display_file_info_from_channel(file_channel, file_counter)
+	return false
 }
