@@ -1,44 +1,32 @@
 package datastructures
 
 import (
-	"fmt"
 	"sync"
 )
 
-type Stack struct {
+type Stack[T any] struct {
 	mutex sync.Mutex
-	items []string
+	items []T
 }
 
-func Is_stack_empty(stack *Stack) bool {
+func Is_stack_empty[T any](stack *Stack[T]) bool {
 	return len(stack.items) == 0
 }
 
-func Push_into_stack(stack *Stack, data string) {
+func Push_into_stack[T any](stack *Stack[T], data T) {
 	stack.mutex.Lock()
 	stack.items = append(stack.items, data)
 	stack.mutex.Unlock()
 }
     
-func Pop_from_stack(stack *Stack) {
-	if Is_stack_empty(stack) {
-		return
-	}
-
+func Pop_from_stack[T any](stack *Stack[T]) T {
+	var item T
 	stack.mutex.Lock()
-	stack.items = stack.items[:len(stack.items)-1]
-	stack.mutex.Unlock()
-}
-
-func Get_stack_top_element(stack *Stack) (string, error) {
-	if Is_stack_empty(stack) {
-	    return "", fmt.Errorf("stack is empty")
+	if len(stack.items) != 0 {
+		item = stack.items[len(stack.items)-1]
+		stack.items = stack.items[:len(stack.items)-1]
 	}
-
-	stack.mutex.Lock()
-	data := stack.items[len(stack.items)-1]
 	stack.mutex.Unlock()
-
-	return data, nil
+	return item
 }
     

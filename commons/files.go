@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"bufio"
+	"io"
 )
 
 type FileSize struct {
@@ -20,20 +22,37 @@ type File struct {
 
 func Hash_file(basepath string, filename string, c chan string) {
 	filepath := filepath.Join(basepath, filename)
-	input, err := os.ReadFile(filepath)
+	file_pointer, err := os.Open(filepath)
+	hash := md5.New()
 	
 	if err != nil {
-		fmt.Print(err)
+		fmt.Println("cannot able to read the file", err)
+		return
+	}
+	     
+	defer file_pointer.Close()
+
+	r := bufio.NewReader(file_pointer)
+	
+	for {
+		buf := make([]byte,4*1024) //the chunk size
+		n, err := r.Read(buf) //loading chunk into buffer
+		buf = buf[:n]
+
+		if err != nil && err != io.EOF {
+			panic(err)
+		} else if err == io.EOF {
+			break
+		}
+		
+		hash.Write(buf)
 	}
 
-	hash := md5.New()
-	hash.Write(input)
 	sum := hash.Sum(nil)
-
 	c <- fmt.Sprintf("%x", sum)
 }
 
-func Get_human_reabable_size(size int64, c chan FileSize) {
+func Get_human_reabable_size(size int64) FileSize {
 	file_size := size
 	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
 	size_index := 0
@@ -45,5 +64,5 @@ func Get_human_reabable_size(size int64, c chan FileSize) {
 
 	output := FileSize{Value: int16(file_size), Unit: sizes_array[size_index]}
 
-	c <- output	
+	return output	
 }
