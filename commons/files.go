@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"bufio"
 	"io"
+	"io/fs"
+	"errors"
 )
 
 type FileSize struct {
@@ -26,8 +28,7 @@ func Hash_file(basepath string, filename string, c chan string) {
 	hash := md5.New()
 	
 	if err != nil {
-		fmt.Println("cannot able to read the file", err)
-		return
+		panic(err)
 	}
 	     
 	defer file_pointer.Close()
@@ -65,4 +66,20 @@ func Get_human_reabable_size(size int64) FileSize {
 	output := FileSize{Value: int16(file_size), Unit: sizes_array[size_index]}
 
 	return output	
+}
+
+func Current_user_has_read_right_on_file(fullpath *string) bool {
+	info, err := os.Stat(*fullpath)
+
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return false
+		}
+		panic(err)
+	}
+
+	read_bit_mask := fs.FileMode(0444)
+	file_permission_bits := info.Mode().Perm()
+	
+	return (file_permission_bits & read_bit_mask) == read_bit_mask
 }

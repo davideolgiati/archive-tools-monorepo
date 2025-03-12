@@ -7,21 +7,19 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
-	"errors"
 )
 
-func process_file_entry(basedir string, entry fs.FileInfo, file_stack *datastructures.Stack[commons.File]) {
-	file_size_info := commons.Get_human_reabable_size(entry.Size())
+func process_file_entry(basedir *string, entry *fs.FileInfo, file_stack *datastructures.Stack[commons.File]) {
+	file_size_info := commons.Get_human_reabable_size((*entry).Size())
 	hash_channel := make(chan string)
-	
-	go commons.Hash_file(basedir, entry.Name(), hash_channel)
-	
-	hash := <- hash_channel
+
+	go commons.Hash_file(*basedir, (*entry).Name(), hash_channel)
+
+	hash := <-hash_channel
 
 	output := commons.File{
-		Name: filepath.Join(basedir, entry.Name()),
+		Name: filepath.Join(*basedir, (*entry).Name()),
 		Size: file_size_info,
 		Hash: hash,
 	}
@@ -32,24 +30,23 @@ func process_file_entry(basedir string, entry fs.FileInfo, file_stack *datastruc
 func display_file_info_from_channel(file_stack *datastructures.Stack[commons.File]) {
 	for !datastructures.Is_stack_empty(file_stack) {
 		data := datastructures.Pop_from_stack(file_stack)
+		hash := data.Hash
+		size := data.Size.Value
+		unit := data.Size.Unit
+		name := data.Name
 
-		fmt.Printf(
-			"file: %-55s %6d %2s    %v\n",
-			data.Name, data.Size.Value, data.Size.Unit, data.Hash,
-		)
+		fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
 	}
 }
 
-func get_next_directory_from_stack(directories_stack *datastructures.Stack[string]) (string, []os.DirEntry, error) {
-	current_dir := datastructures.Pop_from_stack(directories_stack)
-
-	entries, read_dir_err := os.ReadDir(current_dir)
+func get_file_list_for_directory(current_dir *string) []os.DirEntry {
+	entries, read_dir_err := os.ReadDir(*current_dir)
 
 	if read_dir_err != nil {
-		return "", nil, read_dir_err
+		panic(read_dir_err)
 	}
 
-	return current_dir, entries, nil
+	return entries
 }
 
 func main() {
@@ -60,15 +57,12 @@ func main() {
 
 	directories_stack := datastructures.Stack[string]{}
 	file_stack := datastructures.Stack[commons.File]{}
-	
+
 	datastructures.Push_into_stack(&directories_stack, basedir)
 
 	for !datastructures.Is_stack_empty(&directories_stack) {
-		current_dir, entries, err := get_next_directory_from_stack(&directories_stack)
-
-		if err != nil {
-			panic(err)
-		}
+		current_dir := datastructures.Pop_from_stack(&directories_stack)
+		entries := get_file_list_for_directory(&current_dir)
 
 		for _, entry := range entries {
 			entry_info, file_info_err := entry.Info()
@@ -77,27 +71,24 @@ func main() {
 				panic(file_info_err)
 			}
 
-			info, err := os.Stat(path.Join(current_dir, entry.Name()))
+			entry_name := entry_info.Name()
+			file_type := entry_info.Mode()
+			fullpath := filepath.Join(current_dir, entry_name)
 
-			if err != nil {
-				if errors.Is(err, fs.ErrNotExist) {
-					continue
-				}
-				panic(err)
+			if !commons.Current_user_has_read_right_on_file(&fullpath) {
+				continue
 			}
 
-			if info.Mode().Perm()&0444 == 0444 {
-				if entry_info.Mode().IsRegular() {
-					go process_file_entry(current_dir, entry_info, &file_stack)
-				} else if entry_info.Mode().IsDir() {
-					datastructures.Push_into_stack(
-						&directories_stack,
-						filepath.Join(current_dir, entry.Name()),
-					)
-				}
+			if file_type.IsRegular() {
+				go process_file_entry(&current_dir, &entry_info, &file_stack)
+				go display_file_info_from_channel(&file_stack)
+			}
+
+			if file_type.IsDir() {
+				datastructures.Push_into_stack(&directories_stack, fullpath)
 			}
 		}
-
-		go display_file_info_from_channel(&file_stack)
+		
 	}
+
 }
