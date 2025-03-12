@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"errors"
 )
 
 func process_file_entry(basedir string, entry fs.FileInfo, file_stack *datastructures.Stack[commons.File]) {
@@ -79,6 +80,9 @@ func main() {
 			info, err := os.Stat(path.Join(current_dir, entry.Name()))
 
 			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					continue
+				}
 				panic(err)
 			}
 
