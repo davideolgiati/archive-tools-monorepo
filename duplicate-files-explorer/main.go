@@ -17,6 +17,18 @@ func process_file_entry(
 	file_stack *datastructures.Stack[commons.File],
 	wg *sync.WaitGroup,
 ) {
+	if *basedir == "" || basedir == nil {
+		panic("basedir is invalid")
+	}
+
+	if entry == nil {
+		panic("entry is invalid")
+	}
+
+	if file_stack == nil {
+		panic("file_stack is invalid")
+	}
+
 	file_size_info := commons.Get_human_reabable_size((*entry).Size())
 	hash_channel := make(chan string)
 
@@ -24,10 +36,26 @@ func process_file_entry(
 
 	hash := <-hash_channel
 
+	if hash == "" {
+		panic("basedir is empty")
+	}
+
 	output := commons.File{
 		Name: filepath.Join(*basedir, (*entry).Name()),
 		Size: file_size_info,
 		Hash: hash,
+	}
+
+	if output.Name == "" {
+		panic("output fullpath is empty")
+	}
+
+	if output.Hash == "" {
+		panic("output hash is empty")
+	}
+
+	if output.Size.Unit == "" {
+		panic("output size unit is empty")
 	}
 
 	datastructures.Push_into_stack(file_stack, output)
