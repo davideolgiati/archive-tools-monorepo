@@ -8,9 +8,15 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
-func process_file_entry(basedir *string, entry *fs.FileInfo, file_stack *datastructures.Stack[commons.File]) {
+func process_file_entry(
+	basedir *string, 
+	entry *fs.FileInfo, 
+	file_stack *datastructures.Stack[commons.File],
+	wg *sync.WaitGroup,
+) {
 	file_size_info := commons.Get_human_reabable_size((*entry).Size())
 	hash_channel := make(chan string)
 
@@ -25,6 +31,8 @@ func process_file_entry(basedir *string, entry *fs.FileInfo, file_stack *datastr
 	}
 
 	datastructures.Push_into_stack(file_stack, output)
+	
+	wg.Done()
 }
 
 func display_file_info_from_channel(file_stack *datastructures.Stack[commons.File]) {
@@ -57,6 +65,7 @@ func main() {
 
 	directories_stack := datastructures.Stack[string]{}
 	file_stack := datastructures.Stack[commons.File]{}
+	var wg sync.WaitGroup
 
 	datastructures.Push_into_stack(&directories_stack, basedir)
 
@@ -80,15 +89,17 @@ func main() {
 			}
 
 			if file_type.IsRegular() {
-				go process_file_entry(&current_dir, &entry_info, &file_stack)
+				wg.Add(1)
+				go process_file_entry(&current_dir, &entry_info, &file_stack, &wg)
 				go display_file_info_from_channel(&file_stack)
 			}
-
+			
 			if file_type.IsDir() {
 				datastructures.Push_into_stack(&directories_stack, fullpath)
 			}
 		}
-		
 	}
 
+	wg.Wait()
+	go display_file_info_from_channel(&file_stack)
 }

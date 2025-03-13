@@ -26,24 +26,42 @@ func Hash_file(basepath string, filename string, c chan string) {
 	filepath := filepath.Join(basepath, filename)
 	file_pointer, err := os.Open(filepath)
 	hash := md5.New()
-	
+
 	if err != nil {
 		panic(err)
 	}
-	     
+
+	file_info, err := file_pointer.Stat()
+
+	if err != nil {
+		panic(err)
+	}
+
+	left_size := file_info.Size()
+
 	defer file_pointer.Close()
 
 	r := bufio.NewReader(file_pointer)
 	
-	for {
-		buf := make([]byte,4*1024) //the chunk size
-		n, err := r.Read(buf) //loading chunk into buffer
+	var chunk_size int
+
+	for left_size > 0 {
+		if left_size > 4000 {
+			chunk_size = 4000
+		} else {
+			chunk_size = int(left_size)
+		}
+
+		buf := make([]byte, 4000)
+		n, err := r.Read(buf)
 		buf = buf[:n]
+
+		left_size = left_size - int64(chunk_size)
 
 		if err != nil && err != io.EOF {
 			panic(err)
-		} else if err == io.EOF {
-			break
+		} else if err == io.EOF && left_size > 0{
+			panic("left size is positive")
 		}
 		
 		hash.Write(buf)
