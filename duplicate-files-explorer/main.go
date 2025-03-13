@@ -2,7 +2,7 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/datastructures"
+	"archive-tools-monorepo/commons/ds"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -11,23 +11,10 @@ import (
 	"sync"
 )
 
-func process_file_entry(
-	basedir *string, 
-	entry *fs.FileInfo, 
-	file_stack *datastructures.Stack[commons.File],
-	wg *sync.WaitGroup,
-) {
-	if *basedir == "" || basedir == nil {
-		panic("basedir is invalid")
-	}
+var wg sync.WaitGroup
 
-	if entry == nil {
-		panic("entry is invalid")
-	}
-
-	if file_stack == nil {
-		panic("file_stack is invalid")
-	}
+func process_file_entry(basedir *string, entry *fs.FileInfo, file_stack *ds.Stack[commons.File]) {
+	wg.Add(1)
 
 	file_size_info := commons.Get_human_reabable_size((*entry).Size())
 	hash_channel := make(chan string)
@@ -36,36 +23,20 @@ func process_file_entry(
 
 	hash := <-hash_channel
 
-	if hash == "" {
-		panic("basedir is empty")
-	}
-
 	output := commons.File{
 		Name: filepath.Join(*basedir, (*entry).Name()),
 		Size: file_size_info,
 		Hash: hash,
 	}
 
-	if output.Name == "" {
-		panic("output fullpath is empty")
-	}
-
-	if output.Hash == "" {
-		panic("output hash is empty")
-	}
-
-	if output.Size.Unit == "" {
-		panic("output size unit is empty")
-	}
-
-	datastructures.Push_into_stack(file_stack, output)
+	ds.Push_into_stack(file_stack, output)
 	
 	wg.Done()
 }
 
-func display_file_info_from_channel(file_stack *datastructures.Stack[commons.File]) {
-	for !datastructures.Is_stack_empty(file_stack) {
-		data := datastructures.Pop_from_stack(file_stack)
+func display_file_info_from_channel(file_stack *ds.Stack[commons.File]) {
+	for !ds.Is_stack_empty(file_stack) {
+		data := ds.Pop_from_stack(file_stack)
 		hash := data.Hash
 		size := data.Size.Value
 		unit := data.Size.Unit
@@ -75,31 +46,24 @@ func display_file_info_from_channel(file_stack *datastructures.Stack[commons.Fil
 	}
 }
 
-func get_file_list_for_directory(current_dir *string) []os.DirEntry {
-	entries, read_dir_err := os.ReadDir(*current_dir)
-
-	if read_dir_err != nil {
-		panic(read_dir_err)
-	}
-
-	return entries
-}
-
 func main() {
 	var basedir string
 
 	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
 	flag.Parse()
 
-	directories_stack := datastructures.Stack[string]{}
-	file_stack := datastructures.Stack[commons.File]{}
-	var wg sync.WaitGroup
+	directories_stack := ds.Stack[string]{}
+	file_stack := ds.Stack[commons.File]{}
 
-	datastructures.Push_into_stack(&directories_stack, basedir)
+	ds.Push_into_stack(&directories_stack, basedir)
 
-	for !datastructures.Is_stack_empty(&directories_stack) {
-		current_dir := datastructures.Pop_from_stack(&directories_stack)
-		entries := get_file_list_for_directory(&current_dir)
+	for !ds.Is_stack_empty(&directories_stack) {
+		current_dir := ds.Pop_from_stack(&directories_stack)
+		entries, read_dir_err := os.ReadDir(current_dir)
+
+		if read_dir_err != nil {
+			panic(read_dir_err)
+		}
 
 		for _, entry := range entries {
 			entry_info, file_info_err := entry.Info()
@@ -117,17 +81,17 @@ func main() {
 			}
 
 			if file_type.IsRegular() {
-				wg.Add(1)
-				go process_file_entry(&current_dir, &entry_info, &file_stack, &wg)
-				go display_file_info_from_channel(&file_stack)
+				go process_file_entry(&current_dir, &entry_info, &file_stack)
 			}
 			
 			if file_type.IsDir() {
-				datastructures.Push_into_stack(&directories_stack, fullpath)
+				ds.Push_into_stack(&directories_stack, fullpath)
 			}
 		}
+		
+		go display_file_info_from_channel(&file_stack)
 	}
 
 	wg.Wait()
-	go display_file_info_from_channel(&file_stack)
+	display_file_info_from_channel(&file_stack)
 }
