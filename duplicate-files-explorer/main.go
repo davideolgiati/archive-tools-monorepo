@@ -50,6 +50,22 @@ func display_file_info_from_channel(
 	}
 }
 
+func compute_back_pressure(queue_size int64) time.Duration {
+	if(queue_size < 100) {
+		return 0 * time.Millisecond
+	}
+
+	if(queue_size < 500) {
+		return 2 * time.Millisecond
+	}
+
+	if(queue_size < 1000) {
+		return 5 * time.Millisecond
+	}
+
+	return 10 * time.Millisecond
+}
+
 func main() {
 	var basedir string
 	saveCursorPosition := "\033[s"
@@ -109,6 +125,7 @@ func main() {
 		}
 
 		formatted_size := commons.Get_human_reabable_size(size_processed)
+		back_pressure := compute_back_pressure(ds.Get_counter_value(file_to_process_counter))
 
 		fmt.Print(clearLine)
 		fmt.Printf(
@@ -116,7 +133,7 @@ func main() {
 			file_seen, directories_seen, formatted_size.Value, 
 			formatted_size.Unit,
 		)
-		time.Sleep(10 * time.Millisecond) // backpressure
+		time.Sleep(back_pressure) // backpressure
 	}
 
 	for ds.Get_counter_value(file_to_process_counter) > 0 {
