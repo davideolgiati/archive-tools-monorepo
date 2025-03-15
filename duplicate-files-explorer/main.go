@@ -37,26 +37,23 @@ func process_file_entry(
 
 func display_file_info_from_channel(
 	file_stack *ds.Stack[commons.File], 
-	directories_stack *ds.Stack[string],
-	file_to_process_counter *ds.AtomicCounter,
 ) {
-	for ds.Get_counter_value(file_to_process_counter) > 0 || !ds.Is_stack_empty(directories_stack) {
-		for !ds.Is_stack_empty(file_stack) {
-			data := ds.Get_top_stack_element(file_stack)
+	for !ds.Is_stack_empty(file_stack) {
+		data := ds.Pop_from_stack(file_stack)
 
-			hash := data.Hash
-			size := data.Size.Value
-			unit := data.Size.Unit
-			name := data.Name
+		hash := data.Hash
+		size := data.Size.Value
+		unit := data.Size.Unit
+		name := data.Name
 
-			fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
-			ds.Pop_from_stack(file_stack)
-		}
+		fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
 	}
 }
 
 func main() {
 	var basedir string
+	saveCursorPosition := "\033[s"
+    	clearLine := "\033[u\033[K"
 
 	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
 	flag.Parse()
@@ -65,16 +62,15 @@ func main() {
 	output_file_stack := ds.Stack[commons.File]{}
 	file_to_process_counter := ds.Create_new_atomic_counter()
 
+	file_seen := 0
+	directories_seen := 0
+	size_processed := int64(0)
+
 	ds.Push_into_stack(&directories_stack, basedir)
 	
-	go display_file_info_from_channel(&output_file_stack, &directories_stack, file_to_process_counter)
-
+	fmt.Print(saveCursorPosition)
 	for !ds.Is_stack_empty(&directories_stack) {
-		for ds.Get_counter_value(file_to_process_counter) > 500 {
-			time.Sleep(10 * time.Millisecond) 
-		}
-		
-		current_dir := ds.Get_top_stack_element(&directories_stack)
+		current_dir := ds.Pop_from_stack(&directories_stack)
 		entries, read_dir_err := os.ReadDir(current_dir)
 
 		if read_dir_err != nil {
@@ -97,6 +93,8 @@ func main() {
 			}
 
 			if file_type.IsRegular() {
+				file_seen += 1
+				size_processed += entry_info.Size()
 				go process_file_entry(
 					&current_dir, &entry_info, 
 					&output_file_stack, 
@@ -105,10 +103,25 @@ func main() {
 			}
 			
 			if file_type.IsDir() {
+				directories_seen += 1
 				ds.Push_into_stack(&directories_stack, fullpath)
 			}
 		}
 
-		ds.Pop_from_stack(&directories_stack)
+		formatted_size := commons.Get_human_reabable_size(size_processed)
+
+		fmt.Print(clearLine)
+		fmt.Printf(
+			"Seen %6d files in %6d directories (%3d %2s)", 
+			file_seen, directories_seen, formatted_size.Value, 
+			formatted_size.Unit,
+		)
+		time.Sleep(10 * time.Millisecond) // backpressure
 	}
+
+	for ds.Get_counter_value(file_to_process_counter) > 0 {
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	display_file_info_from_channel(&output_file_stack)
 }
