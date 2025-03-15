@@ -50,20 +50,20 @@ func display_file_info_from_channel(
 	}
 }
 
-func compute_back_pressure(queue_size int64) time.Duration {
-	if(queue_size < 100) {
+func compute_back_pressure(queue_size *int64) time.Duration {
+	if(*queue_size < 100) {
 		return 0 * time.Millisecond
 	}
 
-	if(queue_size < 500) {
+	if(*queue_size < 500) {
+		return 1 * time.Millisecond
+	}
+
+	if(*queue_size < 1000) {
 		return 2 * time.Millisecond
 	}
 
-	if(queue_size < 1000) {
-		return 5 * time.Millisecond
-	}
-
-	return 10 * time.Millisecond
+	return 3 * time.Millisecond
 }
 
 func main() {
@@ -125,7 +125,8 @@ func main() {
 		}
 
 		formatted_size := commons.Get_human_reabable_size(size_processed)
-		back_pressure := compute_back_pressure(ds.Get_counter_value(file_to_process_counter))
+		queue_size := ds.Get_counter_value(file_to_process_counter)
+		back_pressure := compute_back_pressure(&queue_size)
 
 		fmt.Print(clearLine)
 		fmt.Printf(
@@ -133,11 +134,11 @@ func main() {
 			file_seen, directories_seen, formatted_size.Value, 
 			formatted_size.Unit,
 		)
-		time.Sleep(back_pressure) // backpressure
+		time.Sleep(back_pressure)
 	}
 
 	for ds.Get_counter_value(file_to_process_counter) > 0 {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 	}
 
 	display_file_info_from_channel(&output_file_stack)
