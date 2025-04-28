@@ -143,5 +143,7 @@ func main() {
 		time.Sleep(1 * time.Millisecond)
 	}
 
+	
+
 	display_file_info_from_channel(&output_file_stack)
 }
