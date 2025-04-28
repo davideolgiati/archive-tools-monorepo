@@ -17,10 +17,11 @@ func process_file_entry(
 	file_stack *ds.Stack[commons.File],
 	file_to_process_counter *ds.AtomicCounter,
 ) {
+	quick_hash := true
 	ds.Increment(file_to_process_counter)
 	
 	hash_channel := make(chan string)
-	go commons.Hash_file(*basedir, (*entry).Name(), hash_channel)
+	go commons.Hash_file(*basedir, (*entry).Name(), quick_hash, hash_channel)
 
 	size_info := commons.Get_human_reabable_size((*entry).Size())
 	fullpath := filepath.Join(*basedir, (*entry).Name())
@@ -31,6 +32,7 @@ func process_file_entry(
 	}
 	
 	file_stats.Hash = <-hash_channel
+	
 	ds.Push_into_stack(file_stack, file_stats)
 	ds.Decrement(file_to_process_counter)
 }

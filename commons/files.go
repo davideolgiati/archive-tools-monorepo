@@ -22,7 +22,7 @@ type File struct {
 	Hash string;
 }
 
-func Hash_file(basepath string, filename string, c chan string) {
+func Hash_file(basepath string, filename string, quick_flag bool, c chan string) {
 	filepath := filepath.Join(basepath, filename)
 	file_pointer, err := os.Open(filepath)
 	hash := md5.New()
@@ -38,6 +38,10 @@ func Hash_file(basepath string, filename string, c chan string) {
 	}
 
 	left_size := file_info.Size()
+
+	if left_size > 4000 && quick_flag {
+		left_size = 4000
+	}
 
 	defer file_pointer.Close()
 
