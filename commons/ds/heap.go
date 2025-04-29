@@ -44,7 +44,7 @@ func heapify[T any](heap *Heap[T]) {
 	parent := get_parent_node_index(current_index)
 	var swap_variable T
 
-	for current_index > 0 && !heap.custom_is_lower_fn(heap.items[current_index], heap.items[parent]) {
+	for current_index > 0 && heap.custom_is_lower_fn(heap.items[current_index], heap.items[parent]) {
 		swap_variable = heap.items[parent]
 		heap.items[parent] = heap.items[current_index]
 		heap.items[current_index] = swap_variable
