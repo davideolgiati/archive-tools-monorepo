@@ -23,6 +23,8 @@ type File struct {
 }
 
 func Hash_file(filepath string, quick_flag bool, c chan string) {
+	var err error
+	
 	file_pointer, err := os.Open(filepath)
 	hash := md5.New()
 
@@ -38,8 +40,8 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 
 	left_size := file_info.Size()
 
-	if left_size > 4000 && quick_flag {
-		left_size = 4000
+	if left_size > 16000 && quick_flag {
+		left_size = 16000
 	}
 
 	defer file_pointer.Close()
@@ -47,6 +49,8 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 	r := bufio.NewReader(file_pointer)
 
 	var chunk_size int
+	buf := make([]byte, 4000)
+	var read_size int
 
 	for left_size > 0 {
 		if left_size > 4000 {
@@ -55,9 +59,8 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 			chunk_size = int(left_size)
 		}
 
-		buf := make([]byte, 4000)
-		n, err := r.Read(buf)
-		buf = buf[:n]
+		read_size, err = r.Read(buf)
+		buf = buf[:read_size]
 
 		left_size = left_size - int64(chunk_size)
 

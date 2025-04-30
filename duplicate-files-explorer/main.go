@@ -40,7 +40,13 @@ func process_file_entry(
 
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
 	var last_seen commons.File
+	var data commons.File
+
 	output := ds.Heap[commons.File]{}
+	hash_channel := make(chan string)
+	is_duplicate := false
+
+	
 	ds.Set_compare_fn(&output, custom_is_lower_fn)
 
 	if !ds.Is_heap_empty(file_heap) {
@@ -48,19 +54,31 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 	}
 
 	for !ds.Is_heap_empty(file_heap) {
-		data := ds.Pop_from_heap(file_heap)
+		data = ds.Pop_from_heap(file_heap)
 
 		if data.Hash == last_seen.Hash {
-			if data.Size > 4000 {
-				hash_channel := make(chan string)
+			last_seen = data
+
+			if data.Size > 16000 {
 				go commons.Hash_file(data.Name, false, hash_channel)
 				data.Hash = <-hash_channel
 			}
 
 			ds.Push_into_heap(&output, data)
-		}
+			is_duplicate = true
+		} else {
+			if is_duplicate {
+				if last_seen.Size > 16000 {
+					go commons.Hash_file(last_seen.Name, false, hash_channel)
+					last_seen.Hash = <-hash_channel
+				}
 
-		last_seen = data
+				ds.Push_into_heap(&output, last_seen)
+			}
+
+			last_seen = data
+			is_duplicate = false
+		}
 	}
 
 	return &output
@@ -70,25 +88,42 @@ func display_file_info_from_channel(
 	file_heap *ds.Heap[commons.File],
 ) {
 	var last_seen commons.File
+	var data commons.File
+	is_duplicate := false
 
 	if !ds.Is_heap_empty(file_heap) {
 		last_seen = ds.Pop_from_heap(file_heap)
 	}
 
 	for !ds.Is_heap_empty(file_heap) {
-		data := ds.Pop_from_heap(file_heap)
+		data = ds.Pop_from_heap(file_heap)
 
 		if data.Hash == last_seen.Hash {
-			hash := data.Hash
-			size := data.FormattedSize.Value
-			unit := data.FormattedSize.Unit
-			name := data.Name
+			print_file_struct_to_stdout(data)
+			is_duplicate = true
+		} else {
+			if is_duplicate {
+				print_file_struct_to_stdout(last_seen)
+			}
 
-			fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
+			is_duplicate = false
 		}
 
 		last_seen = data
 	}
+
+	if is_duplicate {
+		print_file_struct_to_stdout(last_seen)
+	}
+}
+
+func print_file_struct_to_stdout(data commons.File) {
+	hash := data.Hash
+	size := data.FormattedSize.Value
+	unit := data.FormattedSize.Unit
+	name := data.Name
+
+	fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
 }
 
 func compute_back_pressure(queue_size *int64) time.Duration {
@@ -113,6 +148,13 @@ func custom_is_lower_fn(a commons.File, b commons.File) bool {
 
 func main() {
 	var basedir string
+	var entry_name string
+	var file_type fs.FileMode
+	var fullpath string
+	var formatted_size commons.FileSize
+	var queue_size int64
+	var back_pressure time.Duration
+
 	saveCursorPosition := "\033[s"
 	clearLine := "\033[u\033[K"
 
@@ -148,9 +190,9 @@ func main() {
 				panic(file_info_err)
 			}
 
-			entry_name := entry_info.Name()
-			file_type := entry_info.Mode()
-			fullpath := filepath.Join(current_dir, entry_name)
+			entry_name = entry_info.Name()
+			file_type = entry_info.Mode()
+			fullpath = filepath.Join(current_dir, entry_name)
 
 			if !commons.Current_user_has_read_right_on_file(&fullpath) {
 				continue
@@ -172,9 +214,9 @@ func main() {
 			}
 		}
 
-		formatted_size := commons.Get_human_reabable_size(size_processed)
-		queue_size := ds.Get_counter_value(file_to_process_counter)
-		back_pressure := compute_back_pressure(&queue_size)
+		formatted_size = commons.Get_human_reabable_size(size_processed)
+		queue_size = ds.Get_counter_value(file_to_process_counter)
+		back_pressure = compute_back_pressure(&queue_size)
 
 		fmt.Print(clearLine)
 		fmt.Printf(
