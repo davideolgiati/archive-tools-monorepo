@@ -12,47 +12,76 @@ import (
 )
 
 func process_file_entry(
-	basedir *string, 
-	entry *fs.FileInfo, 
+	basedir *string,
+	entry *fs.FileInfo,
 	file_stack *ds.Heap[commons.File],
 	file_to_process_counter *ds.AtomicCounter,
 ) {
 	quick_hash := true
 	ds.Increment(file_to_process_counter)
-	
+
 	hash_channel := make(chan string)
-	go commons.Hash_file(*basedir, (*entry).Name(), quick_hash, hash_channel)
+	fullpath := filepath.Join(*basedir, (*entry).Name())
+	go commons.Hash_file(fullpath, quick_hash, hash_channel)
 
 	size_info := commons.Get_human_reabable_size((*entry).Size())
-	fullpath := filepath.Join(*basedir, (*entry).Name())
-	
+
 	file_stats := commons.File{
-		Name: fullpath,
-		Size: size_info,
+		Name:          fullpath,
+		FormattedSize: size_info,
+		Size:	       (*entry).Size(),
 	}
-	
+
 	file_stats.Hash = <-hash_channel
-	
+
 	ds.Push_into_heap(file_stack, file_stats)
 	ds.Decrement(file_to_process_counter)
 }
 
+func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
+	var last_seen commons.File
+	output := ds.Heap[commons.File]{}
+	ds.Set_compare_fn(&output, custom_is_lower_fn)
+
+	if !ds.Is_heap_empty(file_heap) {
+		last_seen = ds.Pop_from_heap(file_heap)
+	}
+
+	for !ds.Is_heap_empty(file_heap) {
+		data := ds.Pop_from_heap(file_heap)
+
+		if data.Hash == last_seen.Hash {
+			if data.Size > 4000 {
+				hash_channel := make(chan string)
+				go commons.Hash_file(data.Name, false, hash_channel)
+				data.Hash = <-hash_channel
+			}
+
+			ds.Push_into_heap(&output, data)
+		}
+
+		last_seen = data
+	}
+
+	return &output
+}
+
 func display_file_info_from_channel(
-	file_heap *ds.Heap[commons.File], 
+	file_heap *ds.Heap[commons.File],
 ) {
 	var last_seen commons.File
 
 	if !ds.Is_heap_empty(file_heap) {
 		last_seen = ds.Pop_from_heap(file_heap)
 	}
-	
+
 	for !ds.Is_heap_empty(file_heap) {
 		data := ds.Pop_from_heap(file_heap)
 
-		if (data.Hash == last_seen.Hash) {
+		if data.Hash == last_seen.Hash {
 			hash := data.Hash
-			size := data.Size.Value
-			unit := data.Size.Unit
+			size := data.FormattedSize.Value
+			unit := data.FormattedSize.Unit
 			name := data.Name
 
 			fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
@@ -63,15 +92,15 @@ func display_file_info_from_channel(
 }
 
 func compute_back_pressure(queue_size *int64) time.Duration {
-	if(*queue_size < 100) {
+	if *queue_size < 100 {
 		return 0 * time.Millisecond
 	}
 
-	if(*queue_size < 500) {
+	if *queue_size < 500 {
 		return 1 * time.Millisecond
 	}
 
-	if(*queue_size < 1000) {
+	if *queue_size < 1000 {
 		return 2 * time.Millisecond
 	}
 
@@ -85,7 +114,7 @@ func custom_is_lower_fn(a commons.File, b commons.File) bool {
 func main() {
 	var basedir string
 	saveCursorPosition := "\033[s"
-    	clearLine := "\033[u\033[K"
+	clearLine := "\033[u\033[K"
 
 	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
 	flag.Parse()
@@ -102,7 +131,7 @@ func main() {
 	size_processed := int64(0)
 
 	ds.Push_into_stack(&directories_stack, basedir)
-	
+
 	fmt.Print(saveCursorPosition)
 	for !ds.Is_stack_empty(&directories_stack) {
 		current_dir := ds.Pop_from_stack(&directories_stack)
@@ -131,12 +160,12 @@ func main() {
 				file_seen += 1
 				size_processed += entry_info.Size()
 				go process_file_entry(
-					&current_dir, &entry_info, 
-					&output_file_heap, 
+					&current_dir, &entry_info,
+					&output_file_heap,
 					file_to_process_counter,
 				)
 			}
-			
+
 			if file_type.IsDir() {
 				directories_seen += 1
 				ds.Push_into_stack(&directories_stack, fullpath)
@@ -149,8 +178,8 @@ func main() {
 
 		fmt.Print(clearLine)
 		fmt.Printf(
-			"Seen %6d files in %6d directories (%3d %2s)", 
-			file_seen, directories_seen, formatted_size.Value, 
+			"Seen %6d files in %6d directories (%3d %2s)",
+			file_seen, directories_seen, formatted_size.Value,
 			formatted_size.Unit,
 		)
 		time.Sleep(back_pressure)
@@ -160,7 +189,6 @@ func main() {
 		time.Sleep(1 * time.Millisecond)
 	}
 
-	
-
-	display_file_info_from_channel(&output_file_heap)
+	cleaned_heap := build_duplicate_entries_heap(&output_file_heap)
+	display_file_info_from_channel(cleaned_heap)
 }

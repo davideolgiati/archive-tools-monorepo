@@ -1,29 +1,28 @@
 package commons
 
 import (
-	"crypto/md5"
-	"fmt"
-	"os"
-	"path/filepath"
 	"bufio"
+	"crypto/md5"
+	"errors"
+	"fmt"
 	"io"
 	"io/fs"
-	"errors"
+	"os"
 )
 
 type FileSize struct {
-	Value int16;
-	Unit string;
+	Value int16
+	Unit  string
 }
 
 type File struct {
-	Name string;
-	Size FileSize;
-	Hash string;
+	Name          string
+	FormattedSize FileSize
+	Hash          string
+	Size 	      int64
 }
 
-func Hash_file(basepath string, filename string, quick_flag bool, c chan string) {
-	filepath := filepath.Join(basepath, filename)
+func Hash_file(filepath string, quick_flag bool, c chan string) {
 	file_pointer, err := os.Open(filepath)
 	hash := md5.New()
 
@@ -46,7 +45,7 @@ func Hash_file(basepath string, filename string, quick_flag bool, c chan string)
 	defer file_pointer.Close()
 
 	r := bufio.NewReader(file_pointer)
-	
+
 	var chunk_size int
 
 	for left_size > 0 {
@@ -64,10 +63,10 @@ func Hash_file(basepath string, filename string, quick_flag bool, c chan string)
 
 		if err != nil && err != io.EOF {
 			panic(err)
-		} else if err == io.EOF && left_size > 0{
+		} else if err == io.EOF && left_size > 0 {
 			panic("left size is positive")
 		}
-		
+
 		hash.Write(buf)
 	}
 
@@ -87,7 +86,7 @@ func Get_human_reabable_size(size int64) FileSize {
 
 	output := FileSize{Value: int16(file_size), Unit: sizes_array[size_index]}
 
-	return output	
+	return output
 }
 
 func Current_user_has_read_right_on_file(fullpath *string) bool {
@@ -102,6 +101,6 @@ func Current_user_has_read_right_on_file(fullpath *string) bool {
 
 	read_bit_mask := fs.FileMode(0444)
 	file_permission_bits := info.Mode().Perm()
-	
+
 	return (file_permission_bits & read_bit_mask) == read_bit_mask
 }
