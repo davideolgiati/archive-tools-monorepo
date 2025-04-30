@@ -10,6 +10,10 @@ type Heap[T any] struct {
 	custom_is_lower_fn func(T, T) bool
 }
 
+func Set_compare_fn[T any](heap *Heap[T], custom_is_lower_fn func(T, T) bool) {
+	heap.custom_is_lower_fn = custom_is_lower_fn
+}
+
 func Is_heap_empty[T any](heap *Heap[T]) bool {
 	return len(heap.items) == 0
 }
@@ -60,7 +64,13 @@ func get_next_candidate[T any](heap *Heap[T], current int) int {
 	left := get_left_node_index(current)
 	right := get_right_node_index(current)
 
-	// BUG: cosa succede se left / right > len(items)
+	if left >= len(heap.items) {
+		return len(heap.items) - 1
+	}
+
+	if right >= len(heap.items) {
+		return left
+	}
 
 	if heap.custom_is_lower_fn(heap.items[left], heap.items[right]) {
 		return left
@@ -75,27 +85,46 @@ func heapify_top_down[T any](heap *Heap[T]) {
 
 	var swap_variable T
 
-	for current_index < len(heap.items) && !heap.custom_is_lower_fn(heap.items[current_index], heap.items[candidate]) {
+	for heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
 		swap_variable = heap.items[candidate]
 		heap.items[candidate] = heap.items[current_index]
 		heap.items[current_index] = swap_variable
 
 		current_index = candidate
-		if current_index < len(heap.items) {
-			candidate = get_next_candidate(heap, current_index)
-		}
+		candidate = get_next_candidate(heap, candidate)
 	}
 }
 
-/*
 func Pop_from_heap[T any](heap *Heap[T]) T {
 	var item T
+
 	heap.mutex.Lock()
+	
 	if len(heap.items) != 0 {
-		item = heap.items[len(heap.items)-1]
+		item = heap.items[0]
+		heap.items[0] = heap.items[len(heap.items)-1]
 		heap.items = heap.items[:len(heap.items)-1]
+
+		if(!Is_heap_empty(heap)) {
+			heapify_top_down(heap)
+		}
 	}
+	
 	heap.mutex.Unlock()
+	
 	return item
 }
-*/
+
+func Peak_from_heap[T any](heap *Heap[T]) T {
+	var item T
+
+	heap.mutex.Lock()
+	
+	if len(heap.items) != 0 {
+		item = heap.items[0]
+	}
+	
+	heap.mutex.Unlock()
+	
+	return item
+}

@@ -14,7 +14,7 @@ import (
 func process_file_entry(
 	basedir *string, 
 	entry *fs.FileInfo, 
-	file_stack *ds.Stack[commons.File],
+	file_stack *ds.Heap[commons.File],
 	file_to_process_counter *ds.AtomicCounter,
 ) {
 	quick_hash := true
@@ -33,22 +33,32 @@ func process_file_entry(
 	
 	file_stats.Hash = <-hash_channel
 	
-	ds.Push_into_stack(file_stack, file_stats)
+	ds.Push_into_heap(file_stack, file_stats)
 	ds.Decrement(file_to_process_counter)
 }
 
 func display_file_info_from_channel(
-	file_stack *ds.Stack[commons.File], 
+	file_heap *ds.Heap[commons.File], 
 ) {
-	for !ds.Is_stack_empty(file_stack) {
-		data := ds.Pop_from_stack(file_stack)
+	var last_seen commons.File
 
-		hash := data.Hash
-		size := data.Size.Value
-		unit := data.Size.Unit
-		name := data.Name
+	if !ds.Is_heap_empty(file_heap) {
+		last_seen = ds.Pop_from_heap(file_heap)
+	}
+	
+	for !ds.Is_heap_empty(file_heap) {
+		data := ds.Pop_from_heap(file_heap)
 
-		fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
+		if (data.Hash == last_seen.Hash) {
+			hash := data.Hash
+			size := data.Size.Value
+			unit := data.Size.Unit
+			name := data.Name
+
+			fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
+		}
+
+		last_seen = data
 	}
 }
 
@@ -68,6 +78,10 @@ func compute_back_pressure(queue_size *int64) time.Duration {
 	return 3 * time.Millisecond
 }
 
+func custom_is_lower_fn(a commons.File, b commons.File) bool {
+	return a.Hash < b.Hash
+}
+
 func main() {
 	var basedir string
 	saveCursorPosition := "\033[s"
@@ -77,7 +91,10 @@ func main() {
 	flag.Parse()
 
 	directories_stack := ds.Stack[string]{}
-	output_file_stack := ds.Stack[commons.File]{}
+	output_file_heap := ds.Heap[commons.File]{}
+
+	ds.Set_compare_fn(&output_file_heap, custom_is_lower_fn)
+
 	file_to_process_counter := ds.Create_new_atomic_counter()
 
 	file_seen := 0
@@ -115,7 +132,7 @@ func main() {
 				size_processed += entry_info.Size()
 				go process_file_entry(
 					&current_dir, &entry_info, 
-					&output_file_stack, 
+					&output_file_heap, 
 					file_to_process_counter,
 				)
 			}
@@ -145,5 +162,5 @@ func main() {
 
 	
 
-	display_file_info_from_channel(&output_file_stack)
+	display_file_info_from_channel(&output_file_heap)
 }
