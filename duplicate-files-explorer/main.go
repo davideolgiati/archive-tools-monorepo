@@ -34,13 +34,13 @@ func process_file_entry(
 
 	file_stats.Hash = <-hash_channel
 
-	ds.Push_into_heap(file_stack, file_stats)
+	ds.Push_into_heap(file_stack, &file_stats)
 	ds.Decrement(file_to_process_counter)
 }
 
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
-	var last_seen commons.File
-	var data commons.File
+	var last_seen *commons.File
+	var data *commons.File
 
 	output := ds.Heap[commons.File]{}
 	hash_channel := make(chan string)
@@ -87,8 +87,8 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 func display_file_info_from_channel(
 	file_heap *ds.Heap[commons.File],
 ) {
-	var last_seen commons.File
-	var data commons.File
+	var last_seen *commons.File
+	var data *commons.File
 	is_duplicate := false
 
 	if !ds.Is_heap_empty(file_heap) {
@@ -117,7 +117,7 @@ func display_file_info_from_channel(
 	}
 }
 
-func print_file_struct_to_stdout(data commons.File) {
+func print_file_struct_to_stdout(data *commons.File) {
 	hash := data.Hash
 	size := data.FormattedSize.Value
 	unit := data.FormattedSize.Unit
@@ -142,7 +142,7 @@ func compute_back_pressure(queue_size *int64) time.Duration {
 	return 3 * time.Millisecond
 }
 
-func custom_is_lower_fn(a commons.File, b commons.File) bool {
+func custom_is_lower_fn(a *commons.File, b *commons.File) bool {
 	return a.Hash < b.Hash
 }
 
