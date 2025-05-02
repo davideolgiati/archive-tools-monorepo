@@ -11,33 +11,6 @@ import (
 	"time"
 )
 
-func process_file_entry(
-	basedir *string,
-	entry *fs.FileInfo,
-	file_stack *ds.Heap[commons.File],
-	file_to_process_counter *ds.AtomicCounter,
-) {
-	quick_hash := true
-	ds.Increment(file_to_process_counter)
-
-	hash_channel := make(chan string)
-	fullpath := filepath.Join(*basedir, (*entry).Name())
-	go commons.Hash_file(fullpath, quick_hash, hash_channel)
-
-	size_info := commons.Get_human_reabable_size((*entry).Size())
-
-	file_stats := commons.File{
-		Name:          fullpath,
-		FormattedSize: size_info,
-		Size:	       (*entry).Size(),
-	}
-
-	file_stats.Hash = <-hash_channel
-
-	ds.Push_into_heap(file_stack, &file_stats)
-	ds.Decrement(file_to_process_counter)
-}
-
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
 	var last_seen *commons.File
 	var data *commons.File
@@ -46,7 +19,6 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 	hash_channel := make(chan string)
 	is_duplicate := false
 
-	
 	ds.Set_compare_fn(&output, custom_is_lower_fn)
 
 	if !ds.Is_heap_empty(file_heap) {
@@ -59,19 +31,15 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 		if data.Hash == last_seen.Hash {
 			last_seen = data
 
-			if data.Size > 16000 {
-				go commons.Hash_file(data.Name, false, hash_channel)
-				data.Hash = <-hash_channel
-			}
+			go commons.Hash_file(data.Name, false, hash_channel)
+			data.Hash = <-hash_channel
 
 			ds.Push_into_heap(&output, data)
 			is_duplicate = true
 		} else {
 			if is_duplicate {
-				if last_seen.Size > 16000 {
-					go commons.Hash_file(last_seen.Name, false, hash_channel)
-					last_seen.Hash = <-hash_channel
-				}
+				go commons.Hash_file(last_seen.Name, false, hash_channel)
+				last_seen.Hash = <-hash_channel
 
 				ds.Push_into_heap(&output, last_seen)
 			}
@@ -99,11 +67,11 @@ func display_file_info_from_channel(
 		data = ds.Pop_from_heap(file_heap)
 
 		if data.Hash == last_seen.Hash {
-			print_file_struct_to_stdout(data)
+			print_file_details_to_stdout(data)
 			is_duplicate = true
 		} else {
 			if is_duplicate {
-				print_file_struct_to_stdout(last_seen)
+				print_file_details_to_stdout(last_seen)
 			}
 
 			is_duplicate = false
@@ -113,17 +81,8 @@ func display_file_info_from_channel(
 	}
 
 	if is_duplicate {
-		print_file_struct_to_stdout(last_seen)
+		print_file_details_to_stdout(last_seen)
 	}
-}
-
-func print_file_struct_to_stdout(data *commons.File) {
-	hash := data.Hash
-	size := data.FormattedSize.Value
-	unit := data.FormattedSize.Unit
-	name := data.Name
-
-	fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
 }
 
 func compute_back_pressure(queue_size *int64) time.Duration {
@@ -162,11 +121,10 @@ func main() {
 	flag.Parse()
 
 	directories_stack := ds.Stack[string]{}
-	output_file_heap := ds.Heap[commons.File]{}
+	output_file_heap := FileHeap{}
 
-	ds.Set_compare_fn(&output_file_heap, custom_is_lower_fn)
-
-	file_to_process_counter := ds.Create_new_atomic_counter()
+	ds.Set_compare_fn(&output_file_heap.heap, custom_is_lower_fn)
+	output_file_heap.pending_insert = *ds.Create_new_atomic_counter()
 
 	file_seen := 0
 	directories_seen := 0
@@ -201,11 +159,7 @@ func main() {
 			if file_type.IsRegular() {
 				file_seen += 1
 				size_processed += entry_info.Size()
-				go process_file_entry(
-					&current_dir, &entry_info,
-					&output_file_heap,
-					file_to_process_counter,
-				)
+				go process_file_entry(&current_dir, &entry_info, &output_file_heap)
 			}
 
 			if file_type.IsDir() {
@@ -215,7 +169,7 @@ func main() {
 		}
 
 		formatted_size = commons.Get_human_reabable_size(size_processed)
-		queue_size = ds.Get_counter_value(file_to_process_counter)
+		queue_size = ds.Get_counter_value(&output_file_heap.pending_insert)
 		back_pressure = compute_back_pressure(&queue_size)
 
 		fmt.Print(clearLine)
@@ -227,10 +181,10 @@ func main() {
 		time.Sleep(back_pressure)
 	}
 
-	for ds.Get_counter_value(file_to_process_counter) > 0 {
+	for ds.Get_counter_value(&output_file_heap.pending_insert) > 0 {
 		time.Sleep(1 * time.Millisecond)
 	}
 
-	cleaned_heap := build_duplicate_entries_heap(&output_file_heap)
+	cleaned_heap := build_duplicate_entries_heap(&output_file_heap.heap)
 	display_file_info_from_channel(cleaned_heap)
 }

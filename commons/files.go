@@ -8,6 +8,8 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"hash"
+	"hash/crc32"
 )
 
 type FileSize struct {
@@ -26,7 +28,7 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 	var err error
 	
 	file_pointer, err := os.Open(filepath)
-	hash := md5.New()
+	var file_hash hash.Hash
 
 	if err != nil {
 		panic(err)
@@ -40,8 +42,13 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 
 	left_size := file_info.Size()
 
-	if left_size > 16000 && quick_flag {
-		left_size = 16000
+	if quick_flag {
+		file_hash = crc32.New(crc32.IEEETable)
+		if left_size > 2000000 {
+			left_size = 2000000
+		}
+	} else {
+		file_hash = md5.New()
 	}
 
 	defer file_pointer.Close()
@@ -49,12 +56,12 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 	r := bufio.NewReader(file_pointer)
 
 	var chunk_size int
-	buf := make([]byte, 4000)
+	buf := make([]byte, 2000)
 	var read_size int
 
 	for left_size > 0 {
-		if left_size > 4000 {
-			chunk_size = 4000
+		if left_size > 2000 {
+			chunk_size = 2000
 		} else {
 			chunk_size = int(left_size)
 		}
@@ -70,11 +77,26 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 			panic("left size is positive")
 		}
 
-		hash.Write(buf)
+		file_hash.Write(buf)
 	}
 
-	sum := hash.Sum(nil)
+	sum := file_hash.Sum(nil)
 	c <- fmt.Sprintf("%x", sum)
+}
+
+func Get_human_reabable_size_async(size int64, file_size_channel chan FileSize) {
+	file_size := size
+	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
+	size_index := 0
+
+	for size_index < 4 && file_size > 1000 {
+		file_size /= 1000
+		size_index++
+	}
+
+	output := FileSize{Value: int16(file_size), Unit: sizes_array[size_index]}
+
+	file_size_channel <- output
 }
 
 func Get_human_reabable_size(size int64) FileSize {
