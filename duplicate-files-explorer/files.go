@@ -3,8 +3,10 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
+	"bufio"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 )
 
@@ -13,18 +15,47 @@ type FileHeap struct {
 	pending_insert ds.AtomicCounter
 }
 
+func can_file_be_read(fullpath *string) bool {
+	var err error
+	
+	file_pointer, err := os.Open(*fullpath)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer file_pointer.Close()
+
+	r := bufio.NewReader(file_pointer)
+
+	buf := make([]byte, 100)
+
+	_, err = r.Read(buf)
+
+	return err == nil
+}
+
 func process_file_entry(basedir *string, entry *fs.FileInfo, file_heap *FileHeap) {
 	file_size := (*entry).Size() 
+	fullpath := filepath.Join(*basedir, (*entry).Name())
 	
 	if file_size <= 0 {
 		return
 	}
 
+	if !can_file_be_read(&fullpath) {
+		return
+	}
+
+	_, err := os.ReadFile(fullpath)
+        if err != nil {
+            return 
+        }
+
 	ds.Increment(&file_heap.pending_insert)
 	
 	hash_channel := make(chan string)
 	file_size_channel := make(chan commons.FileSize)
-	fullpath := filepath.Join(*basedir, (*entry).Name())
 	
 	go commons.Hash_file(fullpath, true, hash_channel)
 	go commons.Get_human_reabable_size_async((*entry).Size(), file_size_channel)

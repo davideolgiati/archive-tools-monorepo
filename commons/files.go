@@ -3,7 +3,6 @@ package commons
 import (
 	"bufio"
 	"crypto/md5"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -72,7 +71,7 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 		left_size = left_size - int64(chunk_size)
 
 		if err != nil && err != io.EOF {
-			panic(err)
+			panic(fmt.Sprintf("%s\n\n", err))
 		} else if err == io.EOF && left_size > 0 {
 			panic(fmt.Sprintf("left size is positive: %d", left_size))
 		}
@@ -118,14 +117,51 @@ func Current_user_has_read_right_on_file(fullpath *string) bool {
 	info, err := os.Stat(*fullpath)
 
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return false
-		}
-		panic(err)
+		return false
 	}
 
 	read_bit_mask := fs.FileMode(0444)
 	file_permission_bits := info.Mode().Perm()
 
 	return (file_permission_bits & read_bit_mask) == read_bit_mask
+}
+
+func Is_file_symbolic_link(fullpath *string) bool {
+	info, err := os.Lstat(*fullpath)
+
+	if err != nil {
+		return false
+	}
+
+	return info.Mode()&os.ModeSymlink == os.ModeSymlink
+}
+
+func Is_file_a_device(fullpath *string) bool {
+	info, err := os.Stat(*fullpath)
+
+	if err != nil {
+		return false
+	}
+
+	return info.Mode()&os.ModeDevice == os.ModeDevice
+}
+
+func Is_file_a_socket(fullpath *string) bool {
+	info, err := os.Stat(*fullpath)
+
+	if err != nil {
+		return false
+	}
+
+	return info.Mode()&os.ModeSocket == os.ModeSocket
+}
+
+func Is_file_a_pipe(fullpath *string) bool {
+	info, err := os.Stat(*fullpath)
+
+	if err != nil {
+		return false
+	}
+
+	return info.Mode()&os.ModeNamedPipe == os.ModeNamedPipe
 }

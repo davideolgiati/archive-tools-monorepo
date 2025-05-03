@@ -105,6 +105,30 @@ func custom_is_lower_fn(a *commons.File, b *commons.File) bool {
 	return a.Hash < b.Hash
 }
 
+func check_if_file_is_valid(fullpath *string) bool {
+	if(commons.Is_file_symbolic_link(fullpath)) {
+		return false
+	} 
+
+	if(commons.Is_file_a_device(fullpath)) {
+		return false
+	}
+
+	if(commons.Is_file_a_socket(fullpath)) {
+		return false
+	} 
+	
+	if(commons.Is_file_a_pipe(fullpath)) {
+		return false
+	}
+
+	if(!commons.Current_user_has_read_right_on_file(fullpath)) {
+		return false
+	}
+
+	return true
+}
+
 func main() {
 	var basedir string
 	var entry_name string
@@ -138,21 +162,21 @@ func main() {
 		entries, read_dir_err := os.ReadDir(current_dir)
 
 		if read_dir_err != nil {
-			panic(read_dir_err)
+			continue
 		}
 
 		for _, entry := range entries {
 			entry_info, file_info_err := entry.Info()
 
 			if file_info_err != nil {
-				panic(file_info_err)
+				continue
 			}
 
 			entry_name = entry_info.Name()
 			file_type = entry_info.Mode()
 			fullpath = filepath.Join(current_dir, entry_name)
 
-			if !commons.Current_user_has_read_right_on_file(&fullpath) {
+			if !check_if_file_is_valid(&fullpath) {
 				continue
 			}
 
