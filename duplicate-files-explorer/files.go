@@ -14,6 +14,12 @@ type FileHeap struct {
 }
 
 func process_file_entry(basedir *string, entry *fs.FileInfo, file_heap *FileHeap) {
+	file_size := (*entry).Size() 
+	
+	if file_size <= 0 {
+		return
+	}
+
 	ds.Increment(&file_heap.pending_insert)
 	
 	hash_channel := make(chan string)

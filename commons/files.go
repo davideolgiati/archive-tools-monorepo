@@ -44,8 +44,8 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 
 	if quick_flag {
 		file_hash = crc32.New(crc32.IEEETable)
-		if left_size > 2000000 {
-			left_size = 2000000
+		if left_size > 4000 {
+			left_size = 4000
 		}
 	} else {
 		file_hash = md5.New()
@@ -74,7 +74,7 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 		if err != nil && err != io.EOF {
 			panic(err)
 		} else if err == io.EOF && left_size > 0 {
-			panic("left size is positive")
+			panic(fmt.Sprintf("left size is positive: %d", left_size))
 		}
 
 		file_hash.Write(buf)
