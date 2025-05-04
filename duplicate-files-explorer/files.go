@@ -47,11 +47,6 @@ func process_file_entry(basedir *string, entry *fs.FileInfo, file_heap *FileHeap
 		return
 	}
 
-	_, err := os.ReadFile(fullpath)
-        if err != nil {
-            return 
-        }
-
 	ds.Increment(&file_heap.pending_insert)
 	
 	hash_channel := make(chan string)

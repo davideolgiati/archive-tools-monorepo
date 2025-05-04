@@ -54,26 +54,20 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 
 	r := bufio.NewReader(file_pointer)
 
-	var chunk_size int
 	buf := make([]byte, 2000)
 	var read_size int
 
 	for left_size > 0 {
-		if left_size > 2000 {
-			chunk_size = 2000
-		} else {
-			chunk_size = int(left_size)
-		}
-
 		read_size, err = r.Read(buf)
 		buf = buf[:read_size]
 
-		left_size = left_size - int64(chunk_size)
+		left_size = left_size - int64(read_size)
 
 		if err != nil && err != io.EOF {
 			panic(fmt.Sprintf("%s\n\n", err))
 		} else if err == io.EOF && left_size > 0 {
-			panic(fmt.Sprintf("left size is positive: %d", left_size))
+			left_size = 0
+			//panic(fmt.Sprintf("left size is positive: %d", left_size))
 		}
 
 		file_hash.Write(buf)

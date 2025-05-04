@@ -3,6 +3,7 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
+	_ "embed"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -10,6 +11,9 @@ import (
 	"path/filepath"
 	"time"
 )
+
+//go:embed semver.txt
+var version string
 
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
 	var last_seen *commons.File
@@ -106,23 +110,23 @@ func custom_is_lower_fn(a *commons.File, b *commons.File) bool {
 }
 
 func check_if_file_is_valid(fullpath *string) bool {
-	if(commons.Is_file_symbolic_link(fullpath)) {
-		return false
-	} 
-
-	if(commons.Is_file_a_device(fullpath)) {
+	if commons.Is_file_symbolic_link(fullpath) {
 		return false
 	}
 
-	if(commons.Is_file_a_socket(fullpath)) {
-		return false
-	} 
-	
-	if(commons.Is_file_a_pipe(fullpath)) {
+	if commons.Is_file_a_device(fullpath) {
 		return false
 	}
 
-	if(!commons.Current_user_has_read_right_on_file(fullpath)) {
+	if commons.Is_file_a_socket(fullpath) {
+		return false
+	}
+
+	if commons.Is_file_a_pipe(fullpath) {
+		return false
+	}
+
+	if !commons.Current_user_has_read_right_on_file(fullpath) {
 		return false
 	}
 
@@ -140,6 +144,8 @@ func main() {
 
 	saveCursorPosition := "\033[s"
 	clearLine := "\033[u\033[K"
+
+	fmt.Printf("Running version: %s", version)
 
 	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
 	flag.Parse()
