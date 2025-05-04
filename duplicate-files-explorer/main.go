@@ -71,7 +71,7 @@ func display_file_info_from_channel(
 		data = ds.Pop_from_heap(file_heap)
 
 		if data.Hash == last_seen.Hash {
-			print_file_details_to_stdout(data)
+			print_file_details_to_stdout(last_seen)
 			is_duplicate = true
 		} else {
 			if is_duplicate {

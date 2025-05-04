@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"crypto/md5"
 	"fmt"
+	"hash"
+	"hash/crc32"
 	"io"
 	"io/fs"
 	"os"
-	"hash"
-	"hash/crc32"
 )
 
 type FileSize struct {
@@ -20,12 +20,12 @@ type File struct {
 	Name          string
 	FormattedSize FileSize
 	Hash          string
-	Size 	      int64
+	Size          int64
 }
 
 func Hash_file(filepath string, quick_flag bool, c chan string) {
 	var err error
-	
+
 	file_pointer, err := os.Open(filepath)
 	var file_hash hash.Hash
 
@@ -127,7 +127,7 @@ func Is_file_symbolic_link(fullpath *string) bool {
 		return false
 	}
 
-	return info.Mode()&os.ModeSymlink == os.ModeSymlink
+	return info.Mode()&os.ModeSymlink != 0
 }
 
 func Is_file_a_device(fullpath *string) bool {
