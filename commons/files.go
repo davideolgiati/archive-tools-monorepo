@@ -23,6 +23,10 @@ type File struct {
 	Size          int64
 }
 
+func Compare_file_hashes(a *File, b *File) bool {
+	return a.Hash < b.Hash
+}
+
 func Hash_file(filepath string, quick_flag bool, c chan string) {
 	var err error
 

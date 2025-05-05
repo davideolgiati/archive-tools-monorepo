@@ -14,12 +14,12 @@ import (
 
 //go:embed semver.txt
 var version string
+
 //go:embed buildts.txt
 var buildts string
 
 var saveCursorPosition string = "\033[s"
 var clearLine string = "\033[u\033[K"
-
 
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
 	var last_seen *commons.File
@@ -32,7 +32,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 	ignored_files_counter := 0
 	processed_files_counter := 0
 
-	ds.Set_compare_fn(&output, custom_is_lower_fn)
+	ds.Set_compare_fn(&output, commons.Compare_file_hashes)
 
 	if !ds.Is_heap_empty(file_heap) {
 		last_seen = ds.Pop_from_heap(file_heap)
@@ -67,7 +67,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 		fmt.Print(clearLine)
 		fmt.Printf(
 			"Removing unique entries ... %.2f %% (%6d files seen, %6d unique entries)",
-			(float32(processed_files_counter) / float32(heap_size)) * 100, processed_files_counter, 
+			(float32(processed_files_counter)/float32(heap_size))*100, processed_files_counter,
 			ignored_files_counter,
 		)
 	}
@@ -126,10 +126,6 @@ func compute_back_pressure(queue_size *int64) time.Duration {
 	return 3 * time.Millisecond
 }
 
-func custom_is_lower_fn(a *commons.File, b *commons.File) bool {
-	return a.Hash < b.Hash
-}
-
 func check_if_file_is_valid(fullpath *string) bool {
 	if commons.Is_file_symbolic_link(fullpath) {
 		return false
@@ -163,6 +159,12 @@ func main() {
 	var queue_size int64
 	var back_pressure time.Duration
 
+	main_ui := commons.New_UI()
+
+	commons.Register_new_line("directory-line", main_ui)
+	commons.Register_new_line("file-line", main_ui)
+	commons.Register_new_line("size-line", main_ui)
+
 	fmt.Printf("Running version: %s", version)
 	fmt.Printf("Build timestamp: %s", buildts)
 
@@ -172,7 +174,7 @@ func main() {
 	directories_stack := ds.Stack[string]{}
 	output_file_heap := FileHeap{}
 
-	ds.Set_compare_fn(&output_file_heap.heap, custom_is_lower_fn)
+	ds.Set_compare_fn(&output_file_heap.heap, commons.Compare_file_hashes)
 	output_file_heap.pending_insert = *ds.Create_new_atomic_counter()
 
 	file_seen := 0
@@ -209,11 +211,19 @@ func main() {
 				file_seen += 1
 				size_processed += entry_info.Size()
 				go process_file_entry(&current_dir, &entry_info, &output_file_heap)
+				commons.Print_to_line(
+					main_ui, "file-line",
+					"Files seen: %12d", file_seen,
+				)
 			}
 
 			if file_type.IsDir() {
 				directories_seen += 1
 				ds.Push_into_stack(&directories_stack, fullpath)
+				commons.Print_to_line(
+					main_ui, "directory-line",
+					"Directories seen: %6d", directories_seen,
+				)
 			}
 		}
 
@@ -221,16 +231,23 @@ func main() {
 		queue_size = ds.Get_counter_value(&output_file_heap.pending_insert)
 		back_pressure = compute_back_pressure(&queue_size)
 
-		fmt.Print(clearLine)
-		fmt.Printf(
-			"Seen %6d files in %6d directories (%3d %2s)",
-			file_seen, directories_seen, formatted_size.Value,
+		commons.Print_to_line(
+			main_ui, "size-line",
+			"Processed: %10d %2s", formatted_size.Value,
 			formatted_size.Unit,
 		)
+		/*
+			fmt.Print(clearLine)
+			fmt.Printf(
+				"Seen %6d files in %6d directories (%3d %2s)",
+				file_seen, directories_seen, formatted_size.Value,
+				formatted_size.Unit,
+			)
+		*/
 		time.Sleep(back_pressure)
 	}
 
-	fmt.Print("\n")
+	commons.Close_UI(main_ui)
 
 	for ds.Get_counter_value(&output_file_heap.pending_insert) > 0 {
 		time.Sleep(1 * time.Millisecond)
