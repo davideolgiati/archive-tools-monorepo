@@ -14,6 +14,9 @@ import (
 
 //go:embed semver.txt
 var version string
+var saveCursorPosition string = "\033[s"
+var clearLine string = "\033[u\033[K"
+
 
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
 	var last_seen *commons.File
@@ -22,6 +25,9 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 	output := ds.Heap[commons.File]{}
 	hash_channel := make(chan string)
 	is_duplicate := false
+	heap_size := ds.Get_heap_size(file_heap)
+	ignored_files_counter := 0
+	processed_files_counter := 0
 
 	ds.Set_compare_fn(&output, custom_is_lower_fn)
 
@@ -29,8 +35,10 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 		last_seen = ds.Pop_from_heap(file_heap)
 	}
 
+	fmt.Print(saveCursorPosition)
 	for !ds.Is_heap_empty(file_heap) {
 		data = ds.Pop_from_heap(file_heap)
+		processed_files_counter++
 
 		if data.Hash == last_seen.Hash {
 			last_seen = data
@@ -41,6 +49,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 			ds.Push_into_heap(&output, data)
 			is_duplicate = true
 		} else {
+			ignored_files_counter++
 			if is_duplicate {
 				go commons.Hash_file(last_seen.Name, false, hash_channel)
 				last_seen.Hash = <-hash_channel
@@ -51,7 +60,16 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 			last_seen = data
 			is_duplicate = false
 		}
+
+		fmt.Print(clearLine)
+		fmt.Printf(
+			"Removing unique entries ... %.2f %% (%6d files seen, %6d unique entries)",
+			(float32(processed_files_counter) / float32(heap_size)) * 100, processed_files_counter, 
+			ignored_files_counter,
+		)
 	}
+
+	fmt.Print("\n")
 
 	return &output
 }
@@ -142,9 +160,6 @@ func main() {
 	var queue_size int64
 	var back_pressure time.Duration
 
-	saveCursorPosition := "\033[s"
-	clearLine := "\033[u\033[K"
-
 	fmt.Printf("Running version: %s", version)
 
 	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
@@ -210,6 +225,8 @@ func main() {
 		)
 		time.Sleep(back_pressure)
 	}
+
+	fmt.Print("\n")
 
 	for ds.Get_counter_value(&output_file_heap.pending_insert) > 0 {
 		time.Sleep(1 * time.Millisecond)

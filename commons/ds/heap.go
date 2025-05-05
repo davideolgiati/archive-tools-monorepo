@@ -34,6 +34,10 @@ func get_parent_node_index(index *int) int {
 	return (*index - 1) / 2
 }
 
+func Get_heap_size[T any](heap *Heap[T]) int {
+	return len(heap.items)
+}
+
 func Push_into_heap[T any](heap *Heap[T], data *T) {
 	heap.mutex.Lock()
 
