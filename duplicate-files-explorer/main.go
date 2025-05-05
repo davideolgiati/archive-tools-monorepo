@@ -14,6 +14,9 @@ import (
 
 //go:embed semver.txt
 var version string
+//go:embed buildts.txt
+var buildts string
+
 var saveCursorPosition string = "\033[s"
 var clearLine string = "\033[u\033[K"
 
@@ -161,6 +164,7 @@ func main() {
 	var back_pressure time.Duration
 
 	fmt.Printf("Running version: %s", version)
+	fmt.Printf("Build timestamp: %s", buildts)
 
 	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
 	flag.Parse()

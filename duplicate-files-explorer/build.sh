@@ -9,4 +9,6 @@ semver_array=( ${version//./ } )
 
 echo "${semver_array[0]}.${semver_array[1]}.${semver_array[2]}" > ./semver.txt
 
+echo $(date +"%Y-%m-%dT%H:%M:%S%z") > ./buildts.txt
+
 go build -o ../bin/
