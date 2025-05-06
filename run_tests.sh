@@ -10,8 +10,13 @@ function run_test_in_dir() {
 export GOTMPDIR="${PWD}/tmp-test-dir/"
 
 mkdir $GOTMPDIR
+mkdir "${GOTMPDIR}/heap_test"
 
-test_dirs=("./commons/ds")
+echo "test1" > "${GOTMPDIR}/heap_test/file1"
+echo "test1" > "${GOTMPDIR}/heap_test/file2"
+echo "test3" > "${GOTMPDIR}/heap_test/file3"
+
+test_dirs=("./commons/ds" "./duplicate-files-explorer")
 
 for dir in ${test_dirs[@]}; do
         run_test_in_dir "${dir}"

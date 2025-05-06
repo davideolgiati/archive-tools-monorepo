@@ -35,33 +35,23 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 	ds.Set_compare_fn(&output, commons.Compare_file_hashes)
 
 	if !ds.Is_heap_empty(file_heap) {
-		last_seen = ds.Pop_from_heap(file_heap)
+		data = ds.Pop_from_heap(file_heap)
 	}
 
 	fmt.Print(saveCursorPosition)
 	for !ds.Is_heap_empty(file_heap) {
+		last_seen = data
 		data = ds.Pop_from_heap(file_heap)
 		processed_files_counter++
 
-		if data.Hash == last_seen.Hash {
-			last_seen = data
+		if data.Hash == last_seen.Hash || is_duplicate {
+			go commons.Hash_file(last_seen.Name, false, hash_channel)
+			last_seen.Hash = <-hash_channel
 
-			go commons.Hash_file(data.Name, false, hash_channel)
-			data.Hash = <-hash_channel
-
-			ds.Push_into_heap(&output, data)
-			is_duplicate = true
+			ds.Push_into_heap(&output, last_seen)
+			is_duplicate = data.Hash == last_seen.Hash
 		} else {
 			ignored_files_counter++
-			if is_duplicate {
-				go commons.Hash_file(last_seen.Name, false, hash_channel)
-				last_seen.Hash = <-hash_channel
-
-				ds.Push_into_heap(&output, last_seen)
-			}
-
-			last_seen = data
-			is_duplicate = false
 		}
 
 		fmt.Print(clearLine)
@@ -85,24 +75,21 @@ func display_file_info_from_channel(
 	is_duplicate := false
 
 	if !ds.Is_heap_empty(file_heap) {
-		last_seen = ds.Pop_from_heap(file_heap)
+		data = ds.Pop_from_heap(file_heap)
 	}
 
 	for !ds.Is_heap_empty(file_heap) {
+		last_seen = data
 		data = ds.Pop_from_heap(file_heap)
 
 		if data.Hash == last_seen.Hash {
 			print_file_details_to_stdout(last_seen)
 			is_duplicate = true
-		} else {
-			if is_duplicate {
-				print_file_details_to_stdout(last_seen)
-			}
-
+		} else if is_duplicate {
+			print_file_details_to_stdout(last_seen)
 			is_duplicate = false
 		}
 
-		last_seen = data
 	}
 
 	if is_duplicate {
@@ -236,14 +223,7 @@ func main() {
 			"Processed: %10d %2s", formatted_size.Value,
 			formatted_size.Unit,
 		)
-		/*
-			fmt.Print(clearLine)
-			fmt.Printf(
-				"Seen %6d files in %6d directories (%3d %2s)",
-				file_seen, directories_seen, formatted_size.Value,
-				formatted_size.Unit,
-			)
-		*/
+		
 		time.Sleep(back_pressure)
 	}
 
