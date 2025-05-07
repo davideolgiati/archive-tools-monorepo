@@ -111,55 +111,25 @@ func Get_human_reabable_size(size int64) FileSize {
 	return output
 }
 
-func Current_user_has_read_right_on_file(fullpath *string) bool {
-	info, err := os.Stat(*fullpath)
-
-	if err != nil {
-		return false
-	}
-
+func Current_user_has_read_right_on_file(obj *os.FileInfo) bool {
 	read_bit_mask := fs.FileMode(0444)
-	file_permission_bits := info.Mode().Perm()
+	file_permission_bits := (*obj).Mode().Perm()
 
 	return (file_permission_bits & read_bit_mask) == read_bit_mask
 }
 
-func Is_file_symbolic_link(fullpath *string) bool {
-	info, err := os.Lstat(*fullpath)
-
-	if err != nil {
-		return false
-	}
-
-	return info.Mode()&os.ModeSymlink != 0
+func Is_file_symbolic_link(obj *os.FileInfo) bool {
+	return (*obj).Mode()&os.ModeSymlink != 0
 }
 
-func Is_file_a_device(fullpath *string) bool {
-	info, err := os.Stat(*fullpath)
-
-	if err != nil {
-		return false
-	}
-
-	return info.Mode()&os.ModeDevice == os.ModeDevice
+func Is_file_a_device(obj *os.FileInfo) bool {
+	return (*obj).Mode()&os.ModeDevice == os.ModeDevice
 }
 
-func Is_file_a_socket(fullpath *string) bool {
-	info, err := os.Stat(*fullpath)
-
-	if err != nil {
-		return false
-	}
-
-	return info.Mode()&os.ModeSocket == os.ModeSocket
+func Is_file_a_socket(obj *os.FileInfo) bool {
+	return (*obj).Mode()&os.ModeSocket == os.ModeSocket
 }
 
-func Is_file_a_pipe(fullpath *string) bool {
-	info, err := os.Stat(*fullpath)
-
-	if err != nil {
-		return false
-	}
-
-	return info.Mode()&os.ModeNamedPipe == os.ModeNamedPipe
+func Is_file_a_pipe(obj *os.FileInfo) bool {
+	return (*obj).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
 }

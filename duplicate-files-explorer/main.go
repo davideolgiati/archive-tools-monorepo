@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -112,34 +111,9 @@ func compute_back_pressure(queue_size *int64) time.Duration {
 	return 3 * time.Millisecond
 }
 
-func check_if_file_is_valid(fullpath *string) bool {
-	if commons.Is_file_symbolic_link(fullpath) {
-		return false
-	}
-
-	if commons.Is_file_a_device(fullpath) {
-		return false
-	}
-
-	if commons.Is_file_a_socket(fullpath) {
-		return false
-	}
-
-	if commons.Is_file_a_pipe(fullpath) {
-		return false
-	}
-
-	if !commons.Current_user_has_read_right_on_file(fullpath) {
-		return false
-	}
-
-	return true
-}
-
 func main() {
 	var basedir string
 	var entry_name string
-	var file_type fs.FileMode
 	var fullpath string
 	var formatted_size commons.FileSize
 	var queue_size int64
@@ -183,30 +157,26 @@ func main() {
 			}
 
 			entry_name = entry_info.Name()
-			file_type = entry_info.Mode()
 			fullpath = filepath.Join(current_dir, entry_name)
 
-			if !check_if_file_is_valid(&fullpath) {
-				continue
-			}
-
-			if file_type.IsRegular() {
-				file_seen += 1
-				size_processed += entry_info.Size()
-				go process_file_entry(&current_dir, &entry_info, &output_file_heap)
-				commons.Print_to_line(
-					main_ui, "file-line",
-					"Files seen: %12d", file_seen,
-				)
-			}
-
-			if file_type.IsDir() {
-				directories_seen += 1
-				ds.Push_into_stack(&directories_stack, fullpath)
-				commons.Print_to_line(
-					main_ui, "directory-line",
-					"Directories seen: %6d", directories_seen,
-				)
+			switch obj_type := evaluate_object_properties(&fullpath); obj_type {
+				case file:
+					file_seen += 1
+					size_processed += entry_info.Size()
+					go process_file_entry(&current_dir, &entry_info, &output_file_heap)
+					commons.Print_to_line(
+						main_ui, "file-line",
+						"Files seen: %12d", file_seen,
+					)
+				case directory:
+					directories_seen += 1
+					ds.Push_into_stack(&directories_stack, fullpath)
+					commons.Print_to_line(
+						main_ui, "directory-line",
+						"Directories seen: %6d", directories_seen,
+					)
+				default:
+					continue
 			}
 		}
 

@@ -10,14 +10,20 @@ import (
 	"path/filepath"
 )
 
+const (
+	directory = iota
+	file      = iota
+	invalid	  = iota
+)
+
 type FileHeap struct {
-	heap ds.Heap[commons.File]
+	heap           ds.Heap[commons.File]
 	pending_insert ds.AtomicCounter
 }
 
 func can_file_be_read(fullpath *string) bool {
 	var err error
-	
+
 	file_pointer, err := os.Open(*fullpath)
 
 	if err != nil {
@@ -36,9 +42,9 @@ func can_file_be_read(fullpath *string) bool {
 }
 
 func process_file_entry(basedir *string, entry *fs.FileInfo, file_heap *FileHeap) {
-	file_size := (*entry).Size() 
+	file_size := (*entry).Size()
 	fullpath := filepath.Join(*basedir, (*entry).Name())
-	
+
 	if file_size <= 0 {
 		return
 	}
@@ -48,19 +54,19 @@ func process_file_entry(basedir *string, entry *fs.FileInfo, file_heap *FileHeap
 	}
 
 	ds.Increment(&file_heap.pending_insert)
-	
+
 	hash_channel := make(chan string)
 	file_size_channel := make(chan commons.FileSize)
-	
+
 	go commons.Hash_file(fullpath, true, hash_channel)
 	go commons.Get_human_reabable_size_async((*entry).Size(), file_size_channel)
 
 	file_stats := commons.File{
-		Name:          fullpath,
-		Size:          (*entry).Size(),
+		Name: fullpath,
+		Size: (*entry).Size(),
 	}
 
-	file_stats.FormattedSize = <- file_size_channel
+	file_stats.FormattedSize = <-file_size_channel
 	file_stats.Hash = <-hash_channel
 
 	ds.Push_into_heap(&file_heap.heap, &file_stats)
@@ -74,4 +80,42 @@ func print_file_details_to_stdout(data *commons.File) {
 	name := data.Name
 
 	fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
+}
+
+func evaluate_object_properties(fullpath *string) int {
+	info, err := os.Lstat(*fullpath)
+
+	if err != nil {
+		return invalid
+	}
+
+	if commons.Is_file_symbolic_link(&info) {
+		return invalid
+	}
+
+	if commons.Is_file_a_device(&info) {
+		return invalid
+	}
+
+	if commons.Is_file_a_socket(&info) {
+		return invalid
+	}
+
+	if commons.Is_file_a_pipe(&info) {
+		return invalid
+	}
+
+	if !commons.Current_user_has_read_right_on_file(&info) {
+		return invalid
+	}
+
+	if info.IsDir() {
+		return directory
+	}
+
+	if info.Mode().IsRegular() {
+		return file
+	}
+
+	return invalid
 }
