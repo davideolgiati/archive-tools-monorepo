@@ -18,8 +18,7 @@ var version string
 //go:embed buildts.txt
 var buildts string
 
-var saveCursorPosition string = "\033[s"
-var clearLine string = "\033[u\033[K"
+var main_ui = commons.New_UI()
 
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
 	var last_seen *commons.File
@@ -32,13 +31,14 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 	ignored_files_counter := 0
 	processed_files_counter := 0
 
+	commons.Register_new_line("heap-line", main_ui)
+
 	ds.Set_compare_fn(&output, commons.Compare_file_hashes)
 
 	if !ds.Is_heap_empty(file_heap) {
 		data = ds.Pop_from_heap(file_heap)
 	}
 
-	fmt.Print(saveCursorPosition)
 	for !ds.Is_heap_empty(file_heap) {
 		last_seen = data
 		data = ds.Pop_from_heap(file_heap)
@@ -54,11 +54,10 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 			ignored_files_counter++
 		}
 
-		fmt.Print(clearLine)
-		fmt.Printf(
-			"Removing unique entries ... %.2f %% (%6d files seen, %6d unique entries)",
-			(float32(processed_files_counter)/float32(heap_size))*100, processed_files_counter,
-			ignored_files_counter,
+		commons.Print_to_line(
+			main_ui, "heap-line",
+			"Removing unique entries stage-1 ... %.1f %%",
+			(float64(processed_files_counter)/float64(heap_size))*100,
 		)
 	}
 
@@ -146,14 +145,12 @@ func main() {
 	var queue_size int64
 	var back_pressure time.Duration
 
-	main_ui := commons.New_UI()
+	commons.Print_not_registered(main_ui, "Running version: %s", version)
+	commons.Print_not_registered(main_ui, "Build timestamp: %s\n", buildts)
 
 	commons.Register_new_line("directory-line", main_ui)
 	commons.Register_new_line("file-line", main_ui)
 	commons.Register_new_line("size-line", main_ui)
-
-	fmt.Printf("Running version: %s", version)
-	fmt.Printf("Build timestamp: %s", buildts)
 
 	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
 	flag.Parse()
@@ -170,7 +167,6 @@ func main() {
 
 	ds.Push_into_stack(&directories_stack, basedir)
 
-	fmt.Print(saveCursorPosition)
 	for !ds.Is_stack_empty(&directories_stack) {
 		current_dir := ds.Pop_from_stack(&directories_stack)
 		entries, read_dir_err := os.ReadDir(current_dir)
@@ -223,16 +219,17 @@ func main() {
 			"Processed: %10d %2s", formatted_size.Value,
 			formatted_size.Unit,
 		)
-		
+
 		time.Sleep(back_pressure)
 	}
-
-	commons.Close_UI(main_ui)
 
 	for ds.Get_counter_value(&output_file_heap.pending_insert) > 0 {
 		time.Sleep(1 * time.Millisecond)
 	}
 
 	cleaned_heap := build_duplicate_entries_heap(&output_file_heap.heap)
+
+	commons.Close_UI(main_ui)
+
 	display_file_info_from_channel(cleaned_heap)
 }
