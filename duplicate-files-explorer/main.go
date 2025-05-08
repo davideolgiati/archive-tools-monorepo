@@ -113,7 +113,6 @@ func compute_back_pressure(queue_size *int64) time.Duration {
 
 func main() {
 	var basedir string
-	var entry_name string
 	var fullpath string
 	var formatted_size commons.FileSize
 	var queue_size int64
@@ -150,20 +149,19 @@ func main() {
 		}
 
 		for _, entry := range entries {
-			entry_info, file_info_err := entry.Info()
+			obj, err := entry.Info()
 
-			if file_info_err != nil {
+			if err != nil {
 				continue
 			}
-
-			entry_name = entry_info.Name()
-			fullpath = filepath.Join(current_dir, entry_name)
-
-			switch obj_type := evaluate_object_properties(&fullpath); obj_type {
+			
+			fullpath = filepath.Join(current_dir, obj.Name())
+			
+			switch obj_type := evaluate_object_properties(&obj, &fullpath); obj_type {
 				case file:
 					file_seen += 1
-					size_processed += entry_info.Size()
-					go process_file_entry(&current_dir, &entry_info, &output_file_heap)
+					size_processed += obj.Size()
+					go process_file_entry(&current_dir, &obj, &output_file_heap)
 					commons.Print_to_line(
 						main_ui, "file-line",
 						"Files seen: %12d", file_seen,

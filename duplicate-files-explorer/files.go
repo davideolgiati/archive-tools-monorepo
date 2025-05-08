@@ -13,7 +13,7 @@ import (
 const (
 	directory = iota
 	file      = iota
-	invalid	  = iota
+	invalid   = iota
 )
 
 type FileHeap struct {
@@ -27,7 +27,7 @@ func can_file_be_read(fullpath *string) bool {
 	file_pointer, err := os.Open(*fullpath)
 
 	if err != nil {
-		panic(err)
+		return false
 	}
 
 	defer file_pointer.Close()
@@ -82,38 +82,32 @@ func print_file_details_to_stdout(data *commons.File) {
 	fmt.Printf("file: %s %4d %2s %s\n", hash, size, unit, name)
 }
 
-func evaluate_object_properties(fullpath *string) int {
-	info, err := os.Lstat(*fullpath)
-
-	if err != nil {
+func evaluate_object_properties(obj *fs.FileInfo, fullpath *string) int {
+	if commons.Is_file_symbolic_link(fullpath) {
 		return invalid
 	}
 
-	if commons.Is_file_symbolic_link(&info) {
+	if commons.Is_file_a_device(obj) {
 		return invalid
 	}
 
-	if commons.Is_file_a_device(&info) {
+	if commons.Is_file_a_socket(obj) {
 		return invalid
 	}
 
-	if commons.Is_file_a_socket(&info) {
+	if commons.Is_file_a_pipe(obj) {
 		return invalid
 	}
 
-	if commons.Is_file_a_pipe(&info) {
+	if !commons.Current_user_has_read_right_on_file(obj) {
 		return invalid
 	}
 
-	if !commons.Current_user_has_read_right_on_file(&info) {
-		return invalid
-	}
-
-	if info.IsDir() {
+	if (*obj).IsDir() {
 		return directory
 	}
 
-	if info.Mode().IsRegular() {
+	if (*obj).Mode().Perm().IsRegular() {
 		return file
 	}
 

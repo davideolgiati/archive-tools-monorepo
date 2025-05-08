@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 )
 
 type FileSize struct {
@@ -118,8 +119,14 @@ func Current_user_has_read_right_on_file(obj *os.FileInfo) bool {
 	return (file_permission_bits & read_bit_mask) == read_bit_mask
 }
 
-func Is_file_symbolic_link(obj *os.FileInfo) bool {
-	return (*obj).Mode()&os.ModeSymlink != 0
+func Is_file_symbolic_link(path *string) bool {
+	dst, err := filepath.EvalSymlinks(*path)
+
+	if err != nil {
+		return false
+	}
+
+	return *path != dst
 }
 
 func Is_file_a_device(obj *os.FileInfo) bool {
