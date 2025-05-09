@@ -1,12 +1,17 @@
 package commons
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type ui struct {
-	lines        map[string]func(string, int, int) int
-	id_to_lines  map[string]int
-	current_line int
-	next_line    int
+	lines               map[string]func(string, int, int) int
+	id_to_lines         map[string]int
+	lines_id_last_value map[string]string
+	current_line        int
+	next_line           int
+	line_last_update    map[string]int64
 }
 
 func New_UI() *ui {
@@ -15,6 +20,8 @@ func New_UI() *ui {
 	output.next_line = 1
 	output.lines = make(map[string]func(string, int, int) int)
 	output.id_to_lines = make(map[string]int)
+	output.lines_id_last_value = make(map[string]string)
+	output.line_last_update = make(map[string]int64)
 
 	return &output
 }
@@ -37,14 +44,20 @@ func Register_new_line(line_id string, ui *ui) {
 	}
 
 	ui.lines[line_id] = custom_fn
+	ui.lines_id_last_value[line_id] = ""
+	ui.line_last_update[line_id] = time.Now().UnixMilli()
 	ui.next_line++
 }
 
 func Print_to_line(ui *ui, line_id string, format string, a ...any) {
 	data := fmt.Sprintf(format, a...)
-	line_number := ui.id_to_lines[line_id]
-	ui.current_line = ui.lines[line_id](data, ui.current_line, line_number)
-	ui.next_line = ui.current_line + 1
+	if data != ui.lines_id_last_value[line_id] && (time.Now().UnixMilli()-ui.line_last_update[line_id]) > 42 {
+		line_number := ui.id_to_lines[line_id]
+		ui.current_line = ui.lines[line_id](data, ui.current_line, line_number)
+		ui.line_last_update[line_id] = time.Now().UnixMilli()
+	}
+
+	//ui.current_line = ui.next_line
 }
 
 func Print_not_registered(ui *ui, format string, a ...any) {
