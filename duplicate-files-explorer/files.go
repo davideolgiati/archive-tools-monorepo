@@ -55,19 +55,13 @@ func process_file_entry(basedir *string, entry *fs.FileInfo, file_heap *FileHeap
 
 	ds.Increment(&file_heap.pending_insert)
 
-	hash_channel := make(chan string)
-	file_size_channel := make(chan commons.FileSize)
-
-	go commons.Hash_file(fullpath, true, hash_channel)
-	go commons.Get_human_reabable_size_async((*entry).Size(), file_size_channel)
-
 	file_stats := commons.File{
 		Name: fullpath,
 		Size: (*entry).Size(),
 	}
 
-	file_stats.FormattedSize = <-file_size_channel
-	file_stats.Hash = <-hash_channel
+	file_stats.FormattedSize = commons.Get_human_reabable_size_async((*entry).Size())
+	file_stats.Hash = ""
 
 	ds.Push_into_heap(&file_heap.heap, &file_stats)
 	ds.Decrement(&file_heap.pending_insert)

@@ -9,7 +9,7 @@ type AtomicCounter struct {
 	value int64
 }
 
-func Create_new_atomic_counter() *AtomicCounter {
+func Build_new_atomic_counter() *AtomicCounter {
 	output := AtomicCounter{}
 	output.value = 0
 
@@ -28,7 +28,7 @@ func Decrement(counter *AtomicCounter) {
 	counter.mutex.Unlock()
 }
 
-func Get_counter_value(counter *AtomicCounter) int64{
+func Get_counter_value(counter *AtomicCounter) int64 {
 	counter.mutex.Lock()
 	output := counter.value
 	counter.mutex.Unlock()

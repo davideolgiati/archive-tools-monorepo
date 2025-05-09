@@ -7,6 +7,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"time"
 )
 
@@ -37,8 +38,8 @@ func main() {
 	directories_stack := ds.Stack[string]{}
 	output_file_heap := FileHeap{}
 
-	ds.Set_compare_fn(&output_file_heap.heap, commons.Compare_file_hashes)
-	output_file_heap.pending_insert = *ds.Create_new_atomic_counter()
+	ds.Set_compare_fn(&output_file_heap.heap, commons.Compare_files)
+	output_file_heap.pending_insert = *ds.Build_new_atomic_counter()
 
 	file_seen := 0
 	directories_seen := 0
@@ -100,7 +101,8 @@ func main() {
 		time.Sleep(1 * time.Millisecond)
 	}
 
-	cleaned_heap := build_duplicate_entries_heap(&output_file_heap.heap)
+	cleaned_heap_1 := build_duplicate_entries_heap(&output_file_heap.heap, true)
+	cleaned_heap := build_duplicate_entries_heap(cleaned_heap_1, false)
 
 	commons.Close_UI(main_ui)
 

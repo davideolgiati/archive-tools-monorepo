@@ -2,9 +2,10 @@ package commons
 
 import (
 	"bufio"
-	"crypto/md5"
+	"crypto/sha1"
 	"fmt"
 	"hash"
+	"hash/crc32"
 	"io"
 	"io/fs"
 	"os"
@@ -23,12 +24,13 @@ type File struct {
 	Size          int64
 }
 
-func Compare_file_hashes(a *File, b *File) bool {
-	return a.Hash < b.Hash
+func Compare_files(a *File, b *File) bool {
+	return a.Hash < b.Hash && a.Size < b.Size
 }
 
-func Hash_file(filepath string, quick_flag bool, c chan string) {
+func Hash_file(filepath string, quick_flag bool) string {
 	var err error
+	var page_size int64 = int64(os.Getpagesize())
 
 	file_pointer, err := os.Open(filepath)
 	var file_hash hash.Hash
@@ -46,18 +48,19 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 	left_size := file_info.Size()
 
 	if quick_flag {
-		if left_size > 4000 {
-			left_size = 4000
+		file_hash = crc32.New(crc32.IEEETable)
+		if left_size > 1000000 {
+			left_size = 1000000
 		}
+	} else {
+		file_hash = sha1.New()
 	}
-
-	file_hash = md5.New()
 
 	defer file_pointer.Close()
 
 	r := bufio.NewReader(file_pointer)
 
-	buf := make([]byte, 2000)
+	buf := make([]byte, page_size)
 	var read_size int
 
 	for left_size > 0 {
@@ -77,10 +80,10 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 	}
 
 	sum := file_hash.Sum(nil)
-	c <- fmt.Sprintf("%x", sum)
+	return fmt.Sprintf("%x", sum)
 }
 
-func Get_human_reabable_size_async(size int64, file_size_channel chan FileSize) {
+func Get_human_reabable_size_async(size int64) FileSize {
 	file_size := size
 	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
 	size_index := 0
@@ -92,7 +95,7 @@ func Get_human_reabable_size_async(size int64, file_size_channel chan FileSize) 
 
 	output := FileSize{Value: int16(file_size), Unit: sizes_array[size_index]}
 
-	file_size_channel <- output
+	return output
 }
 
 func Get_human_reabable_size(size int64) FileSize {
