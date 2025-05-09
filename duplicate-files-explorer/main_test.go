@@ -35,7 +35,14 @@ func TestComputeBackPressure(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := compute_back_pressure(&test.queueSize)
+		counter := ds.AtomicCounter{}
+		
+		for i := int64(0); i < test.queueSize; i++ {
+			ds.Increment(&counter)
+		}
+
+		result := compute_back_pressure(&counter)
+		
 		if result != test.expected {
 			t.Errorf("For queue size %d, expected %v, got %v", test.queueSize, test.expected, result)
 		}

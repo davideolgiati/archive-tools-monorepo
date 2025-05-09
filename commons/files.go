@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"hash"
-	"hash/crc32"
 	"io"
 	"io/fs"
 	"os"
@@ -47,13 +46,12 @@ func Hash_file(filepath string, quick_flag bool, c chan string) {
 	left_size := file_info.Size()
 
 	if quick_flag {
-		file_hash = crc32.New(crc32.IEEETable)
 		if left_size > 4000 {
 			left_size = 4000
 		}
-	} else {
-		file_hash = md5.New()
 	}
+
+	file_hash = md5.New()
 
 	defer file_pointer.Close()
 
