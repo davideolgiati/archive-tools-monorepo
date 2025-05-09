@@ -7,7 +7,6 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
-	"runtime/pprof"
 	"time"
 )
 
@@ -56,32 +55,27 @@ func main() {
 		}
 
 		for _, entry := range entries {
-			obj, err := entry.Info()
-
-			if err != nil {
-				continue
-			}
-
-			fullpath = filepath.Join(current_dir, obj.Name())
-
-			switch obj_type := evaluate_object_properties(&obj, &fullpath); obj_type {
-			case file:
-				file_seen += 1
-				size_processed += obj.Size()
-				go process_file_entry(&current_dir, &obj, &output_file_heap)
-				commons.Print_to_line(
-					main_ui, "file-line",
-					"Files seen: %12d", file_seen,
-				)
-			case directory:
+			fullpath = filepath.Join(current_dir, entry.Name())
+			
+			if entry.IsDir() {
 				directories_seen += 1
 				ds.Push_into_stack(&directories_stack, fullpath)
 				commons.Print_to_line(
 					main_ui, "directory-line",
 					"Directories seen: %6d", directories_seen,
 				)
-			default:
-				continue
+			} else {
+				obj, err := entry.Info()
+
+				if err == nil && evaluate_object_properties(&obj, &fullpath) == file {
+					file_seen += 1
+					size_processed += obj.Size()
+					go process_file_entry(&current_dir, &obj, &output_file_heap)
+					commons.Print_to_line(
+						main_ui, "file-line",
+						"Files seen: %12d", file_seen,
+					)
+				}
 			}
 		}
 
