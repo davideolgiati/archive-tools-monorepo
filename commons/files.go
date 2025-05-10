@@ -88,7 +88,7 @@ func Get_human_reabable_size_async(size int64) FileSize {
 	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
 	size_index := 0
 
-	for size_index < 4 && file_size > 1000 {
+	for size_index < 3 && file_size > 1000 {
 		file_size /= 1000
 		size_index++
 	}
@@ -103,7 +103,7 @@ func Get_human_reabable_size(size int64) FileSize {
 	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
 	size_index := 0
 
-	for size_index < 4 && file_size > 1000 {
+	for size_index < 3 && file_size > 1000 {
 		file_size /= 1000
 		size_index++
 	}

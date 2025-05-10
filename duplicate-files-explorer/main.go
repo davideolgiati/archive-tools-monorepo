@@ -22,7 +22,6 @@ func main() {
 	var basedir string
 	var fullpath string
 	var formatted_size commons.FileSize
-	var back_pressure time.Duration
 
 	commons.Print_not_registered(main_ui, "Running version: %s", version)
 	commons.Print_not_registered(main_ui, "Build timestamp: %s\n", buildts)
@@ -43,6 +42,7 @@ func main() {
 	file_seen := 0
 	directories_seen := 0
 	size_processed := int64(0)
+	cicles_counter := 0
 
 	ds.Push_into_stack(&directories_stack, basedir)
 
@@ -56,40 +56,63 @@ func main() {
 
 		for _, entry := range entries {
 			fullpath = filepath.Join(current_dir, entry.Name())
-			
+
 			if entry.IsDir() {
 				directories_seen += 1
 				ds.Push_into_stack(&directories_stack, fullpath)
-				commons.Print_to_line(
-					main_ui, "directory-line",
-					"Directories seen: %6d", directories_seen,
-				)
 			} else {
 				obj, err := entry.Info()
 
 				if err == nil && evaluate_object_properties(&obj, &fullpath) == file {
 					file_seen += 1
 					size_processed += obj.Size()
-					go process_file_entry(&current_dir, &obj, &output_file_heap)
-					commons.Print_to_line(
-						main_ui, "file-line",
-						"Files seen: %12d", file_seen,
-					)
+					go process_file_entry(current_dir, &obj, &output_file_heap)
+
 				}
 			}
 		}
 
 		formatted_size = commons.Get_human_reabable_size(size_processed)
-		back_pressure = compute_back_pressure(&output_file_heap.pending_insert)
 
-		commons.Print_to_line(
-			main_ui, "size-line",
-			"Processed: %10d %2s", formatted_size.Value,
-			formatted_size.Unit,
-		)
+		cicles_counter++
 
-		time.Sleep(back_pressure)
+		if cicles_counter > 50 {
+			commons.Print_to_line(
+				main_ui, "directory-line",
+				"Directories seen: %6d", directories_seen,
+			)
+
+			commons.Print_to_line(
+				main_ui, "file-line",
+				"Files seen: %12d", file_seen,
+			)
+
+			commons.Print_to_line(
+				main_ui, "size-line",
+				"Processed: %10d %2s", formatted_size.Value,
+				formatted_size.Unit,
+			)
+
+			cicles_counter = 0
+		}
+		apply_back_pressure(&output_file_heap.pending_insert)
 	}
+
+	commons.Print_to_line(
+		main_ui, "directory-line",
+		"Directories seen: %6d", directories_seen,
+	)
+
+	commons.Print_to_line(
+		main_ui, "file-line",
+		"Files seen: %12d", file_seen,
+	)
+
+	commons.Print_to_line(
+		main_ui, "size-line",
+		"Processed: %10d %2s", formatted_size.Value,
+		formatted_size.Unit,
+	)
 
 	for ds.Get_counter_value(&output_file_heap.pending_insert) > 0 {
 		time.Sleep(1 * time.Millisecond)

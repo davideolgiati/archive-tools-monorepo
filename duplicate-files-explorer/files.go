@@ -41,9 +41,9 @@ func can_file_be_read(fullpath *string) bool {
 	return err == nil
 }
 
-func process_file_entry(basedir *string, entry *fs.FileInfo, file_heap *FileHeap) {
+func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap) {
 	file_size := (*entry).Size()
-	fullpath := filepath.Join(*basedir, (*entry).Name())
+	fullpath := filepath.Join(basedir, (*entry).Name())
 
 	if file_size <= 0 {
 		return

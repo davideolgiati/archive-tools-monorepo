@@ -3,25 +3,17 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
+	"runtime"
 	"time"
 )
 
-func compute_back_pressure(queue *ds.AtomicCounter) time.Duration {
+func apply_back_pressure(queue *ds.AtomicCounter) {
 	queue_size := ds.Get_counter_value(queue)
 
-	if queue_size < 500 {
-		return 0 * time.Millisecond
+	for queue_size > int64(runtime.NumCPU()*2) {
+		time.Sleep(1 * time.Millisecond)
+		queue_size = ds.Get_counter_value(queue)
 	}
-
-	if queue_size < 1000 {
-		return 1 * time.Millisecond
-	}
-
-	if queue_size < 2000 {
-		return 2 * time.Millisecond
-	}
-
-	return 3 * time.Millisecond
 }
 
 func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, lazy bool) {
@@ -45,7 +37,6 @@ func build_new_file_heap() *FileHeap {
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy bool) *ds.Heap[commons.File] {
 	var last_file_seen *commons.File
 	var current_file *commons.File
-	var back_pressure time.Duration
 	var line_id string
 
 	refined_file_heap := build_new_file_heap()
@@ -85,8 +76,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy bool) *
 			(float64(processed_files_counter)/float64(input_heap_size))*100,
 		)
 
-		back_pressure = compute_back_pressure(&refined_file_heap.pending_insert)
-		time.Sleep(back_pressure)
+		apply_back_pressure(&refined_file_heap.pending_insert)
 	}
 
 	return &refined_file_heap.heap
