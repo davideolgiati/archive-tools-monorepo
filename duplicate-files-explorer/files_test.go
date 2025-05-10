@@ -1,7 +1,10 @@
 package main
 
 import (
+	"archive-tools-monorepo/commons"
+	"archive-tools-monorepo/commons/ds"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -186,3 +189,87 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		}
 	})
 }
+func TestProcessFileEntry(t *testing.T) {
+	t.Run("ValidFileEntry", func(t *testing.T) {
+		tmpFile, err := os.CreateTemp("", "testfile")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		_, err = tmpFile.WriteString("test content")
+		if err != nil {
+			t.Fatalf("Failed to write to temp file: %v", err)
+		}
+
+		info, err := os.Stat(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to get file info: %v", err)
+		}
+
+		fileHeap := &FileHeap{
+			heap:           ds.Heap[commons.File]{},
+			pending_insert: *ds.Build_new_atomic_counter(),
+		}
+
+		process_file_entry(filepath.Dir(tmpFile.Name()), &info, fileHeap)
+
+		if ds.Is_heap_empty(&fileHeap.heap) {
+			t.Errorf("Expected 1 file in heap, got 0",)
+		}
+	})
+
+	t.Run("EmptyFileEntry", func(t *testing.T) {
+		tmpFile, err := os.CreateTemp("", "testfile")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		info, err := os.Stat(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to get file info: %v", err)
+		}
+
+		fileHeap := &FileHeap{
+			heap:           ds.Heap[commons.File]{},
+			pending_insert: *ds.Build_new_atomic_counter(),
+		}
+
+		process_file_entry(filepath.Dir(tmpFile.Name()), &info, fileHeap)
+
+		if ds.Is_heap_empty(&fileHeap.heap) {
+			t.Errorf("Expected 1 file in heap, got 0",)
+		}
+	})
+
+	t.Run("UnreadableFileEntry", func(t *testing.T) {
+		tmpFile, err := os.CreateTemp("", "testfile")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		err = os.Chmod(tmpFile.Name(), 0200) // Write-only
+		if err != nil {
+			t.Fatalf("Failed to change file permissions: %v", err)
+		}
+
+		info, err := os.Stat(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to get file info: %v", err)
+		}
+
+		fileHeap := &FileHeap{
+			heap:           ds.Heap[commons.File]{},
+			pending_insert: *ds.Build_new_atomic_counter(),
+		}
+
+		process_file_entry(filepath.Dir(tmpFile.Name()), &info, fileHeap)
+
+		if !ds.Is_heap_empty(&fileHeap.heap) {
+			t.Errorf("Expected 0 file in heap, got more",)
+		}
+	})
+}
+
