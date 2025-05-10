@@ -5,6 +5,7 @@ import (
 	"archive-tools-monorepo/commons/ds"
 	"bufio"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,6 +14,10 @@ import (
 const (
 	directory = iota
 	file      = iota
+	symlink   = iota
+	device    = iota
+	socket    = iota
+	pipe      = iota
 	invalid   = iota
 )
 
@@ -38,7 +43,11 @@ func can_file_be_read(fullpath *string) bool {
 
 	_, err = r.Read(buf)
 
-	return err == nil
+	if err != nil && err != io.EOF {
+		return false
+	}
+
+	return true
 }
 
 func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap) {
@@ -60,7 +69,7 @@ func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap)
 		Size: (*entry).Size(),
 	}
 
-	file_stats.FormattedSize = commons.Get_human_reabable_size_async((*entry).Size())
+	file_stats.FormattedSize = commons.Get_human_reabable_size((*entry).Size())
 	file_stats.Hash = ""
 
 	ds.Push_into_heap(&file_heap.heap, &file_stats)
@@ -78,19 +87,19 @@ func print_file_details_to_stdout(data *commons.File) {
 
 func evaluate_object_properties(obj *fs.FileInfo, fullpath *string) int {
 	if commons.Is_file_symbolic_link(fullpath) {
-		return invalid
+		return symlink
 	}
 
 	if commons.Is_file_a_device(obj) {
-		return invalid
+		return device
 	}
 
 	if commons.Is_file_a_socket(obj) {
-		return invalid
+		return socket
 	}
 
 	if commons.Is_file_a_pipe(obj) {
-		return invalid
+		return pipe
 	}
 
 	if !commons.Current_user_has_read_right_on_file(obj) {

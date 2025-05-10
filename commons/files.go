@@ -28,7 +28,11 @@ func Compare_files(a *File, b *File) bool {
 	return a.Hash < b.Hash && a.Size < b.Size
 }
 
-func Hash_file(filepath string, quick_flag bool) string {
+func Check_if_files_are_equal(a *File, b *File) bool {
+	return a.Hash == b.Hash && a.Size == b.Size
+}
+
+func Hash_file(filepath string, quick_flag bool) (string, error) {
 	var err error
 	var page_size int64 = int64(os.Getpagesize())
 
@@ -36,21 +40,21 @@ func Hash_file(filepath string, quick_flag bool) string {
 	var file_hash hash.Hash
 
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	file_info, err := file_pointer.Stat()
 
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	left_size := file_info.Size()
 
 	if quick_flag {
 		file_hash = crc32.New(crc32.IEEETable)
-		if left_size > 1000000 {
-			left_size = 1000000
+		if left_size > page_size*5 {
+			left_size = page_size * 5
 		}
 	} else {
 		file_hash = sha1.New()
@@ -73,29 +77,13 @@ func Hash_file(filepath string, quick_flag bool) string {
 			panic(fmt.Sprintf("%s\n\n", err))
 		} else if err == io.EOF && left_size > 0 {
 			left_size = 0
-			//panic(fmt.Sprintf("left size is positive: %d", left_size))
 		}
 
 		file_hash.Write(buf)
 	}
 
 	sum := file_hash.Sum(nil)
-	return fmt.Sprintf("%x", sum)
-}
-
-func Get_human_reabable_size_async(size int64) FileSize {
-	file_size := size
-	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
-	size_index := 0
-
-	for size_index < 3 && file_size > 1000 {
-		file_size /= 1000
-		size_index++
-	}
-
-	output := FileSize{Value: int16(file_size), Unit: sizes_array[size_index]}
-
-	return output
+	return fmt.Sprintf("%x", sum), nil
 }
 
 func Get_human_reabable_size(size int64) FileSize {
@@ -117,7 +105,7 @@ func Current_user_has_read_right_on_file(obj *os.FileInfo) bool {
 	read_bit_mask := fs.FileMode(0444)
 	file_permission_bits := (*obj).Mode().Perm()
 
-	return (file_permission_bits & read_bit_mask) == read_bit_mask
+	return (file_permission_bits & read_bit_mask) != fs.FileMode(0000)
 }
 
 func Is_file_symbolic_link(path *string) bool {

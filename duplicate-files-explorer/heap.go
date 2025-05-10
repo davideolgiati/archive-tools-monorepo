@@ -6,21 +6,23 @@ import (
 	"runtime"
 	"time"
 )
-
 func apply_back_pressure(queue *ds.AtomicCounter) {
 	queue_size := ds.Get_counter_value(queue)
 
-	for queue_size > int64(runtime.NumCPU()*2) {
-		time.Sleep(1 * time.Millisecond)
-		queue_size = ds.Get_counter_value(queue)
+	if queue_size > int64(runtime.NumCPU()) {
+		time.Sleep(100 * time.Microsecond)
 	}
 }
 
 func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, lazy bool) {
 	ds.Increment(&file_heap.pending_insert)
 
-	file.Hash = commons.Hash_file(file.Name, lazy)
-	ds.Push_into_heap(&file_heap.heap, file)
+	hash, err := commons.Hash_file(file.Name, lazy)
+	
+	if err == nil {
+		file.Hash = hash
+		ds.Push_into_heap(&file_heap.heap, file)
+	}
 
 	ds.Decrement(&file_heap.pending_insert)
 }
@@ -34,19 +36,20 @@ func build_new_file_heap() *FileHeap {
 	return &file_heap
 }
 
-func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy bool) *ds.Heap[commons.File] {
+func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing bool) *ds.Heap[commons.File] {
 	var last_file_seen *commons.File
 	var current_file *commons.File
 	var line_id string
+	var files_are_equal bool
 
 	refined_file_heap := build_new_file_heap()
-	is_duplicate := false
+	last_seen_was_a_duplicate := false
 
 	input_heap_size := ds.Get_heap_size(file_heap)
 	ignored_files_counter := 0
 	processed_files_counter := 0
 
-	if lazy {
+	if lazy_hashing {
 		line_id = "stage-1"
 	} else {
 		line_id = "stage-2"
@@ -62,10 +65,11 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy bool) *
 		last_file_seen = current_file
 		current_file = ds.Pop_from_heap(file_heap)
 		processed_files_counter++
+		files_are_equal = commons.Check_if_files_are_equal(current_file, last_file_seen)
 
-		if (current_file.Hash == last_file_seen.Hash && current_file.Size == last_file_seen.Size) || is_duplicate {
-			is_duplicate = (current_file.Hash == last_file_seen.Hash && current_file.Size == last_file_seen.Size)
-			go refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy)
+		if files_are_equal || last_seen_was_a_duplicate {
+			last_seen_was_a_duplicate = files_are_equal
+			go refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
 		} else {
 			ignored_files_counter++
 		}
