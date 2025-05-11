@@ -42,17 +42,20 @@ func can_file_be_read(fullpath *string) bool {
 }
 
 func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap) {
-	file_stats := commons.File{
-		Name: filepath.Join(basedir, (*entry).Name()),
-		Size: (*entry).Size(),
-		Hash: "",
-	}
+	full_path := filepath.Join(basedir, (*entry).Name())
 
-	file_stats.FormattedSize = commons.Format_file_size(file_stats.Size)
-
-	if can_file_be_read(&file_stats.Name) {
+	if can_file_be_read(&full_path) {
 		ds.Increment(&file_heap.pending_insert)
+
+		file_stats := commons.File{
+			Name: full_path,
+			Size: (*entry).Size(),
+			Hash: "",
+			FormattedSize: commons.Format_file_size((*entry).Size()),
+		}
+
 		ds.Push_into_heap(&file_heap.heap, &file_stats)
+
 		ds.Decrement(&file_heap.pending_insert)
 	}
 }

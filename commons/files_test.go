@@ -1,6 +1,12 @@
 package commons
 
-import "testing"
+import (
+	"crypto/sha1"
+	"fmt"
+	"hash/crc32"
+	"os"
+	"testing"
+)
 
 func TestCompareFiles(t *testing.T) {
 	// Test Case 1: File A is less than File B
@@ -137,3 +143,92 @@ func TestGetHumanReadableSizeAsync(t *testing.T) {
 		}
 	})
 }
+func TestHash(t *testing.T) {
+	// Test Case 1: Hash a small file with quick_flag set to true
+	t.Run("HashSmallFileQuickFlag", func(t *testing.T) {
+		filepath := "testfile_small.txt"
+		content := "This is a test file."
+		os.WriteFile(filepath, []byte(content), 0644)
+		defer os.Remove(filepath)
+
+		hash, err := Hash(&filepath, int64(len(content)), true)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		expectedHash := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(content[:page_size*5])))
+		if hash != expectedHash {
+			t.Errorf("Expected hash %s, got %s", expectedHash, hash)
+		}
+	})
+
+	// Test Case 2: Hash a small file with quick_flag set to false
+	t.Run("HashSmallFileFullHash", func(t *testing.T) {
+		filepath := "testfile_small.txt"
+		content := "This is a test file."
+		os.WriteFile(filepath, []byte(content), 0644)
+		defer os.Remove(filepath)
+
+		hash, err := Hash(&filepath, int64(len(content)), false)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		expectedHash := fmt.Sprintf("%x", sha1.Sum([]byte(content)))
+		if hash != expectedHash {
+			t.Errorf("Expected hash %s, got %s", expectedHash, hash)
+		}
+	})
+
+	// Test Case 3: Hash a large file with quick_flag set to true
+	t.Run("HashLargeFileQuickFlag", func(t *testing.T) {
+		filepath := "testfile_large.txt"
+		content := make([]byte, page_size*10)
+		for i := range content {
+			content[i] = byte(i % 256)
+		}
+		os.WriteFile(filepath, content, 0644)
+		defer os.Remove(filepath)
+
+		hash, err := Hash(&filepath, int64(len(content)), true)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		expectedHash := fmt.Sprintf("%x", crc32.ChecksumIEEE(content[:page_size*5]))
+		if hash != expectedHash {
+			t.Errorf("Expected hash %s, got %s", expectedHash, hash)
+		}
+	})
+
+	// Test Case 4: Hash a large file with quick_flag set to false
+	t.Run("HashLargeFileFullHash", func(t *testing.T) {
+		filepath := "testfile_large.txt"
+		content := make([]byte, page_size*10)
+		for i := range content {
+			content[i] = byte(i % 256)
+		}
+		os.WriteFile(filepath, content, 0644)
+		defer os.Remove(filepath)
+
+		hash, err := Hash(&filepath, int64(len(content)), false)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		expectedHash := fmt.Sprintf("%x", sha1.Sum(content))
+		if hash != expectedHash {
+			t.Errorf("Expected hash %s, got %s", expectedHash, hash)
+		}
+	})
+
+	// Test Case 5: File does not exist
+	t.Run("FileDoesNotExist", func(t *testing.T) {
+		filepath := "nonexistent_file.txt"
+		_, err := Hash(&filepath, 0, true)
+		if err == nil {
+			t.Errorf("Expected an error for nonexistent file, got nil")
+		}
+	})
+}
+
