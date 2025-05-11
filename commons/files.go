@@ -12,6 +12,9 @@ import (
 	"path/filepath"
 )
 
+var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
+var page_size int64 = int64(os.Getpagesize())
+
 type FileSize struct {
 	Value int16
 	Unit  string
@@ -24,71 +27,73 @@ type File struct {
 	Size          int64
 }
 
-func Compare_files(a *File, b *File) bool {
+func (file *File) Format(f fmt.State, c rune) {
+	f.Write([]byte(file.ToString()))
+}
+
+func (f *File) ToString() string {
+	return fmt.Sprintf(
+		"%s %4d %2s %s",
+		f.Hash,
+		f.FormattedSize.Value,
+		f.FormattedSize.Unit,
+		f.Name,
+	)
+}
+
+func Lower(a *File, b *File) bool {
 	return a.Hash < b.Hash && a.Size < b.Size
 }
 
-func Check_if_files_are_equal(a *File, b *File) bool {
+func Equal(a *File, b *File) bool {
 	return a.Hash == b.Hash && a.Size == b.Size
 }
 
-func Hash_file(filepath string, quick_flag bool) (string, error) {
-	var err error
-	var page_size int64 = int64(os.Getpagesize())
+func Hash(filepath *string, size int64, quick_flag bool) (string, error) {
+	var err error = nil
+	var hash_accumulator hash.Hash = crc32.New(crc32.IEEETable)
+	var hash []byte
 
-	file_pointer, err := os.Open(filepath)
-	var file_hash hash.Hash
-
-	if err != nil {
-		return "", err
-	}
-
-	file_info, err := file_pointer.Stat()
+	file_pointer, err := os.Open(*filepath)
 
 	if err != nil {
 		return "", err
 	}
-
-	left_size := file_info.Size()
 
 	if quick_flag {
-		file_hash = crc32.New(crc32.IEEETable)
-		if left_size > page_size*5 {
-			left_size = page_size * 5
-		}
+		size = page_size * 5
 	} else {
-		file_hash = sha1.New()
+		hash_accumulator = sha1.New()
 	}
 
 	defer file_pointer.Close()
 
-	r := bufio.NewReader(file_pointer)
+	reader := bufio.NewReader(file_pointer)
 
-	buf := make([]byte, page_size)
+	read_buffer := make([]byte, page_size)
 	var read_size int
 
-	for left_size > 0 {
-		read_size, err = r.Read(buf)
-		buf = buf[:read_size]
-
-		left_size = left_size - int64(read_size)
-
-		if err != nil && err != io.EOF {
-			panic(fmt.Sprintf("%s\n\n", err))
-		} else if err == io.EOF && left_size > 0 {
-			left_size = 0
+	for size > 0 {
+		read_size, err = reader.Read(read_buffer)
+		
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			size = 0
 		}
-
-		file_hash.Write(buf)
+		
+		size = size - int64(read_size)
+		read_buffer = read_buffer[:read_size]
+		hash_accumulator.Write(read_buffer)
 	}
 
-	sum := file_hash.Sum(nil)
-	return fmt.Sprintf("%x", sum), nil
+	hash = hash_accumulator.Sum(nil)
+	return fmt.Sprintf("%x", hash), err
 }
 
-func Get_human_reabable_size(size int64) FileSize {
+func Format_file_size(size int64) FileSize {
 	file_size := size
-	sizes_array := [4]string{"b", "Kb", "Mb", "Gb"}
 	size_index := 0
 
 	for size_index < 3 && file_size > 1000 {
@@ -101,14 +106,14 @@ func Get_human_reabable_size(size int64) FileSize {
 	return output
 }
 
-func Current_user_has_read_right_on_file(obj *os.FileInfo) bool {
+func Check_read_rights_on_file(obj *os.FileInfo) bool {
 	read_bit_mask := fs.FileMode(0444)
 	file_permission_bits := (*obj).Mode().Perm()
 
 	return (file_permission_bits & read_bit_mask) != fs.FileMode(0000)
 }
 
-func Is_file_symbolic_link(path *string) bool {
+func Is_symbolic_link(path *string) bool {
 	dst, err := filepath.EvalSymlinks(*path)
 
 	if err != nil {
@@ -118,14 +123,14 @@ func Is_file_symbolic_link(path *string) bool {
 	return *path != dst
 }
 
-func Is_file_a_device(obj *os.FileInfo) bool {
+func Is_a_device(obj *os.FileInfo) bool {
 	return (*obj).Mode()&os.ModeDevice == os.ModeDevice
 }
 
-func Is_file_a_socket(obj *os.FileInfo) bool {
+func Is_a_socket(obj *os.FileInfo) bool {
 	return (*obj).Mode()&os.ModeSocket == os.ModeSocket
 }
 
-func Is_file_a_pipe(obj *os.FileInfo) bool {
+func Is_a_pipe(obj *os.FileInfo) bool {
 	return (*obj).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
 }

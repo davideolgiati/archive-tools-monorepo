@@ -4,7 +4,6 @@ import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
 	"bufio"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -49,7 +48,7 @@ func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap)
 		Hash: "",
 	}
 
-	file_stats.FormattedSize = commons.Get_human_reabable_size(file_stats.Size)
+	file_stats.FormattedSize = commons.Format_file_size(file_stats.Size)
 
 	if can_file_be_read(&file_stats.Name) {
 		ds.Increment(&file_heap.pending_insert)
@@ -58,27 +57,17 @@ func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap)
 	}
 }
 
-func print_file_details_to_stdout(data *commons.File) {
-	fmt.Printf(
-		"file: %s %4d %2s %s\n", 
-		data.Hash, 
-		data.FormattedSize.Value, 
-		data.FormattedSize.Unit,
-		data.Name,
-	)
-}
-
 func evaluate_object_properties(obj *fs.FileInfo, fullpath *string) int {
 	switch {
-	case commons.Is_file_symbolic_link(fullpath):
+	case commons.Is_symbolic_link(fullpath):
 		return symlink
-	case commons.Is_file_a_device(obj):
+	case commons.Is_a_device(obj):
 		return device
-	case commons.Is_file_a_socket(obj):
+	case commons.Is_a_socket(obj):
 		return socket
-	case commons.Is_file_a_pipe(obj):
+	case commons.Is_a_pipe(obj):
 		return pipe
-	case !commons.Current_user_has_read_right_on_file(obj):
+	case !commons.Check_read_rights_on_file(obj):
 		return invalid
 	case (*obj).IsDir():
 		return directory

@@ -8,7 +8,7 @@ func TestCompareFiles(t *testing.T) {
 		fileA := &File{Hash: "abc123", Size: 100}
 		fileB := &File{Hash: "def456", Size: 200}
 
-		if !Compare_files(fileA, fileB) {
+		if !Lower(fileA, fileB) {
 			t.Errorf("Expected fileA to be less than fileB")
 		}
 	})
@@ -18,7 +18,7 @@ func TestCompareFiles(t *testing.T) {
 		fileA := &File{Hash: "def456", Size: 200}
 		fileB := &File{Hash: "abc123", Size: 100}
 
-		if Compare_files(fileA, fileB) {
+		if Lower(fileA, fileB) {
 			t.Errorf("Expected fileA to not be less than fileB")
 		}
 	})
@@ -28,7 +28,7 @@ func TestCompareFiles(t *testing.T) {
 		fileA := &File{Hash: "abc123", Size: 100}
 		fileB := &File{Hash: "abc123", Size: 100}
 
-		if Compare_files(fileA, fileB) {
+		if Lower(fileA, fileB) {
 			t.Errorf("Expected fileA to not be less than fileB when they are equal")
 		}
 	})
@@ -40,7 +40,7 @@ func TestCheckIfFilesAreEqual(t *testing.T) {
 		fileA := &File{Hash: "abc123", Size: 100}
 		fileB := &File{Hash: "abc123", Size: 100}
 
-		if !Check_if_files_are_equal(fileA, fileB) {
+		if !Equal(fileA, fileB) {
 			t.Errorf("Expected files to be equal")
 		}
 	})
@@ -50,7 +50,7 @@ func TestCheckIfFilesAreEqual(t *testing.T) {
 		fileA := &File{Hash: "abc123", Size: 100}
 		fileB := &File{Hash: "def456", Size: 100}
 
-		if Check_if_files_are_equal(fileA, fileB) {
+		if Equal(fileA, fileB) {
 			t.Errorf("Expected files to not be equal due to different hashes")
 		}
 	})
@@ -60,7 +60,7 @@ func TestCheckIfFilesAreEqual(t *testing.T) {
 		fileA := &File{Hash: "abc123", Size: 100}
 		fileB := &File{Hash: "abc123", Size: 200}
 
-		if Check_if_files_are_equal(fileA, fileB) {
+		if Equal(fileA, fileB) {
 			t.Errorf("Expected files to not be equal due to different sizes")
 		}
 	})
@@ -70,7 +70,7 @@ func TestCheckIfFilesAreEqual(t *testing.T) {
 		fileA := &File{Hash: "abc123", Size: 100}
 		fileB := &File{Hash: "def456", Size: 200}
 
-		if Check_if_files_are_equal(fileA, fileB) {
+		if Equal(fileA, fileB) {
 			t.Errorf("Expected files to not be equal due to different hashes and sizes")
 		}
 	})
@@ -81,7 +81,7 @@ func TestGetHumanReadableSizeAsync(t *testing.T) {
 	t.Run("SizeInBytes", func(t *testing.T) {
 		size := int64(500)
 		expected := FileSize{Value: 500, Unit: "b"}
-		result := Get_human_reabable_size(size)
+		result := Format_file_size(size)
 		if result != expected {
 			t.Errorf("Expected %v, got %v", expected, result)
 		}
@@ -91,7 +91,7 @@ func TestGetHumanReadableSizeAsync(t *testing.T) {
 	t.Run("SizeInKilobytes", func(t *testing.T) {
 		size := int64(1500)
 		expected := FileSize{Value: 1, Unit: "Kb"}
-		result := Get_human_reabable_size(size)
+		result := Format_file_size(size)
 		if result != expected {
 			t.Errorf("Expected %v, got %v", expected, result)
 		}
@@ -101,7 +101,7 @@ func TestGetHumanReadableSizeAsync(t *testing.T) {
 	t.Run("SizeInMegabytes", func(t *testing.T) {
 		size := int64(2_500_000)
 		expected := FileSize{Value: 2, Unit: "Mb"}
-		result := Get_human_reabable_size(size)
+		result := Format_file_size(size)
 		if result != expected {
 			t.Errorf("Expected %v, got %v", expected, result)
 		}
@@ -111,7 +111,7 @@ func TestGetHumanReadableSizeAsync(t *testing.T) {
 	t.Run("SizeInGigabytes", func(t *testing.T) {
 		size := int64(5_000_000_000)
 		expected := FileSize{Value: 5, Unit: "Gb"}
-		result := Get_human_reabable_size(size)
+		result := Format_file_size(size)
 		if result != expected {
 			t.Errorf("Expected %v, got %v", expected, result)
 		}
@@ -121,7 +121,7 @@ func TestGetHumanReadableSizeAsync(t *testing.T) {
 	t.Run("EdgeCase1000Bytes", func(t *testing.T) {
 		size := int64(1000)
 		expected := FileSize{Value: 1, Unit: "Kb"}
-		result := Get_human_reabable_size(size)
+		result := Format_file_size(size)
 		if result != expected {
 			t.Errorf("Expected %v, got %v", expected, result)
 		}
@@ -131,7 +131,7 @@ func TestGetHumanReadableSizeAsync(t *testing.T) {
 	t.Run("EdgeCase1000000Bytes", func(t *testing.T) {
 		size := int64(1_000_000)
 		expected := FileSize{Value: 1, Unit: "Mb"}
-		result := Get_human_reabable_size(size)
+		result := Format_file_size(size)
 		if result != expected {
 			t.Errorf("Expected %v, got %v", expected, result)
 		}

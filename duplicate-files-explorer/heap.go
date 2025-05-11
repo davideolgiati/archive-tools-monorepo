@@ -3,9 +3,11 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
+	"fmt"
 	"runtime"
 	"time"
 )
+
 func apply_back_pressure(queue *ds.AtomicCounter) {
 	queue_size := ds.Get_counter_value(queue)
 
@@ -17,8 +19,8 @@ func apply_back_pressure(queue *ds.AtomicCounter) {
 func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, lazy bool) {
 	ds.Increment(&file_heap.pending_insert)
 
-	hash, err := commons.Hash_file(file.Name, lazy)
-	
+	hash, err := commons.Hash(&file.Name, file.Size, lazy)
+
 	if err == nil {
 		file.Hash = hash
 		ds.Push_into_heap(&file_heap.heap, file)
@@ -30,7 +32,7 @@ func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, laz
 func build_new_file_heap() *FileHeap {
 	file_heap := FileHeap{}
 
-	ds.Set_compare_fn(&file_heap.heap, commons.Compare_files)
+	ds.Set_compare_fn(&file_heap.heap, commons.Lower)
 	file_heap.pending_insert = *ds.Build_new_atomic_counter()
 
 	return &file_heap
@@ -65,7 +67,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 		last_file_seen = current_file
 		current_file = ds.Pop_from_heap(file_heap)
 		processed_files_counter++
-		files_are_equal = commons.Check_if_files_are_equal(current_file, last_file_seen)
+		files_are_equal = commons.Equal(current_file, last_file_seen)
 
 		if files_are_equal || last_seen_was_a_duplicate {
 			last_seen_was_a_duplicate = files_are_equal
@@ -101,7 +103,7 @@ func display_duplicate_file_info(file_heap *ds.Heap[commons.File]) {
 		current_file = ds.Pop_from_heap(file_heap)
 
 		if current_file.Hash == last_file_seen.Hash || is_duplicate {
-			print_file_details_to_stdout(last_file_seen)
+			fmt.Printf("file: %s\n", last_file_seen)
 			is_duplicate = current_file.Hash == last_file_seen.Hash
 		}
 

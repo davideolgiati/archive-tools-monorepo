@@ -36,7 +36,7 @@ func main() {
 	directories_stack := ds.Stack[string]{}
 	output_file_heap := FileHeap{}
 
-	ds.Set_compare_fn(&output_file_heap.heap, commons.Compare_files)
+	ds.Set_compare_fn(&output_file_heap.heap, commons.Lower)
 	output_file_heap.pending_insert = *ds.Build_new_atomic_counter()
 
 	file_seen := 0
@@ -72,7 +72,7 @@ func main() {
 			}
 		}
 
-		formatted_size = commons.Get_human_reabable_size(size_processed)
+		formatted_size = commons.Format_file_size(size_processed)
 
 		cicles_counter++
 
