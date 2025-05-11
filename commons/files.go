@@ -93,6 +93,10 @@ func Hash(filepath *string, size int64, quick_flag bool) (string, error) {
 }
 
 func Format_file_size(size int64) FileSize {
+	if size < 0 {
+		panic("Format_file_size -- size is negative")
+	}
+
 	file_size := size
 	size_index := 0
 
@@ -101,12 +105,27 @@ func Format_file_size(size int64) FileSize {
 		size_index++
 	}
 
+	if file_size > 1000 && size_index != 3 {
+		panic(fmt.Sprintf(
+			"Format_file_size -- file_size is > 1000 and unit is  %s", 
+			sizes_array[size_index],
+		))
+	}
+
 	output := FileSize{Value: int16(file_size), Unit: sizes_array[size_index]}
 
 	return output
 }
 
 func Check_read_rights_on_file(obj *os.FileInfo) bool {
+	if obj == nil {
+		panic("Check_read_rights_on_file -- obj is nil")
+	}
+
+	if (*obj).IsDir() {
+		panic("Check_read_rights_on_file -- obj is a dir")
+	}
+
 	read_bit_mask := fs.FileMode(0444)
 	file_permission_bits := (*obj).Mode().Perm()
 
@@ -114,6 +133,18 @@ func Check_read_rights_on_file(obj *os.FileInfo) bool {
 }
 
 func Is_symbolic_link(path *string) bool {
+	if path == nil {
+		panic("Is_symbolic_link -- obj is nil")
+	}
+
+	if *path == "" {
+		panic("Is_symbolic_link -- obj is empty")
+	}
+
+	if (*path)[len(*path)-1] == '/' {
+		panic("Is_symbolic_link -- obj is a path")
+	}
+
 	dst, err := filepath.EvalSymlinks(*path)
 
 	if err != nil {
@@ -124,13 +155,37 @@ func Is_symbolic_link(path *string) bool {
 }
 
 func Is_a_device(obj *os.FileInfo) bool {
+	if obj == nil {
+		panic("Is_a_devide -- obj is nil")
+	}
+
+	if (*obj).IsDir() {
+		panic("Is_a_device -- obj is a dir")
+	}
+
 	return (*obj).Mode()&os.ModeDevice == os.ModeDevice
 }
 
 func Is_a_socket(obj *os.FileInfo) bool {
+	if obj == nil {
+		panic("Is_a_socket -- obj is nil")
+	}
+
+	if (*obj).IsDir() {
+		panic("Is_a_socket -- obj is a dir")
+	}
+
 	return (*obj).Mode()&os.ModeSocket == os.ModeSocket
 }
 
 func Is_a_pipe(obj *os.FileInfo) bool {
+	if obj == nil {
+		panic("Is_a_pipe -- obj is nil")
+	}
+
+	if (*obj).IsDir() {
+		panic("Is_a_pipe -- obj is a dir")
+	}
+
 	return (*obj).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
 }
