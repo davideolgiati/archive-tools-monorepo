@@ -25,6 +25,15 @@ type FileHeap struct {
 	pending_insert ds.AtomicCounter
 }
 
+func build_new_file_heap() *FileHeap {
+	file_heap := FileHeap{}
+
+	ds.Set_compare_fn(&file_heap.heap, commons.Lower)
+	file_heap.pending_insert = *ds.Build_new_atomic_counter()
+
+	return &file_heap
+}
+
 func can_file_be_read(fullpath *string) bool {
 	file_pointer, file_open_error := os.Open(*fullpath)
 

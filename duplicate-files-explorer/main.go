@@ -7,6 +7,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -19,9 +20,14 @@ var buildts string
 var main_ui = commons.New_UI()
 
 func main() {
-	var basedir string
-	var fullpath string
-	var formatted_size commons.FileSize
+	var basedir string = ""
+	var fullpath string = ""
+	var formatted_size commons.FileSize = commons.FileSize{}
+
+	var file_seen int = 0
+	var directories_seen int = 0
+	var size_processed int64 = 0
+	var cicles_counter int = 0
 
 	commons.Print_not_registered(main_ui, "Running version: %s", version)
 	commons.Print_not_registered(main_ui, "Build timestamp: %s\n", buildts)
@@ -34,15 +40,7 @@ func main() {
 	flag.Parse()
 
 	directories_stack := ds.Stack[string]{}
-	output_file_heap := FileHeap{}
-
-	ds.Set_compare_fn(&output_file_heap.heap, commons.Lower)
-	output_file_heap.pending_insert = *ds.Build_new_atomic_counter()
-
-	file_seen := 0
-	directories_seen := 0
-	size_processed := int64(0)
-	cicles_counter := 0
+	output_file_heap := build_new_file_heap()
 
 	ds.Push_into_stack(&directories_stack, basedir)
 
@@ -57,6 +55,10 @@ func main() {
 		for _, entry := range entries {
 			fullpath = filepath.Join(current_dir, entry.Name())
 
+			if strings.Contains(fullpath, "/dev") || strings.Contains(fullpath, "/sys") || strings.Contains(fullpath, "/proc") {
+				continue
+			}
+
 			if entry.IsDir() {
 				directories_seen += 1
 				ds.Push_into_stack(&directories_stack, fullpath)
@@ -66,7 +68,7 @@ func main() {
 				if err == nil && evaluate_object_properties(&obj, &fullpath) == file {
 					file_seen += 1
 					size_processed += obj.Size()
-					go process_file_entry(current_dir, &obj, &output_file_heap)
+					go process_file_entry(current_dir, &obj, output_file_heap)
 
 				}
 			}

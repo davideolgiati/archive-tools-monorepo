@@ -29,15 +29,6 @@ func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, laz
 	ds.Decrement(&file_heap.pending_insert)
 }
 
-func build_new_file_heap() *FileHeap {
-	file_heap := FileHeap{}
-
-	ds.Set_compare_fn(&file_heap.heap, commons.Lower)
-	file_heap.pending_insert = *ds.Build_new_atomic_counter()
-
-	return &file_heap
-}
-
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing bool) *ds.Heap[commons.File] {
 	var last_file_seen *commons.File
 	var current_file *commons.File

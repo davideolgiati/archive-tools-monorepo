@@ -56,8 +56,6 @@ func Print_to_line(ui *ui, line_id string, format string, a ...any) {
 		ui.current_line = ui.lines[line_id](data, ui.current_line, line_number)
 		ui.line_last_update[line_id] = time.Now().UnixMilli()
 	}
-
-	//ui.current_line = ui.next_line
 }
 
 func Print_not_registered(ui *ui, format string, a ...any) {
