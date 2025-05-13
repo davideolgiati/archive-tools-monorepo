@@ -2,11 +2,9 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/ds"
 	_ "embed"
 	"flag"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"runtime"
 	"strings"
 )
@@ -29,79 +27,47 @@ func check_if_dir_is_allowed(full_path *string) bool {
 	return allowed
 }
 
-func main() {
-	var basedir string = ""
-	var fullpath string = ""
-	var formatted_size commons.FileSize = commons.FileSize{}
+func check_if_file_is_allowed(full_path *string) bool {
+	return evaluate_object_properties(full_path) == file
+}
 
-	var file_seen int = 0
-	var directories_seen int = 0
-	var size_processed int64 = 0
+func submit_file_thread_pool(file *fs.FileInfo, current_dir *string, channel chan<- FsObj) {
+	channel <- FsObj{obj: *file, base_dir: *current_dir}
+}
+
+func main() {
+	var start_directory string = ""
 	var skip_empty bool = false
+
+	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
+	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
+	flag.Parse()
 
 	commons.Print_not_registered(main_ui, "Running version: %s", version)
 	commons.Print_not_registered(main_ui, "Build timestamp: %s\n", buildts)
 
-	main_ui.Register_line("directory-line", "Directories seen: %6d")
-	main_ui.Register_line("file-line", "Files seen: %12d")
-	main_ui.Register_line("size-line", "Processed: %10d %2s")
-
-	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
-	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
-	flag.Parse()
-
-	directories_stack := ds.Stack[string]{}
 	output_file_heap := build_new_file_heap()
 
-	input := make(chan FsObj)
+	file_entry_channel := make(chan FsObj)
 
 	for w := 1; w <= runtime.NumCPU()*4; w++ {
-		go file_process_thread_pool(output_file_heap, input)
+		go file_process_thread_pool(output_file_heap, file_entry_channel)
 	}
 
-	directories_stack.Push(basedir)
-
-	for !directories_stack.Empty() {
-		current_dir := directories_stack.Pop()
-		entries, read_dir_err := os.ReadDir(current_dir)
-
-		if read_dir_err != nil {
-			continue
-		}
-
-		for _, entry := range entries {
-			fullpath = filepath.Join(current_dir, entry.Name())
-
-			if !check_if_dir_is_allowed(&fullpath) {
-				continue
-			}
-
-			if entry.IsDir() {
-				directories_seen += 1
-				directories_stack.Push(fullpath)
-			} else {
-				obj, err := entry.Info()
-
-				if skip_empty && obj.Size() == 0 {
-					continue
-				}
-
-				if err == nil && evaluate_object_properties(&obj, &fullpath) == file {
-					file_seen += 1
-					size_processed += obj.Size()
-					input <- FsObj{obj: obj, base_dir: current_dir}
-				}
-			}
-		}
-
-		formatted_size = commons.Format_file_size(size_processed)
-
-		main_ui.Update_line("directory-line", directories_seen)
-		main_ui.Update_line("file-line", file_seen)
-		main_ui.Update_line("size-line", formatted_size.Value, formatted_size.Unit)
+	file_callback_fn := func(file *fs.FileInfo, current_dir *string) {
+		submit_file_thread_pool(file, current_dir, file_entry_channel)
 	}
 
-	close(input)
+	walker := New_dir_walker(skip_empty)
+
+	walker.Set_entry_point(start_directory)
+	walker.Set_directory_filter_function(check_if_dir_is_allowed)
+	walker.Set_file_filter_function(check_if_file_is_allowed)
+	walker.Set_file_callback_function(file_callback_fn)
+
+	walker.Walk()
+
+	close(file_entry_channel)
 
 	output_file_heap.collect()
 

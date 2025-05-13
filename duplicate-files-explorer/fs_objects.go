@@ -41,21 +41,27 @@ func can_file_be_read(fullpath *string) bool {
 	return file_read_error == nil || file_read_error == io.EOF
 }
 
-func evaluate_object_properties(obj *fs.FileInfo, fullpath *string) int {
+func evaluate_object_properties(fullpath *string) int {
+	obj, err := os.Stat(*fullpath)
+
+	if err != nil {
+		return invalid
+	}
+
 	switch {
 	case commons.Is_symbolic_link(fullpath):
 		return symlink
-	case commons.Is_a_device(obj):
+	case commons.Is_a_device(&obj):
 		return device
-	case commons.Is_a_socket(obj):
+	case commons.Is_a_socket(&obj):
 		return socket
-	case commons.Is_a_pipe(obj):
+	case commons.Is_a_pipe(&obj):
 		return pipe
-	case !commons.Check_read_rights_on_file(obj):
+	case !commons.Check_read_rights_on_file(&obj):
 		return invalid
-	case (*obj).IsDir():
+	case obj.IsDir():
 		return directory
-	case (*obj).Mode().Perm().IsRegular():
+	case obj.Mode().Perm().IsRegular():
 		return file
 	default:
 		return invalid

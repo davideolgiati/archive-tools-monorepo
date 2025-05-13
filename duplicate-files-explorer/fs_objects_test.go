@@ -112,13 +112,12 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		}
 		defer os.Remove(symlinkPath)
 
-		info, err := os.Lstat(symlinkPath)
 		if err != nil {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
 		fullpath := symlinkPath
-		result := evaluate_object_properties(&info, &fullpath)
+		result := evaluate_object_properties(&fullpath)
 		if result != symlink {
 			t.Errorf("Expected invalid for symbolic link, got %d", result)
 		}
@@ -132,13 +131,8 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		}
 		defer os.Remove(tmpFile.Name())
 
-		info, err := os.Stat(tmpFile.Name())
-		if err != nil {
-			t.Fatalf("Failed to get file info: %v", err)
-		}
-
 		fullpath := tmpFile.Name()
-		result := evaluate_object_properties(&info, &fullpath)
+		result := evaluate_object_properties(&fullpath)
 		if result != file {
 			t.Errorf("Expected file for regular file, got %d", result)
 		}
@@ -152,13 +146,8 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		}
 		defer os.Remove(tmpDir)
 
-		info, err := os.Stat(tmpDir)
-		if err != nil {
-			t.Fatalf("Failed to get directory info: %v", err)
-		}
-
 		fullpath := tmpDir
-		result := evaluate_object_properties(&info, &fullpath)
+		result := evaluate_object_properties(&fullpath)
 		if result != directory {
 			t.Errorf("Expected directory for directory, got %d", result)
 		}
@@ -177,13 +166,8 @@ func TestEvaluateObjectProperties(t *testing.T) {
 			t.Fatalf("Failed to change file permissions: %v", err)
 		}
 
-		info, err := os.Stat(tmpFile.Name())
-		if err != nil {
-			t.Fatalf("Failed to get file info: %v", err)
-		}
-
 		fullpath := tmpFile.Name()
-		result := evaluate_object_properties(&info, &fullpath)
+		result := evaluate_object_properties(&fullpath)
 		if result != invalid {
 			t.Errorf("Expected invalid for file without read permissions, got %d", result)
 		}
