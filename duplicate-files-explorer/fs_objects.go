@@ -49,6 +49,8 @@ func evaluate_object_properties(fullpath *string) int {
 	}
 
 	switch {
+	case obj.IsDir():
+		return directory
 	case commons.Is_symbolic_link(fullpath):
 		return symlink
 	case commons.Is_a_device(&obj):
@@ -59,8 +61,6 @@ func evaluate_object_properties(fullpath *string) int {
 		return pipe
 	case !commons.Check_read_rights_on_file(&obj):
 		return invalid
-	case obj.IsDir():
-		return directory
 	case obj.Mode().Perm().IsRegular():
 		return file
 	default:
@@ -75,9 +75,9 @@ func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap)
 		ds.Increment(&file_heap.pending_insert)
 
 		file_stats := commons.File{
-			Name: full_path,
-			Size: (*entry).Size(),
-			Hash: "",
+			Name:          full_path,
+			Size:          (*entry).Size(),
+			Hash:          "",
 			FormattedSize: commons.Format_file_size((*entry).Size()),
 		}
 
