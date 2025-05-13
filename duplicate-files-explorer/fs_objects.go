@@ -20,18 +20,9 @@ const (
 	invalid   = iota
 )
 
-type FileHeap struct {
-	heap           ds.Heap[commons.File]
-	pending_insert ds.AtomicCounter
-}
-
-func build_new_file_heap() *FileHeap {
-	file_heap := FileHeap{}
-
-	ds.Set_compare_fn(&file_heap.heap, commons.Lower)
-	file_heap.pending_insert = *ds.Build_new_atomic_counter()
-
-	return &file_heap
+type FsObj struct {
+	obj      fs.FileInfo
+	base_dir string
 }
 
 func can_file_be_read(fullpath *string) bool {
@@ -48,25 +39,6 @@ func can_file_be_read(fullpath *string) bool {
 	_, file_read_error := buffered_reader.Read(buffer)
 
 	return file_read_error == nil || file_read_error == io.EOF
-}
-
-func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap) {
-	full_path := filepath.Join(basedir, (*entry).Name())
-
-	if can_file_be_read(&full_path) {
-		ds.Increment(&file_heap.pending_insert)
-
-		file_stats := commons.File{
-			Name: full_path,
-			Size: (*entry).Size(),
-			Hash: "",
-			FormattedSize: commons.Format_file_size((*entry).Size()),
-		}
-
-		ds.Push_into_heap(&file_heap.heap, &file_stats)
-
-		ds.Decrement(&file_heap.pending_insert)
-	}
 }
 
 func evaluate_object_properties(obj *fs.FileInfo, fullpath *string) int {
@@ -87,5 +59,30 @@ func evaluate_object_properties(obj *fs.FileInfo, fullpath *string) int {
 		return file
 	default:
 		return invalid
+	}
+}
+
+func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap) {
+	full_path := filepath.Join(basedir, (*entry).Name())
+
+	if can_file_be_read(&full_path) {
+		ds.Increment(&file_heap.pending_insert)
+
+		file_stats := commons.File{
+			Name: full_path,
+			Size: (*entry).Size(),
+			Hash: "",
+			FormattedSize: commons.Format_file_size((*entry).Size()),
+		}
+
+		file_heap.heap.Push(&file_stats)
+
+		ds.Decrement(&file_heap.pending_insert)
+	}
+}
+
+func file_process_thread_pool(file_heap *FileHeap, in <-chan FsObj) {
+	for obj := range in {
+		process_file_entry(obj.base_dir, &obj.obj, file_heap)
 	}
 }

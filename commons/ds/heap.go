@@ -10,12 +10,59 @@ type Heap[T any] struct {
 	custom_is_lower_fn func(*T, *T) bool
 }
 
-func Set_compare_fn[T any](heap *Heap[T], custom_is_lower_fn func(*T, *T) bool) {
+func (heap *Heap[T]) Compare_fn(custom_is_lower_fn func(*T, *T) bool) {
 	heap.custom_is_lower_fn = custom_is_lower_fn
 }
 
-func Is_heap_empty[T any](heap *Heap[T]) bool {
+func (heap *Heap[T]) Empty() bool {
 	return len(heap.items) == 0
+}
+
+func (heap *Heap[T]) Size() int {
+	return len(heap.items)
+}
+
+func (heap *Heap[T]) Push(data *T) {
+	heap.mutex.Lock()
+
+	heap.items = append(heap.items, data)
+	heapify_bottom_up(heap)
+
+	heap.mutex.Unlock()
+}
+
+func (heap *Heap[T]) Pop() *T {
+	var item *T
+
+	heap.mutex.Lock()
+	
+	if len(heap.items) != 0 {
+		item = heap.items[0]
+		heap.items[0] = heap.items[len(heap.items)-1]
+		heap.items = heap.items[:len(heap.items)-1]
+
+		if(!heap.Empty()) {
+			heapify_top_down(heap)
+		}
+	}
+	
+	heap.mutex.Unlock()
+	
+	return item
+}
+
+func (heap *Heap[T]) Peak() *T {
+	var item *T
+
+	heap.mutex.Lock()
+	
+	if len(heap.items) != 0 {
+		item = heap.items[0]
+	}
+	
+	heap.mutex.Unlock()
+	
+	return item
 }
 
 func get_left_node_index(index *int) int {
@@ -32,19 +79,6 @@ func get_parent_node_index(index *int) int {
 	}
 
 	return (*index - 1) / 2
-}
-
-func Get_heap_size[T any](heap *Heap[T]) int {
-	return len(heap.items)
-}
-
-func Push_into_heap[T any](heap *Heap[T], data *T) {
-	heap.mutex.Lock()
-
-	heap.items = append(heap.items, data)
-	heapify_bottom_up(heap)
-
-	heap.mutex.Unlock()
 }
 
 func heapify_bottom_up[T any](heap *Heap[T]) {
@@ -97,38 +131,4 @@ func heapify_top_down[T any](heap *Heap[T]) {
 		current_index = candidate
 		candidate = get_next_candidate(heap, &candidate)
 	}
-}
-
-func Pop_from_heap[T any](heap *Heap[T]) *T {
-	var item *T
-
-	heap.mutex.Lock()
-	
-	if len(heap.items) != 0 {
-		item = heap.items[0]
-		heap.items[0] = heap.items[len(heap.items)-1]
-		heap.items = heap.items[:len(heap.items)-1]
-
-		if(!Is_heap_empty(heap)) {
-			heapify_top_down(heap)
-		}
-	}
-	
-	heap.mutex.Unlock()
-	
-	return item
-}
-
-func Peak_from_heap[T any](heap *Heap[T]) *T {
-	var item *T
-
-	heap.mutex.Lock()
-	
-	if len(heap.items) != 0 {
-		item = heap.items[0]
-	}
-	
-	heap.mutex.Unlock()
-	
-	return item
 }

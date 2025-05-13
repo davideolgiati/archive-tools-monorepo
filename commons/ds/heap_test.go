@@ -77,63 +77,63 @@ func TestFullHeapWorkflow(t *testing.T) {
 	input_heap := Heap[int]{}
 	input_heap.custom_is_lower_fn = is_lower
 
-	values := []int{1, 30, -1, 20, 25 }
-	
-	Push_into_heap(&input_heap, &values[0])
+	values := []int{1, 30, -1, 20, 25}
+
+	input_heap.Push(&values[0])
 
 	if len(input_heap.items) != 1 {
 		t.Errorf("len(input_heap.items) = %d, expected 1", len(input_heap.items))
 	}
 
-	if Peak_from_heap(&input_heap) != &values[0] {
-		t.Errorf("input_heap.items[0] = %d, expected 1", Peak_from_heap(&input_heap))
+	if input_heap.Peak() != &values[0] {
+		t.Errorf("input_heap.items[0] = %d, expected 1", input_heap.Peak())
 	}
 
-	Push_into_heap(&input_heap, &values[1])
+	input_heap.Push(&values[1])
 
 	if len(input_heap.items) != 2 {
 		t.Errorf("len(input_heap.items) = %d, expected 1", len(input_heap.items))
 	}
 
-	if Peak_from_heap(&input_heap) != &values[0] {
-		t.Errorf("input_heap.items[0] = %d, expected 1", Peak_from_heap(&input_heap))
+	if input_heap.Peak() != &values[0] {
+		t.Errorf("input_heap.items[0] = %d, expected 1", input_heap.Peak())
 	}
 
-	Push_into_heap(&input_heap, &values[2])
+	input_heap.Push(&values[2])
 
 	if len(input_heap.items) != 3 {
 		t.Errorf("len(input_heap.items) = %d, expected 1", len(input_heap.items))
 	}
 
-	if Peak_from_heap(&input_heap) != &values[2] {
-		t.Errorf("input_heap.items[0] = %d, expected 1", Peak_from_heap(&input_heap))
+	if input_heap.Peak() != &values[2] {
+		t.Errorf("input_heap.items[0] = %d, expected 1", input_heap.Peak())
 	}
 
-	Push_into_heap(&input_heap, &values[3])
+	input_heap.Push(&values[3])
 
 	if len(input_heap.items) != 4 {
 		t.Errorf("len(input_heap.items) = %d, expected 1", len(input_heap.items))
 	}
 
-	if Peak_from_heap(&input_heap) != &values[2] {
-		t.Errorf("input_heap.items[0] = %d, expected 1", Peak_from_heap(&input_heap))
+	if input_heap.Peak() != &values[2] {
+		t.Errorf("input_heap.items[0] = %d, expected 1", input_heap.Peak())
 	}
 
-	Push_into_heap(&input_heap, &values[4])
+	input_heap.Push(&values[4])
 
 	if len(input_heap.items) != 5 {
 		t.Errorf("len(input_heap.items) = %d, expected 1", len(input_heap.items))
 	}
 
-	if Peak_from_heap(&input_heap) != &values[2] {
-		t.Errorf("input_heap.items[0] = %d, expected 1", Peak_from_heap(&input_heap))
+	if input_heap.Peak() != &values[2] {
+		t.Errorf("input_heap.items[0] = %d, expected 1", input_heap.Peak())
 	}
 
 	expected_array := []int{-1, 1, 20, 25, 30}
 	var current_element *int
 
 	for i := 0; i < 5; i++ {
-		current_element = Pop_from_heap(&input_heap)
+		current_element = input_heap.Pop()
 		if *current_element != expected_array[i] {
 			t.Errorf(
 				"Pop_from_heap(&input_heap) = %d, expected %d",

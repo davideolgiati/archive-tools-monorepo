@@ -9,17 +9,17 @@ type Stack[T any] struct {
 	items []T
 }
 
-func Is_stack_empty[T any](stack *Stack[T]) bool {
+func (stack *Stack[T]) Empty() bool {
 	return len(stack.items) == 0
 }
 
-func Push_into_stack[T any](stack *Stack[T], data T) {
+func (stack *Stack[T]) Push(data T) {
 	stack.mutex.Lock()
 	stack.items = append(stack.items, data)
 	stack.mutex.Unlock()
 }
     
-func Pop_from_stack[T any](stack *Stack[T]) T {
+func (stack *Stack[T]) Pop() T {
 	var item T
 	stack.mutex.Lock()
 	if len(stack.items) != 0 {

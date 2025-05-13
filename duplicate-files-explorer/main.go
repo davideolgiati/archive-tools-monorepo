@@ -5,7 +5,6 @@ import (
 	"archive-tools-monorepo/commons/ds"
 	_ "embed"
 	"flag"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,16 +18,15 @@ var version string
 var buildts string
 
 var main_ui = commons.New_UI()
+var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
 
-type FsObj struct {
-	obj      fs.FileInfo
-	base_dir string
-}
-
-func file_process_thread_pool(file_heap *FileHeap, in <-chan FsObj) {
-	for obj := range in {
-		process_file_entry(obj.base_dir, &obj.obj, file_heap)
+func check_if_dir_is_allowed(full_path *string) bool {
+	allowed := true
+	for index := range ignored_dir {
+		allowed = allowed && !strings.Contains(*full_path, ignored_dir[index])
 	}
+
+	return allowed
 }
 
 func main() {
@@ -39,15 +37,17 @@ func main() {
 	var file_seen int = 0
 	var directories_seen int = 0
 	var size_processed int64 = 0
+	var skip_empty bool = false
 
 	commons.Print_not_registered(main_ui, "Running version: %s", version)
 	commons.Print_not_registered(main_ui, "Build timestamp: %s\n", buildts)
 
-	commons.Register_new_line("directory-line", "Directories seen: %6d", main_ui)
-	commons.Register_new_line("file-line", "Files seen: %12d", main_ui)
-	commons.Register_new_line("size-line", "Processed: %10d %2s", main_ui)
+	main_ui.Register_line("directory-line", "Directories seen: %6d")
+	main_ui.Register_line("file-line", "Files seen: %12d")
+	main_ui.Register_line("size-line", "Processed: %10d %2s")
 
 	flag.StringVar(&basedir, "dir", "", "Scan starting point  directory")
+	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
 	flag.Parse()
 
 	directories_stack := ds.Stack[string]{}
@@ -55,14 +55,14 @@ func main() {
 
 	input := make(chan FsObj)
 
-	for w := 1; w <= runtime.NumCPU() * 4; w++ {
+	for w := 1; w <= runtime.NumCPU()*4; w++ {
 		go file_process_thread_pool(output_file_heap, input)
 	}
 
-	ds.Push_into_stack(&directories_stack, basedir)
+	directories_stack.Push(basedir)
 
-	for !ds.Is_stack_empty(&directories_stack) {
-		current_dir := ds.Pop_from_stack(&directories_stack)
+	for !directories_stack.Empty() {
+		current_dir := directories_stack.Pop()
 		entries, read_dir_err := os.ReadDir(current_dir)
 
 		if read_dir_err != nil {
@@ -72,15 +72,19 @@ func main() {
 		for _, entry := range entries {
 			fullpath = filepath.Join(current_dir, entry.Name())
 
-			if strings.Contains(fullpath, "/dev") || strings.Contains(fullpath, "/sys") || strings.Contains(fullpath, "/proc") {
+			if !check_if_dir_is_allowed(&fullpath) {
 				continue
 			}
 
 			if entry.IsDir() {
 				directories_seen += 1
-				ds.Push_into_stack(&directories_stack, fullpath)
+				directories_stack.Push(fullpath)
 			} else {
 				obj, err := entry.Info()
+
+				if skip_empty && obj.Size() == 0 {
+					continue
+				}
 
 				if err == nil && evaluate_object_properties(&obj, &fullpath) == file {
 					file_seen += 1
@@ -92,14 +96,14 @@ func main() {
 
 		formatted_size = commons.Format_file_size(size_processed)
 
-		commons.Print_to_line(main_ui, "directory-line", directories_seen)
-		commons.Print_to_line(main_ui, "file-line", file_seen)
-		commons.Print_to_line(main_ui, "size-line", formatted_size.Value, formatted_size.Unit)
+		main_ui.Update_line("directory-line", directories_seen)
+		main_ui.Update_line("file-line", file_seen)
+		main_ui.Update_line("size-line", formatted_size.Value, formatted_size.Unit)
 	}
 
-	for ds.Get_counter_value(&output_file_heap.pending_insert) > 0 {
-		apply_back_pressure(&output_file_heap.pending_insert)
-	}
+	close(input)
+
+	output_file_heap.collect()
 
 	cleaned_heap_1 := build_duplicate_entries_heap(&output_file_heap.heap, true)
 	cleaned_heap := build_duplicate_entries_heap(cleaned_heap_1, false)

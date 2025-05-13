@@ -8,11 +8,26 @@ import (
 	"time"
 )
 
-func apply_back_pressure(queue *ds.AtomicCounter) {
-	queue_size := ds.Get_counter_value(queue)
+type FileHeap struct {
+	heap           ds.Heap[commons.File]
+	pending_insert ds.AtomicCounter
+}
 
-	if queue_size > int64(runtime.NumCPU()) {
+func build_new_file_heap() *FileHeap {
+	file_heap := FileHeap{}
+
+	file_heap.heap.Compare_fn(commons.Lower)
+	file_heap.pending_insert = *ds.Build_new_atomic_counter()
+
+	return &file_heap
+}
+
+func (file_heap *FileHeap) collect() {
+	queue_size := ds.Get_counter_value(&file_heap.pending_insert)
+
+	for queue_size > 0 {
 		time.Sleep(100 * time.Microsecond)
+		queue_size = ds.Get_counter_value(&file_heap.pending_insert)
 	}
 }
 
@@ -23,7 +38,7 @@ func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, laz
 
 	if err == nil {
 		file.Hash = hash
-		ds.Push_into_heap(&file_heap.heap, file)
+		file_heap.heap.Push(file)
 	}
 
 	ds.Decrement(&file_heap.pending_insert)
@@ -46,13 +61,13 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 
 	input := make(chan commons.File)
 
-	for w := 1; w <= runtime.NumCPU() * 4; w++ {
+	for w := 1; w <= runtime.NumCPU()*4; w++ {
 		go heap_refine_thread_pool(refined_file_heap, lazy_hashing, input)
 	}
 
-	input_heap_size := ds.Get_heap_size(file_heap)
+	total_entries := float64(file_heap.Size())
 	ignored_files_counter := 0
-	processed_files_counter := 0
+	processed_entries := float64(0)
 
 	if lazy_hashing {
 		line_id = "stage-1"
@@ -60,16 +75,16 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 		line_id = "stage-2"
 	}
 
-	commons.Register_new_line(line_id, "Removing unique entries %s ... %.1f %%", main_ui)
+	main_ui.Register_line(line_id, "Removing unique entries %s ... %.1f %%")
 
-	if !ds.Is_heap_empty(file_heap) {
-		current_file = ds.Pop_from_heap(file_heap)
+	if !file_heap.Empty() {
+		current_file = file_heap.Pop()
 	}
 
-	for !ds.Is_heap_empty(file_heap) {
+	for !file_heap.Empty() {
 		last_file_seen = current_file
-		current_file = ds.Pop_from_heap(file_heap)
-		processed_files_counter++
+		current_file = file_heap.Pop()
+		processed_entries++
 		files_are_equal = commons.Equal(current_file, last_file_seen)
 
 		if files_are_equal || last_seen_was_a_duplicate {
@@ -79,12 +94,10 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 			ignored_files_counter++
 		}
 
-		commons.Print_to_line(main_ui, line_id, line_id, (float64(processed_files_counter)/float64(input_heap_size))*100)
+		main_ui.Update_line(line_id, line_id, (processed_entries/total_entries)*100)
 	}
 
-	for ds.Get_counter_value(&refined_file_heap.pending_insert) > 0 {
-		apply_back_pressure(&refined_file_heap.pending_insert)
-	}
+	refined_file_heap.collect()
 
 	return &refined_file_heap.heap
 }
@@ -95,13 +108,13 @@ func display_duplicate_file_info(file_heap *ds.Heap[commons.File]) {
 
 	is_duplicate := false
 
-	if !ds.Is_heap_empty(file_heap) {
-		current_file = ds.Pop_from_heap(file_heap)
+	if !file_heap.Empty() {
+		current_file = file_heap.Pop()
 	}
 
-	for !ds.Is_heap_empty(file_heap) {
+	for !file_heap.Empty() {
 		last_file_seen = current_file
-		current_file = ds.Pop_from_heap(file_heap)
+		current_file = file_heap.Pop()
 
 		if current_file.Hash == last_file_seen.Hash || is_duplicate {
 			fmt.Printf("file: %s\n", last_file_seen)

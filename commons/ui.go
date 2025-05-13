@@ -28,7 +28,7 @@ func New_UI() *ui {
 	return &output
 }
 
-func Register_new_line(line_id string, format string, ui *ui) {
+func (ui *ui) Register_line(line_id string, format string) {
 	ui.id_to_lines[line_id] = ui.next_line
 	ui.id_to_format[line_id] = format
 
@@ -52,7 +52,7 @@ func Register_new_line(line_id string, format string, ui *ui) {
 	ui.next_line++
 }
 
-func Print_to_line(ui *ui, line_id string, a ...any) {
+func (ui *ui) Update_line(line_id string, a ...any) {
 	data := fmt.Sprintf(ui.id_to_format[line_id], a...)
 	if data != ui.lines_id_last_value[line_id] && (time.Now().UnixMilli()-ui.line_last_update[line_id]) > 60 {
 		line_number := ui.id_to_lines[line_id]
