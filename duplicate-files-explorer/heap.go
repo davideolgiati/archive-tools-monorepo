@@ -29,6 +29,12 @@ func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, laz
 	ds.Decrement(&file_heap.pending_insert)
 }
 
+func heap_refine_thread_pool(file_heap *FileHeap, lazy_hashing bool, in <-chan commons.File) {
+	for obj := range in {
+		refine_and_push_file_into_heap(&obj, file_heap, lazy_hashing)
+	}
+}
+
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing bool) *ds.Heap[commons.File] {
 	var last_file_seen *commons.File
 	var current_file *commons.File
@@ -37,6 +43,12 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 
 	refined_file_heap := build_new_file_heap()
 	last_seen_was_a_duplicate := false
+
+	input := make(chan commons.File)
+
+	for w := 1; w <= runtime.NumCPU() * 4; w++ {
+		go heap_refine_thread_pool(refined_file_heap, lazy_hashing, input)
+	}
 
 	input_heap_size := ds.Get_heap_size(file_heap)
 	ignored_files_counter := 0
@@ -48,7 +60,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 		line_id = "stage-2"
 	}
 
-	commons.Register_new_line(line_id, main_ui)
+	commons.Register_new_line(line_id, "Removing unique entries %s ... %.1f %%", main_ui)
 
 	if !ds.Is_heap_empty(file_heap) {
 		current_file = ds.Pop_from_heap(file_heap)
@@ -67,12 +79,10 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 			ignored_files_counter++
 		}
 
-		commons.Print_to_line(
-			main_ui, line_id,
-			"Removing unique entries %s ... %.1f %%", line_id,
-			(float64(processed_files_counter)/float64(input_heap_size))*100,
-		)
+		commons.Print_to_line(main_ui, line_id, line_id, (float64(processed_files_counter)/float64(input_heap_size))*100)
+	}
 
+	for ds.Get_counter_value(&refined_file_heap.pending_insert) > 0 {
 		apply_back_pressure(&refined_file_heap.pending_insert)
 	}
 
@@ -98,5 +108,9 @@ func display_duplicate_file_info(file_heap *ds.Heap[commons.File]) {
 			is_duplicate = current_file.Hash == last_file_seen.Hash
 		}
 
+	}
+
+	if is_duplicate {
+		fmt.Printf("file: %s\n", current_file)
 	}
 }
