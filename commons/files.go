@@ -16,14 +16,14 @@ var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
 var page_size int64 = int64(os.Getpagesize())
 
 type FileSize struct {
-	Value int16
 	Unit  string
+	Value int16
 }
 
 type File struct {
 	Name          string
-	FormattedSize FileSize
 	Hash          string
+	FormattedSize FileSize
 	Size          int64
 }
 

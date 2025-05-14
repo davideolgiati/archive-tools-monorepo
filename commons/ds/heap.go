@@ -5,9 +5,9 @@ import (
 )
 
 type Heap[T any] struct {
-	mutex              sync.Mutex
 	items              []*T
 	custom_is_lower_fn func(*T, *T) bool
+	mutex              sync.Mutex
 }
 
 func (heap *Heap[T]) Compare_fn(custom_is_lower_fn func(*T, *T) bool) {

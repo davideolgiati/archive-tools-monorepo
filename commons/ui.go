@@ -7,12 +7,12 @@ import (
 
 type ui struct {
 	lines               map[string]func(string, int, int) int
-	id_to_lines         map[string]int
 	id_to_format        map[string]string
 	lines_id_last_value map[string]string
+	line_last_update    map[string]int64
+	id_to_lines         map[string]int
 	current_line        int
 	next_line           int
-	line_last_update    map[string]int64
 }
 
 func New_UI() *ui {

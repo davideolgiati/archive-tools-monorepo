@@ -5,8 +5,8 @@ import (
 )
 
 type Stack[T any] struct {
-	mutex sync.Mutex
 	items []T
+	mutex sync.Mutex
 }
 
 func (stack *Stack[T]) Empty() bool {

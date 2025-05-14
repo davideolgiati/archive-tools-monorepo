@@ -9,16 +9,16 @@ import (
 )
 
 type dirWalker struct {
-	directories ds.Stack[string]
-	file_seen int
-	directories_seen int
-	size_processed int64
 	directory_filter_function func(*string) bool
-	file_filter_function func(*string) bool
-	file_callback_function func(*fs.FileInfo, *string)
-	current_directory string
-	current_file string
-	skip_empty bool
+	file_filter_function      func(*string) bool
+	file_callback_function    func(*fs.FileInfo, *string)
+	current_directory         string
+	current_file              string
+	directories               ds.Stack[string]
+	size_processed            int64
+	file_seen                 int
+	directories_seen          int
+	skip_empty                bool
 }
 
 func New_dir_walker(skip_empty bool) *dirWalker {
@@ -52,7 +52,7 @@ func (walker *dirWalker) Set_file_filter_function(filter_fn func(*string) bool) 
 
 func (walker *dirWalker) Set_file_callback_function(callback func(*fs.FileInfo, *string)) {
 	walker.file_callback_function = callback
-} 
+}
 
 func (walker *dirWalker) Walk() {
 	var formatted_size commons.FileSize
@@ -77,7 +77,7 @@ func (walker *dirWalker) Walk() {
 	}
 }
 
-func (walker *dirWalker) process_directory_objects(objects *[]os.DirEntry){
+func (walker *dirWalker) process_directory_objects(objects *[]os.DirEntry) {
 	for _, obj := range *objects {
 		walker.current_file = filepath.Join(walker.current_directory, obj.Name())
 
@@ -108,9 +108,8 @@ func (walker *dirWalker) process_file(obj *os.DirEntry) {
 	if err != nil {
 		return
 	}
-	
-	if (walker.skip_empty && file_entry.Size() == 0) {
-		return 
+	if walker.skip_empty && file_entry.Size() == 0 {
+		return
 	}
 
 	walker.file_seen += 1
