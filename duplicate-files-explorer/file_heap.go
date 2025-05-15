@@ -59,7 +59,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 	refined_file_heap := build_new_file_heap()
 	last_seen_was_a_duplicate := false
 
-	input := make(chan commons.File)
+	input := make(chan commons.File, runtime.NumCPU()*4)
 
 	for w := 1; w <= runtime.NumCPU()*4; w++ {
 		go heap_refine_thread_pool(refined_file_heap, lazy_hashing, input)

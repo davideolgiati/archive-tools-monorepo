@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -90,5 +91,47 @@ func process_file_entry(basedir string, entry *fs.FileInfo, file_heap *FileHeap)
 func file_process_thread_pool(file_heap *FileHeap, in <-chan FsObj) {
 	for obj := range in {
 		process_file_entry(obj.base_dir, &obj.obj, file_heap)
+	}
+}
+
+var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
+
+func check_if_dir_is_allowed(full_path *string, user_defined_dir *[]string) bool {
+	allowed := true
+	for index := range ignored_dir {
+		allowed = allowed && !strings.Contains(*full_path, ignored_dir[index])
+	}
+
+	if user_defined_dir != nil {
+		for index := range *user_defined_dir {
+			allowed = allowed && !strings.Contains(*full_path, (*user_defined_dir)[index])
+		}
+	}
+
+	return allowed
+}
+
+func check_if_file_is_allowed(full_path *string) bool {
+	return evaluate_object_properties(full_path) == file
+}
+
+func submit_file_thread_pool(file *fs.FileInfo, current_dir *string, channel chan<- FsObj) {
+	channel <- FsObj{obj: *file, base_dir: *current_dir}
+}
+
+func get_directory_filter_fn(ignored_dir_user string) func(full_path *string) bool {
+	return func(full_path *string) bool {
+		if ignored_dir_user == "" {
+			return check_if_dir_is_allowed(full_path, nil)
+		} else {
+			user_dirs := strings.Split(ignored_dir_user, ",")
+			return check_if_dir_is_allowed(full_path, &user_dirs)
+		}
+	}
+}
+
+func get_file_callback_fn(input_channel *chan FsObj) func(file *fs.FileInfo, current_dir *string) {
+	return func(file *fs.FileInfo, current_dir *string) {
+		submit_file_thread_pool(file, current_dir, *input_channel)
 	}
 }

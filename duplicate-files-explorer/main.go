@@ -4,9 +4,7 @@ import (
 	"archive-tools-monorepo/commons"
 	_ "embed"
 	"flag"
-	"io/fs"
 	"runtime"
-	"strings"
 )
 
 //go:embed semver.txt
@@ -16,30 +14,14 @@ var version string
 var buildts string
 
 var main_ui = commons.New_UI()
-var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
-
-func check_if_dir_is_allowed(full_path *string) bool {
-	allowed := true
-	for index := range ignored_dir {
-		allowed = allowed && !strings.Contains(*full_path, ignored_dir[index])
-	}
-
-	return allowed
-}
-
-func check_if_file_is_allowed(full_path *string) bool {
-	return evaluate_object_properties(full_path) == file
-}
-
-func submit_file_thread_pool(file *fs.FileInfo, current_dir *string, channel chan<- FsObj) {
-	channel <- FsObj{obj: *file, base_dir: *current_dir}
-}
 
 func main() {
 	var start_directory string = ""
+	var ignored_dir_user string = ""
 	var skip_empty bool = false
 
 	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
+	flag.StringVar(&ignored_dir_user, "skip_dirs", "", "Skip user defined directories during scan (separated by comma)")
 	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
 	flag.Parse()
 
@@ -48,22 +30,18 @@ func main() {
 
 	output_file_heap := build_new_file_heap()
 
-	file_entry_channel := make(chan FsObj)
+	file_entry_channel := make(chan FsObj, runtime.NumCPU()*4)
 
 	for w := 1; w <= runtime.NumCPU()*4; w++ {
 		go file_process_thread_pool(output_file_heap, file_entry_channel)
 	}
 
-	file_callback_fn := func(file *fs.FileInfo, current_dir *string) {
-		submit_file_thread_pool(file, current_dir, file_entry_channel)
-	}
-
 	walker := New_dir_walker(skip_empty)
 
 	walker.Set_entry_point(start_directory)
-	walker.Set_directory_filter_function(check_if_dir_is_allowed)
+	walker.Set_directory_filter_function(get_directory_filter_fn(ignored_dir_user))
 	walker.Set_file_filter_function(check_if_file_is_allowed)
-	walker.Set_file_callback_function(file_callback_fn)
+	walker.Set_file_callback_function(get_file_callback_fn(&file_entry_channel))
 
 	walker.Walk()
 
