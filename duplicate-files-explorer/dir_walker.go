@@ -11,7 +11,7 @@ import (
 type dirWalker struct {
 	directory_filter_function func(*string) bool
 	file_filter_function      func(*string) bool
-	file_callback_function    func(*fs.FileInfo, *string)
+	file_callback_function    func(fs.FileInfo, string)
 	current_directory         string
 	current_file              string
 	directories               ds.Stack[string]
@@ -50,7 +50,7 @@ func (walker *dirWalker) Set_file_filter_function(filter_fn func(*string) bool) 
 	walker.file_filter_function = filter_fn
 }
 
-func (walker *dirWalker) Set_file_callback_function(callback func(*fs.FileInfo, *string)) {
+func (walker *dirWalker) Set_file_callback_function(callback func(fs.FileInfo, string)) {
 	walker.file_callback_function = callback
 }
 
@@ -114,5 +114,5 @@ func (walker *dirWalker) process_file(obj *os.DirEntry) {
 
 	walker.file_seen += 1
 	walker.size_processed += file_entry.Size()
-	walker.file_callback_function(&file_entry, &walker.current_directory)
+	walker.file_callback_function(file_entry, walker.current_directory)
 }

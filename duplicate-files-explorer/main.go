@@ -49,6 +49,9 @@ func main() {
 
 	output_file_heap.collect()
 
+
+	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale 
+	// come sembra, ci devo lavorare
 	cleaned_heap_1 := build_duplicate_entries_heap(&output_file_heap.heap, true)
 	cleaned_heap := build_duplicate_entries_heap(cleaned_heap_1, false)
 

@@ -130,8 +130,8 @@ func get_directory_filter_fn(ignored_dir_user string) func(full_path *string) bo
 	}
 }
 
-func get_file_callback_fn(input_channel *chan FsObj) func(file *fs.FileInfo, current_dir *string) {
-	return func(file *fs.FileInfo, current_dir *string) {
-		submit_file_thread_pool(file, current_dir, *input_channel)
+func get_file_callback_fn(input_channel *chan FsObj) func(file fs.FileInfo, current_dir string) {
+	return func(file fs.FileInfo, current_dir string) {
+		submit_file_thread_pool(&file, &current_dir, *input_channel)
 	}
 }
