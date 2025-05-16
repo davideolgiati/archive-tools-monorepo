@@ -26,8 +26,14 @@ func (heap *Heap[T]) Size() int {
 func (heap *Heap[T]) Push(data T) {
 	heap.mutex.Lock()
 
+	start_size := len(heap.items)
+
 	heap.items = append(heap.items, data)
 	heapify_bottom_up(heap)
+
+	if len(heap.items) != start_size + 1 {
+		panic(fmt.Sprintf("wrong heap size, expected %d, got %d", start_size + 1, len(heap.items)))
+	}
 
 	heap.mutex.Unlock()
 }
@@ -99,6 +105,7 @@ func heapify_bottom_up[T any](heap *Heap[T]) {
 		heap.items[current_index] = swap_variable
 
 		current_index = parent
+		
 		if current_index > 0 {
 			parent = get_parent_node_index(&current_index)
 		}

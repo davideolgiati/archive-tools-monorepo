@@ -73,6 +73,7 @@ func TestParentLeftRightHead(t *testing.T) {
 func is_lower(a *int, b *int) bool {
 	return *a < *b
 }
+
 func TestFullHeapWorkflow(t *testing.T) {
 	input_heap := Heap[int]{}
 	input_heap.custom_is_lower_fn = is_lower
@@ -143,3 +144,54 @@ func TestFullHeapWorkflow(t *testing.T) {
 	}
 
 }
+
+func TestHeapifyBottomUpBubbleUp(t *testing.T) {
+	// Create a valid min-heap: [1, 5, 10, 20]
+	// Then simulate inserting a new element "0" at the end that needs to bubble up.
+	h := Heap[int]{
+		custom_is_lower_fn: is_lower,
+		items:             []int{1, 5, 10, 20},
+	}
+	h.items = append(h.items, 0)
+
+	// Call heapify_bottom_up to bubble up the last element.
+	heapify_bottom_up(&h)
+
+	// Expected array after bubbling up: [0, 1, 10, 20, 5]
+	expected := []int{0, 1, 10, 20, 5}
+
+	if len(h.items) != len(expected) {
+		t.Fatalf("expected length %d, got %d", len(expected), len(h.items))
+	}
+	for i, v := range expected {
+		if h.items[i] != v {
+			t.Errorf("at index %d expected %d got %d", i, v, h.items[i])
+		}
+	}
+}
+
+func TestHeapifyBottomUpNoBubble(t *testing.T) {
+	// Create a valid min-heap: [0, 5, 10, 20]
+	// Then simulate inserting a new element "30" that does not need to bubble up.
+	h := Heap[int]{
+		custom_is_lower_fn: is_lower,
+		items:             []int{0, 5, 10, 20},
+	}
+	h.items = append(h.items, 30)
+
+	// Call heapify_bottom_up.
+	heapify_bottom_up(&h)
+
+	// Expected array remains unchanged.
+	expected := []int{0, 5, 10, 20, 30}
+
+	if len(h.items) != len(expected) {
+		t.Fatalf("expected length %d, got %d", len(expected), len(h.items))
+	}
+	for i, v := range expected {
+		if h.items[i] != v {
+			t.Errorf("at index %d expected %d got %d", i, v, h.items[i])
+		}
+	}
+}
+

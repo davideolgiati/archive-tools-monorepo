@@ -90,10 +90,14 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 		processed_entries++
 		files_are_equal = commons.Equal(&current_file, &last_file_seen)
 
-		if files_are_equal || last_seen_was_a_duplicate {
-			last_seen_was_a_duplicate = files_are_equal
+		if files_are_equal {
+			last_seen_was_a_duplicate = true
 			go refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
 		} else {
+			if last_seen_was_a_duplicate {
+				go refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
+			}
+			last_seen_was_a_duplicate = false
 			ignored_files_counter++
 		}
 
@@ -122,6 +126,8 @@ func display_duplicate_file_info(file_heap *ds.Heap[commons.File]) {
 		if current_file.Hash == last_file_seen.Hash || is_duplicate {
 			commons.Print_not_registered(main_ui, "file: %s\n", &last_file_seen)
 			is_duplicate = current_file.Hash == last_file_seen.Hash
+		} else {
+			is_duplicate = false
 		}
 
 	}
