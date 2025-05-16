@@ -63,7 +63,7 @@ func (ui *ui) Update_line(line_id string, a ...any) {
 
 func Print_not_registered(ui *ui, format string, a ...any) {
 	data := fmt.Sprintf(format, a...)
-	offset := ui.next_line - ui.current_line - 1
+	offset := ui.next_line - ui.current_line
 
 	if offset < 0 && ui.current_line > 1 {
 		fmt.Printf("\033[%dA", -offset)
@@ -71,9 +71,9 @@ func Print_not_registered(ui *ui, format string, a ...any) {
 		fmt.Printf("\033[%dB", offset)
 	}
 
-	fmt.Printf("\r%s\n", data)
-	ui.next_line++
+	fmt.Printf("\r%s", data)
 	ui.current_line = ui.next_line
+	ui.next_line++
 }
 
 func Close_UI(ui *ui) {

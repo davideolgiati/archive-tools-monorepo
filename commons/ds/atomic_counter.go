@@ -16,19 +16,19 @@ func Build_new_atomic_counter() *AtomicCounter {
 	return &output
 }
 
-func Increment(counter *AtomicCounter) {
+func (counter *AtomicCounter) Increment() {
 	counter.mutex.Lock()
 	counter.value += 1
 	counter.mutex.Unlock()
 }
 
-func Decrement(counter *AtomicCounter) {
+func (counter *AtomicCounter) Decrement() {
 	counter.mutex.Lock()
 	counter.value -= 1
 	counter.mutex.Unlock()
 }
 
-func Get_counter_value(counter *AtomicCounter) int64 {
+func (counter *AtomicCounter) Value() int64 {
 	counter.mutex.Lock()
 	output := counter.value
 	counter.mutex.Unlock()

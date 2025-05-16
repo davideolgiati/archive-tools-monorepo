@@ -48,8 +48,8 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 
 	// Record processed file paths.
 	processedFiles := []string{}
-	walker.Set_file_callback_function(func(info *fs.FileInfo, dir *string) {
-		processedFiles = append(processedFiles, filepath.Join(*dir, (*info).Name()))
+	walker.Set_file_callback_function(func(info fs.FileInfo, dir string) {
+		processedFiles = append(processedFiles, filepath.Join(dir, info.Name()))
 	})
 
 	// Execute the walk.
@@ -98,8 +98,8 @@ func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 	})
 
 	processedFiles := []string{}
-	walker.Set_file_callback_function(func(info *fs.FileInfo, dir *string) {
-		processedFiles = append(processedFiles, filepath.Join(*dir, (*info).Name()))
+	walker.Set_file_callback_function(func(info fs.FileInfo, dir string) {
+		processedFiles = append(processedFiles, filepath.Join(dir, info.Name()))
 	})
 
 	walker.Walk()
@@ -140,8 +140,8 @@ func TestDirWalker_NoSkipEmptyFiles(t *testing.T) {
 	})
 
 	processedFiles := []string{}
-	walker.Set_file_callback_function(func(info *fs.FileInfo, dir *string) {
-		processedFiles = append(processedFiles, filepath.Join(*dir, (*info).Name()))
+	walker.Set_file_callback_function(func(info fs.FileInfo, dir string) {
+		processedFiles = append(processedFiles, filepath.Join(dir, info.Name()))
 	})
 
 	walker.Walk()

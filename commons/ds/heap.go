@@ -1,11 +1,12 @@
 package ds
 
 import (
+	"fmt"
 	"sync"
 )
 
 type Heap[T any] struct {
-	items              []*T
+	items              []T
 	custom_is_lower_fn func(*T, *T) bool
 	mutex              sync.Mutex
 }
@@ -22,7 +23,7 @@ func (heap *Heap[T]) Size() int {
 	return len(heap.items)
 }
 
-func (heap *Heap[T]) Push(data *T) {
+func (heap *Heap[T]) Push(data T) {
 	heap.mutex.Lock()
 
 	heap.items = append(heap.items, data)
@@ -31,11 +32,13 @@ func (heap *Heap[T]) Push(data *T) {
 	heap.mutex.Unlock()
 }
 
-func (heap *Heap[T]) Pop() *T {
-	var item *T
+func (heap *Heap[T]) Pop() T {
+	var item T
 
 	heap.mutex.Lock()
 	
+	start_size := len(heap.items)
+
 	if len(heap.items) != 0 {
 		item = heap.items[0]
 		heap.items[0] = heap.items[len(heap.items)-1]
@@ -46,6 +49,10 @@ func (heap *Heap[T]) Pop() *T {
 		}
 	}
 	
+	if len(heap.items) != start_size - 1 {
+		panic(fmt.Sprintf("wrong heap size, expected %d, got %d", start_size - 1, len(heap.items)))
+	}
+
 	heap.mutex.Unlock()
 	
 	return item
@@ -57,7 +64,7 @@ func (heap *Heap[T]) Peak() *T {
 	heap.mutex.Lock()
 	
 	if len(heap.items) != 0 {
-		item = heap.items[0]
+		item = &heap.items[0]
 	}
 	
 	heap.mutex.Unlock()
@@ -84,9 +91,9 @@ func get_parent_node_index(index *int) int {
 func heapify_bottom_up[T any](heap *Heap[T]) {
 	current_index := len(heap.items) - 1
 	parent := get_parent_node_index(&current_index)
-	var swap_variable *T
+	var swap_variable T
 
-	for current_index > 0 && heap.custom_is_lower_fn(heap.items[current_index], heap.items[parent]) {
+	for current_index > 0 && heap.custom_is_lower_fn(&heap.items[current_index], &heap.items[parent]) {
 		swap_variable = heap.items[parent]
 		heap.items[parent] = heap.items[current_index]
 		heap.items[current_index] = swap_variable
@@ -110,7 +117,7 @@ func get_next_candidate[T any](heap *Heap[T], current *int) int {
 		return left
 	}
 
-	if heap.custom_is_lower_fn(heap.items[left], heap.items[right]) {
+	if heap.custom_is_lower_fn(&heap.items[left], &heap.items[right]) {
 		return left
 	} else {
 		return right
@@ -121,9 +128,9 @@ func heapify_top_down[T any](heap *Heap[T]) {
 	current_index := 0
 	candidate := get_next_candidate(heap, &current_index)
 
-	var swap_variable *T
+	var swap_variable T
 
-	for heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
+	for heap.custom_is_lower_fn(&heap.items[candidate], &heap.items[current_index]) {
 		swap_variable = heap.items[candidate]
 		heap.items[candidate] = heap.items[current_index]
 		heap.items[current_index] = swap_variable

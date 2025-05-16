@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/ds"
 	"bufio"
 	"io"
 	"io/fs"
@@ -26,7 +25,17 @@ type FsObj struct {
 	base_dir string
 }
 
+var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
+
 func can_file_be_read(fullpath *string) bool {
+	if fullpath == nil {
+		panic("can_file_be_read - fullpath is nil")
+	}
+
+	if *fullpath == "" {
+		panic("can_file_be_read - fullpath is empty")
+	}
+
 	file_pointer, file_open_error := os.Open(*fullpath)
 
 	if file_open_error != nil {
@@ -43,6 +52,14 @@ func can_file_be_read(fullpath *string) bool {
 }
 
 func evaluate_object_properties(fullpath *string) int {
+	if fullpath == nil {
+		panic("evaluate_object_properties - fullpath is nil")
+	}
+
+	if *fullpath == "" {
+		panic("evaluate_object_properties - fullpath is empty")
+	}
+	
 	obj, err := os.Stat(*fullpath)
 
 	if err != nil {
@@ -73,7 +90,7 @@ func process_file_entry(basedir string, entry fs.FileInfo, file_heap *FileHeap) 
 	full_path := filepath.Join(basedir, entry.Name())
 
 	if can_file_be_read(&full_path) {
-		ds.Increment(&file_heap.pending_insert)
+		file_heap.pending_insert.Increment()
 
 		file_stats := commons.File{
 			Name:          full_path,
@@ -82,9 +99,9 @@ func process_file_entry(basedir string, entry fs.FileInfo, file_heap *FileHeap) 
 			FormattedSize: commons.Format_file_size(entry.Size()),
 		}
 
-		file_heap.heap.Push(&file_stats)
+		file_heap.heap.Push(file_stats)
 
-		ds.Decrement(&file_heap.pending_insert)
+		file_heap.pending_insert.Decrement()
 	}
 }
 
@@ -93,8 +110,6 @@ func file_process_thread_pool(file_heap *FileHeap, in <-chan FsObj) {
 		process_file_entry(obj.base_dir, obj.obj, file_heap)
 	}
 }
-
-var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
 
 func check_if_dir_is_allowed(full_path *string, user_defined_dir *[]string) bool {
 	allowed := true
