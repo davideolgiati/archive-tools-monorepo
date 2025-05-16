@@ -196,7 +196,7 @@ func TestProcessFileEntry(t *testing.T) {
 			pending_insert: *ds.Build_new_atomic_counter(),
 		}
 
-		process_file_entry(filepath.Dir(tmpFile.Name()), &info, fileHeap)
+		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)
 
 		if fileHeap.heap.Empty() {
 			t.Errorf("Expected 1 file in heap, got 0",)
@@ -220,7 +220,7 @@ func TestProcessFileEntry(t *testing.T) {
 			pending_insert: *ds.Build_new_atomic_counter(),
 		}
 
-		process_file_entry(filepath.Dir(tmpFile.Name()), &info, fileHeap)
+		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)
 
 		if fileHeap.heap.Empty() {
 			t.Errorf("Expected 1 file in heap, got 0",)
@@ -249,7 +249,7 @@ func TestProcessFileEntry(t *testing.T) {
 			pending_insert: *ds.Build_new_atomic_counter(),
 		}
 
-		process_file_entry(filepath.Dir(tmpFile.Name()), &info, fileHeap)
+		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)
 
 		if !fileHeap.heap.Empty() {
 			t.Errorf("Expected 0 file in heap, got more",)

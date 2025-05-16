@@ -3,7 +3,6 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
-	"fmt"
 	"runtime"
 	"time"
 )
@@ -26,19 +25,23 @@ func (file_heap *FileHeap) collect() {
 	queue_size := ds.Get_counter_value(&file_heap.pending_insert)
 
 	for queue_size > 0 {
-		time.Sleep(100 * time.Microsecond)
+		time.Sleep(2 * time.Second)
 		queue_size = ds.Get_counter_value(&file_heap.pending_insert)
+	}
+
+	if ds.Get_counter_value(&file_heap.pending_insert) != 0 {
+		panic("heap.collect() did not wait for all jobs to finish")
 	}
 }
 
-func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, lazy bool) {
+func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap, lazy bool) {
 	ds.Increment(&file_heap.pending_insert)
 
 	hash, err := commons.Hash(&file.Name, file.Size, lazy)
 
 	if err == nil {
 		file.Hash = hash
-		file_heap.heap.Push(file)
+		file_heap.heap.Push(&file)
 	}
 
 	ds.Decrement(&file_heap.pending_insert)
@@ -46,7 +49,7 @@ func refine_and_push_file_into_heap(file *commons.File, file_heap *FileHeap, laz
 
 func heap_refine_thread_pool(file_heap *FileHeap, lazy_hashing bool, in <-chan commons.File) {
 	for obj := range in {
-		refine_and_push_file_into_heap(&obj, file_heap, lazy_hashing)
+		refine_and_push_file_into_heap(obj, file_heap, lazy_hashing)
 	}
 }
 
@@ -59,7 +62,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 	refined_file_heap := build_new_file_heap()
 	last_seen_was_a_duplicate := false
 
-	input := make(chan commons.File, runtime.NumCPU()*4)
+	input := make(chan commons.File)
 
 	for w := 1; w <= runtime.NumCPU()*4; w++ {
 		go heap_refine_thread_pool(refined_file_heap, lazy_hashing, input)
@@ -89,7 +92,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 
 		if files_are_equal || last_seen_was_a_duplicate {
 			last_seen_was_a_duplicate = files_are_equal
-			go refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
+			go refine_and_push_file_into_heap(*last_file_seen, refined_file_heap, lazy_hashing)
 		} else {
 			ignored_files_counter++
 		}
@@ -117,13 +120,13 @@ func display_duplicate_file_info(file_heap *ds.Heap[commons.File]) {
 		current_file = file_heap.Pop()
 
 		if current_file.Hash == last_file_seen.Hash || is_duplicate {
-			fmt.Printf("file: %s\n", last_file_seen)
+			commons.Print_not_registered(main_ui, "file: %s\n", last_file_seen)
 			is_duplicate = current_file.Hash == last_file_seen.Hash
 		}
 
 	}
 
 	if is_duplicate {
-		fmt.Printf("file: %s\n", current_file)
+		commons.Print_not_registered(main_ui, "file: %s\n", last_file_seen)
 	}
 }

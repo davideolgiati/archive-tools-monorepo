@@ -41,7 +41,7 @@ func main() {
 	walker.Set_entry_point(start_directory)
 	walker.Set_directory_filter_function(get_directory_filter_fn(ignored_dir_user))
 	walker.Set_file_filter_function(check_if_file_is_allowed)
-	walker.Set_file_callback_function(get_file_callback_fn(&file_entry_channel))
+	walker.Set_file_callback_function(get_file_callback_fn(file_entry_channel))
 
 	walker.Walk()
 
@@ -49,13 +49,12 @@ func main() {
 
 	output_file_heap.collect()
 
-
-	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale 
+	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale
 	// come sembra, ci devo lavorare
 	cleaned_heap_1 := build_duplicate_entries_heap(&output_file_heap.heap, true)
 	cleaned_heap := build_duplicate_entries_heap(cleaned_heap_1, false)
 
-	commons.Close_UI(main_ui)
-
 	display_duplicate_file_info(cleaned_heap)
+
+	commons.Close_UI(main_ui)
 }
