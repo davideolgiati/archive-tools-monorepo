@@ -38,7 +38,7 @@ func main() {
 
 	file_entry_channel := make(chan FsObj)
 
-	for w := 1; w <= 1; w++ {
+	for w := 1; w <= 10; w++ {
 		wg.Add(1)
 		go file_process_thread_pool(output_file_heap, file_entry_channel, &wg)
 	}
