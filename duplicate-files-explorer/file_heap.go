@@ -55,7 +55,6 @@ func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap, lazy
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing bool) *ds.Heap[commons.File] {
 	var last_file_seen commons.File
 	var current_file commons.File
-	var line_id string
 	var files_are_equal bool
 
 	refined_file_heap := build_new_file_heap()
@@ -65,13 +64,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 	ignored_files_counter := 0
 	processed_entries := float64(0)
 
-	if lazy_hashing {
-		line_id = "stage-1"
-	} else {
-		line_id = "stage-2"
-	}
-
-	main_ui.Register_line(line_id, "Removing unique entries %s ... %.1f %%")
+	main_ui.Register_line("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
 	if !file_heap.Empty() {
 		current_file = file_heap.Pop()
@@ -85,19 +78,17 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 
 		if files_are_equal {
 			last_seen_was_a_duplicate = true
-			refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
+			refine_and_push_file_into_heap(last_file_seen, refined_file_heap, false)
 		} else {
 			if last_seen_was_a_duplicate {
-				refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
+				refine_and_push_file_into_heap(last_file_seen, refined_file_heap, false)
 			}
 			last_seen_was_a_duplicate = false
 			ignored_files_counter++
 		}
 
-		main_ui.Update_line(line_id, line_id, (processed_entries/total_entries)*100)
+		main_ui.Update_line("cleanup-stage", "cleanup-stage", (processed_entries/total_entries)*100)
 	}
-
-	refined_file_heap.collect()
 
 	return refined_file_heap.heap
 }

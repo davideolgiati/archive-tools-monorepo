@@ -4,7 +4,6 @@ import (
 	"archive-tools-monorepo/commons"
 	_ "embed"
 	"flag"
-	"runtime"
 	"sync"
 )
 
@@ -37,9 +36,9 @@ func main() {
 		panic("error wile creating new file heap object")
 	}
 
-	file_entry_channel := make(chan FsObj, runtime.NumCPU()*4)
+	file_entry_channel := make(chan FsObj)
 
-	for w := 1; w <= runtime.NumCPU()*4; w++ {
+	for w := 1; w <= 1; w++ {
 		wg.Add(1)
 		go file_process_thread_pool(output_file_heap, file_entry_channel, &wg)
 	}
@@ -56,19 +55,18 @@ func main() {
 	walker.Set_file_callback_function(get_file_callback_fn(file_entry_channel))
 
 	walker.Walk()
-	
+
 	close(file_entry_channel)
 
 	wg.Wait()
-	
+
 	if output_file_heap.pending_insert.Value() > 0 {
 		panic("file heap collect() not working properly, pending_indert > 0")
 	}
 
 	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale
 	// come sembra, ci devo lavorare
-	cleaned_heap_1 := build_duplicate_entries_heap(output_file_heap.heap, true)
-	cleaned_heap := build_duplicate_entries_heap(cleaned_heap_1, false)
+	cleaned_heap := build_duplicate_entries_heap(output_file_heap.heap, true)
 
 	display_duplicate_file_info(cleaned_heap)
 

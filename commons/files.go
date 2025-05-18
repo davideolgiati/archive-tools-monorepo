@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"hash"
-	"hash/crc32"
 	"io"
 	"io/fs"
 	"os"
@@ -51,7 +50,7 @@ func Equal(a File, b File) bool {
 
 func Hash(filepath string, size int64, quick_flag bool) (string, error) {
 	var err error = nil
-	var hash_accumulator hash.Hash = crc32.New(crc32.IEEETable)
+	var hash_accumulator hash.Hash = sha1.New()
 	var hash []byte
 
 	file_pointer, err := os.Open(filepath)
@@ -62,8 +61,6 @@ func Hash(filepath string, size int64, quick_flag bool) (string, error) {
 
 	if quick_flag {
 		size = page_size * 5
-	} else {
-		hash_accumulator = sha1.New()
 	}
 
 	defer file_pointer.Close()

@@ -10,23 +10,28 @@ type Stack[T any] struct {
 }
 
 func (stack *Stack[T]) Empty() bool {
+	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
+	
 	return len(stack.items) == 0
 }
 
 func (stack *Stack[T]) Push(data T) {
 	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
 	stack.items = append(stack.items, data)
-	stack.mutex.Unlock()
 }
     
 func (stack *Stack[T]) Pop() T {
-	var item T
 	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
+	
+	var item T
 	if len(stack.items) != 0 {
 		item = stack.items[len(stack.items)-1]
 		stack.items = stack.items[:len(stack.items)-1]
 	}
-	stack.mutex.Unlock()
+
 	return item
 }
     
