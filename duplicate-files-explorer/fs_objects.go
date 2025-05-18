@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 const (
@@ -27,16 +28,12 @@ type FsObj struct {
 
 var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
 
-func can_file_be_read(fullpath *string) bool {
-	if fullpath == nil {
-		panic("can_file_be_read - fullpath is nil")
-	}
-
-	if *fullpath == "" {
+func can_file_be_read(fullpath string) bool {
+	if fullpath == "" {
 		panic("can_file_be_read - fullpath is empty")
 	}
 
-	file_pointer, file_open_error := os.Open(*fullpath)
+	file_pointer, file_open_error := os.Open(fullpath)
 
 	if file_open_error != nil {
 		return false
@@ -51,16 +48,13 @@ func can_file_be_read(fullpath *string) bool {
 	return file_read_error == nil || file_read_error == io.EOF
 }
 
-func evaluate_object_properties(fullpath *string) int {
-	if fullpath == nil {
-		panic("evaluate_object_properties - fullpath is nil")
-	}
+func evaluate_object_properties(fullpath string) int {
 
-	if *fullpath == "" {
+	if fullpath == "" {
 		panic("evaluate_object_properties - fullpath is empty")
 	}
 	
-	obj, err := os.Stat(*fullpath)
+	obj, err := os.Stat(fullpath)
 
 	if err != nil {
 		return invalid
@@ -71,13 +65,13 @@ func evaluate_object_properties(fullpath *string) int {
 		return directory
 	case commons.Is_symbolic_link(fullpath):
 		return symlink
-	case commons.Is_a_device(&obj):
+	case commons.Is_a_device(obj):
 		return device
-	case commons.Is_a_socket(&obj):
+	case commons.Is_a_socket(obj):
 		return socket
-	case commons.Is_a_pipe(&obj):
+	case commons.Is_a_pipe(obj):
 		return pipe
-	case !commons.Check_read_rights_on_file(&obj):
+	case !commons.Check_read_rights_on_file(obj):
 		return invalid
 	case obj.Mode().Perm().IsRegular():
 		return file
@@ -87,9 +81,13 @@ func evaluate_object_properties(fullpath *string) int {
 }
 
 func process_file_entry(basedir string, entry fs.FileInfo, file_heap *FileHeap) {
+	if file_heap == nil || file_heap.heap == nil || file_heap.pending_insert == nil {
+		panic("file_heap is not fully referenced")
+	}
+	
 	full_path := filepath.Join(basedir, entry.Name())
 
-	if can_file_be_read(&full_path) {
+	if can_file_be_read(full_path) {
 		file_heap.pending_insert.Increment()
 
 		file_stats := commons.File{
@@ -105,28 +103,28 @@ func process_file_entry(basedir string, entry fs.FileInfo, file_heap *FileHeap) 
 	}
 }
 
-func file_process_thread_pool(file_heap *FileHeap, in <-chan FsObj) {
+func file_process_thread_pool(file_heap *FileHeap, in <-chan FsObj, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for obj := range in {
 		process_file_entry(obj.base_dir, obj.obj, file_heap)
 	}
 }
 
-func check_if_dir_is_allowed(full_path *string, user_defined_dir *[]string) bool {
+func check_if_dir_is_allowed(full_path string, user_defined_dir []string) bool {
 	allowed := true
 	for index := range ignored_dir {
-		allowed = allowed && !strings.Contains(*full_path, ignored_dir[index])
+		allowed = allowed && !strings.Contains(full_path, ignored_dir[index])
 	}
 
-	if user_defined_dir != nil {
-		for index := range *user_defined_dir {
-			allowed = allowed && !strings.Contains(*full_path, (*user_defined_dir)[index])
-		}
+	for index := range user_defined_dir {
+		allowed = allowed && !strings.Contains(full_path, user_defined_dir[index])
 	}
+
 
 	return allowed
 }
 
-func check_if_file_is_allowed(full_path *string) bool {
+func check_if_file_is_allowed(full_path string) bool {
 	return evaluate_object_properties(full_path) == file
 }
 
@@ -134,13 +132,13 @@ func submit_file_thread_pool(file fs.FileInfo, current_dir string, channel chan<
 	channel <- FsObj{obj: file, base_dir: current_dir}
 }
 
-func get_directory_filter_fn(ignored_dir_user string) func(full_path *string) bool {
-	return func(full_path *string) bool {
+func get_directory_filter_fn(ignored_dir_user string) func(full_path string) bool {
+	return func(full_path string) bool {
 		if ignored_dir_user == "" {
-			return check_if_dir_is_allowed(full_path, nil)
+			return check_if_dir_is_allowed(full_path, []string{})
 		} else {
 			user_dirs := strings.Split(ignored_dir_user, ",")
-			return check_if_dir_is_allowed(full_path, &user_dirs)
+			return check_if_dir_is_allowed(full_path, user_dirs)
 		}
 	}
 }

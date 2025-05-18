@@ -25,7 +25,7 @@ func TestCanFileBeRead(t *testing.T) {
 
 		filePath := tmpFile.Name()
 
-		if !can_file_be_read(&filePath) {
+		if !can_file_be_read(filePath) {
 			t.Errorf("Expected %s to be a valid file path", filePath)
 		}
 	})
@@ -33,7 +33,7 @@ func TestCanFileBeRead(t *testing.T) {
 	// Test Case 2: Non-Existent File
 	t.Run("NonExistentFile", func(t *testing.T) {
 		nonExistentPath := "/nonexistent/file/path"
-		if can_file_be_read(&nonExistentPath) {
+		if can_file_be_read(nonExistentPath) {
 			t.Errorf("Expected false for non-existent file, got true")
 		}
 	})
@@ -52,7 +52,7 @@ func TestCanFileBeRead(t *testing.T) {
 		}
 
 		filePath := tmpFile.Name()
-		if can_file_be_read(&filePath) {
+		if can_file_be_read(filePath) {
 			t.Errorf("Expected false for file without read permissions, got true")
 		}
 	})
@@ -65,7 +65,7 @@ func TestCanFileBeRead(t *testing.T) {
 		}
 		defer os.Remove(tmpDir)
 		dirPath := tmpDir
-		if can_file_be_read(&dirPath) {
+		if can_file_be_read(dirPath) {
 			t.Errorf("Expected false for directory, got true")
 		}
 	})
@@ -78,7 +78,7 @@ func TestCanFileBeRead(t *testing.T) {
 		}
 		defer os.Remove(tmpFile.Name())
 		filePath := tmpFile.Name()
-		if !can_file_be_read(&filePath) {
+		if !can_file_be_read(filePath) {
 			t.Errorf("Expected true for empty file, got false")
 		}
 	})
@@ -91,7 +91,7 @@ func TestCanFileBeRead(t *testing.T) {
 		}
 		defer os.Remove(tmpFile.Name())
 		filePath := tmpFile.Name()
-		if !can_file_be_read(&filePath) {
+		if !can_file_be_read(filePath) {
 			t.Errorf("Expected true for file with special characters, got false")
 		}
 	})
@@ -117,7 +117,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		}
 
 		fullpath := symlinkPath
-		result := evaluate_object_properties(&fullpath)
+		result := evaluate_object_properties(fullpath)
 		if result != symlink {
 			t.Errorf("Expected invalid for symbolic link, got %d", result)
 		}
@@ -132,7 +132,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		defer os.Remove(tmpFile.Name())
 
 		fullpath := tmpFile.Name()
-		result := evaluate_object_properties(&fullpath)
+		result := evaluate_object_properties(fullpath)
 		if result != file {
 			t.Errorf("Expected file for regular file, got %d", result)
 		}
@@ -147,7 +147,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		defer os.Remove(tmpDir)
 
 		fullpath := tmpDir
-		result := evaluate_object_properties(&fullpath)
+		result := evaluate_object_properties(fullpath)
 		if result != directory {
 			t.Errorf("Expected directory for directory, got %d", result)
 		}
@@ -167,7 +167,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		}
 
 		fullpath := tmpFile.Name()
-		result := evaluate_object_properties(&fullpath)
+		result := evaluate_object_properties(fullpath)
 		if result != invalid {
 			t.Errorf("Expected invalid for file without read permissions, got %d", result)
 		}
@@ -192,8 +192,8 @@ func TestProcessFileEntry(t *testing.T) {
 		}
 
 		fileHeap := &FileHeap{
-			heap:           ds.Heap[commons.File]{},
-			pending_insert: *ds.Build_new_atomic_counter(),
+			heap:           &ds.Heap[commons.File]{},
+			pending_insert: ds.Build_new_atomic_counter(),
 		}
 
 		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)
@@ -216,8 +216,8 @@ func TestProcessFileEntry(t *testing.T) {
 		}
 
 		fileHeap := &FileHeap{
-			heap:           ds.Heap[commons.File]{},
-			pending_insert: *ds.Build_new_atomic_counter(),
+			heap:           &ds.Heap[commons.File]{},
+			pending_insert: ds.Build_new_atomic_counter(),
 		}
 
 		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)
@@ -245,8 +245,8 @@ func TestProcessFileEntry(t *testing.T) {
 		}
 
 		fileHeap := &FileHeap{
-			heap:           ds.Heap[commons.File]{},
-			pending_insert: *ds.Build_new_atomic_counter(),
+			heap:           &ds.Heap[commons.File]{},
+			pending_insert: ds.Build_new_atomic_counter(),
 		}
 
 		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)

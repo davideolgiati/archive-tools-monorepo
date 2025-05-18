@@ -38,12 +38,12 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 	walker := New_dir_walker(true)
 	walker.Set_entry_point(baseDir)
 	// Directory filter: allow all directories.
-	walker.Set_directory_filter_function(func(dir *string) bool {
+	walker.Set_directory_filter_function(func(dir string) bool {
 		return true
 	})
 	// File filter: allow only .txt files.
-	walker.Set_file_filter_function(func(file *string) bool {
-		return filepath.Ext(*file) == ".txt"
+	walker.Set_file_filter_function(func(file string) bool {
+		return filepath.Ext(file) == ".txt"
 	})
 
 	// Record processed file paths.
@@ -90,10 +90,10 @@ func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 
 	walker := New_dir_walker(true)
 	walker.Set_entry_point(baseDir)
-	walker.Set_directory_filter_function(func(dir *string) bool {
+	walker.Set_directory_filter_function(func(dir string) bool {
 		return true
 	})
-	walker.Set_file_filter_function(func(file *string) bool {
+	walker.Set_file_filter_function(func(file string) bool {
 		return true
 	})
 
@@ -132,10 +132,10 @@ func TestDirWalker_NoSkipEmptyFiles(t *testing.T) {
 
 	walker := New_dir_walker(false) // Do not skip empty files.
 	walker.Set_entry_point(baseDir)
-	walker.Set_directory_filter_function(func(dir *string) bool {
+	walker.Set_directory_filter_function(func(dir string) bool {
 		return true
 	})
-	walker.Set_file_filter_function(func(file *string) bool {
+	walker.Set_file_filter_function(func(file string) bool {
 		return true
 	})
 

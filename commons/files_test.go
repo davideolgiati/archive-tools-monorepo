@@ -11,8 +11,8 @@ import (
 func TestCompareFiles(t *testing.T) {
 	// Test Case 1: File A is less than File B
 	t.Run("FileALessThanFileB", func(t *testing.T) {
-		fileA := &File{Hash: "abc123", Size: 100}
-		fileB := &File{Hash: "def456", Size: 200}
+		fileA := File{Hash: "abc123", Size: 100}
+		fileB := File{Hash: "def456", Size: 200}
 
 		if !Lower(fileA, fileB) {
 			t.Errorf("Expected fileA to be less than fileB")
@@ -21,8 +21,8 @@ func TestCompareFiles(t *testing.T) {
 
 	// Test Case 2: File A is not less than File B
 	t.Run("FileANotLessThanFileB", func(t *testing.T) {
-		fileA := &File{Hash: "def456", Size: 200}
-		fileB := &File{Hash: "abc123", Size: 100}
+		fileA := File{Hash: "def456", Size: 200}
+		fileB := File{Hash: "abc123", Size: 100}
 
 		if Lower(fileA, fileB) {
 			t.Errorf("Expected fileA to not be less than fileB")
@@ -31,8 +31,8 @@ func TestCompareFiles(t *testing.T) {
 
 	// Test Case 3: File A and File B are equal
 	t.Run("FileAEqualToFileB", func(t *testing.T) {
-		fileA := &File{Hash: "abc123", Size: 100}
-		fileB := &File{Hash: "abc123", Size: 100}
+		fileA := File{Hash: "abc123", Size: 100}
+		fileB := File{Hash: "abc123", Size: 100}
 
 		if Lower(fileA, fileB) {
 			t.Errorf("Expected fileA to not be less than fileB when they are equal")
@@ -43,8 +43,8 @@ func TestCompareFiles(t *testing.T) {
 func TestCheckIfFilesAreEqual(t *testing.T) {
 	// Test Case 1: Files are equal
 	t.Run("FilesAreEqual", func(t *testing.T) {
-		fileA := &File{Hash: "abc123", Size: 100}
-		fileB := &File{Hash: "abc123", Size: 100}
+		fileA := File{Hash: "abc123", Size: 100}
+		fileB := File{Hash: "abc123", Size: 100}
 
 		if !Equal(fileA, fileB) {
 			t.Errorf("Expected files to be equal")
@@ -53,8 +53,8 @@ func TestCheckIfFilesAreEqual(t *testing.T) {
 
 	// Test Case 2: Files have different hashes
 	t.Run("FilesHaveDifferentHashes", func(t *testing.T) {
-		fileA := &File{Hash: "abc123", Size: 100}
-		fileB := &File{Hash: "def456", Size: 100}
+		fileA := File{Hash: "abc123", Size: 100}
+		fileB := File{Hash: "def456", Size: 100}
 
 		if Equal(fileA, fileB) {
 			t.Errorf("Expected files to not be equal due to different hashes")
@@ -63,8 +63,8 @@ func TestCheckIfFilesAreEqual(t *testing.T) {
 
 	// Test Case 3: Files have different sizes
 	t.Run("FilesHaveDifferentSizes", func(t *testing.T) {
-		fileA := &File{Hash: "abc123", Size: 100}
-		fileB := &File{Hash: "abc123", Size: 200}
+		fileA := File{Hash: "abc123", Size: 100}
+		fileB := File{Hash: "abc123", Size: 200}
 
 		if Equal(fileA, fileB) {
 			t.Errorf("Expected files to not be equal due to different sizes")
@@ -73,8 +73,8 @@ func TestCheckIfFilesAreEqual(t *testing.T) {
 
 	// Test Case 4: Files have different hashes and sizes
 	t.Run("FilesHaveDifferentHashesAndSizes", func(t *testing.T) {
-		fileA := &File{Hash: "abc123", Size: 100}
-		fileB := &File{Hash: "def456", Size: 200}
+		fileA := File{Hash: "abc123", Size: 100}
+		fileB := File{Hash: "def456", Size: 200}
 
 		if Equal(fileA, fileB) {
 			t.Errorf("Expected files to not be equal due to different hashes and sizes")
@@ -151,7 +151,7 @@ func TestHash(t *testing.T) {
 		os.WriteFile(filepath, []byte(content), 0644)
 		defer os.Remove(filepath)
 
-		hash, err := Hash(&filepath, int64(len(content)), true)
+		hash, err := Hash(filepath, int64(len(content)), true)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -169,7 +169,7 @@ func TestHash(t *testing.T) {
 		os.WriteFile(filepath, []byte(content), 0644)
 		defer os.Remove(filepath)
 
-		hash, err := Hash(&filepath, int64(len(content)), false)
+		hash, err := Hash(filepath, int64(len(content)), false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -190,7 +190,7 @@ func TestHash(t *testing.T) {
 		os.WriteFile(filepath, content, 0644)
 		defer os.Remove(filepath)
 
-		hash, err := Hash(&filepath, int64(len(content)), true)
+		hash, err := Hash(filepath, int64(len(content)), true)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -211,7 +211,7 @@ func TestHash(t *testing.T) {
 		os.WriteFile(filepath, content, 0644)
 		defer os.Remove(filepath)
 
-		hash, err := Hash(&filepath, int64(len(content)), false)
+		hash, err := Hash(filepath, int64(len(content)), false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -225,7 +225,7 @@ func TestHash(t *testing.T) {
 	// Test Case 5: File does not exist
 	t.Run("FileDoesNotExist", func(t *testing.T) {
 		filepath := "nonexistent_file.txt"
-		_, err := Hash(&filepath, 0, true)
+		_, err := Hash(filepath, 0, true)
 		if err == nil {
 			t.Errorf("Expected an error for nonexistent file, got nil")
 		}

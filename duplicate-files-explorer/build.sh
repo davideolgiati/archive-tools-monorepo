@@ -11,4 +11,4 @@ echo "${semver_array[0]}.${semver_array[1]}.${semver_array[2]}" > ./semver.txt
 
 echo $(date -u +"%Y-%m-%dT%H:%M:%SZ") > ./buildts.txt
 
-go build -o ../bin/
+go build -o ../bin/ -race

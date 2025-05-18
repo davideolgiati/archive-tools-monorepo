@@ -9,8 +9,8 @@ import (
 )
 
 type dirWalker struct {
-	directory_filter_function func(*string) bool
-	file_filter_function      func(*string) bool
+	directory_filter_function func(string) bool
+	file_filter_function      func(string) bool
 	file_callback_function    func(fs.FileInfo, string)
 	current_directory         string
 	current_file              string
@@ -42,11 +42,11 @@ func (walker *dirWalker) Set_entry_point(directory string) {
 	walker.directories.Push(directory)
 }
 
-func (walker *dirWalker) Set_directory_filter_function(filter_fn func(*string) bool) {
+func (walker *dirWalker) Set_directory_filter_function(filter_fn func(string) bool) {
 	walker.directory_filter_function = filter_fn
 }
 
-func (walker *dirWalker) Set_file_filter_function(filter_fn func(*string) bool) {
+func (walker *dirWalker) Set_file_filter_function(filter_fn func(string) bool) {
 	walker.file_filter_function = filter_fn
 }
 
@@ -66,7 +66,7 @@ func (walker *dirWalker) Walk() {
 		objects, read_dir_err := os.ReadDir(walker.current_directory)
 
 		if read_dir_err == nil {
-			walker.process_directory_objects(&objects)
+			walker.process_directory_objects(objects)
 
 			formatted_size = commons.Format_file_size(walker.size_processed)
 
@@ -77,20 +77,20 @@ func (walker *dirWalker) Walk() {
 	}
 }
 
-func (walker *dirWalker) process_directory_objects(objects *[]os.DirEntry) {
-	for _, obj := range *objects {
+func (walker *dirWalker) process_directory_objects(objects []os.DirEntry) {
+	for _, obj := range objects {
 		walker.current_file = filepath.Join(walker.current_directory, obj.Name())
 
 		if obj.IsDir() {
 			walker.process_directory(walker.current_file)
 		} else {
-			walker.process_file(&obj)
+			walker.process_file(obj)
 		}
 	}
 }
 
 func (walker *dirWalker) process_directory(directory string) {
-	if !walker.directory_filter_function(&directory) {
+	if !walker.directory_filter_function(directory) {
 		return
 	}
 
@@ -98,12 +98,12 @@ func (walker *dirWalker) process_directory(directory string) {
 	walker.directories.Push(directory)
 }
 
-func (walker *dirWalker) process_file(obj *os.DirEntry) {
-	if !walker.file_filter_function(&walker.current_file) {
+func (walker *dirWalker) process_file(obj os.DirEntry) {
+	if !walker.file_filter_function(walker.current_file) {
 		return
 	}
 
-	file_entry, err := (*obj).Info()
+	file_entry, err := obj.Info()
 
 	if err != nil {
 		return

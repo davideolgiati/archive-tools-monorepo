@@ -18,20 +18,23 @@ func Build_new_atomic_counter() *AtomicCounter {
 
 func (counter *AtomicCounter) Increment() {
 	counter.mutex.Lock()
+	defer counter.mutex.Unlock()
+
 	counter.value += 1
-	counter.mutex.Unlock()
 }
 
 func (counter *AtomicCounter) Decrement() {
 	counter.mutex.Lock()
+	defer counter.mutex.Unlock()
+
 	counter.value -= 1
-	counter.mutex.Unlock()
 }
 
 func (counter *AtomicCounter) Value() int64 {
 	counter.mutex.Lock()
+	defer counter.mutex.Unlock()
+	
 	output := counter.value
-	counter.mutex.Unlock()
 
 	return output
 }

@@ -3,20 +3,25 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
-	"runtime"
 	"time"
 )
 
 type FileHeap struct {
-	heap           ds.Heap[commons.File]
-	pending_insert ds.AtomicCounter
+	heap           *ds.Heap[commons.File]
+	pending_insert *ds.AtomicCounter
 }
 
 func build_new_file_heap() *FileHeap {
 	file_heap := FileHeap{}
-
+	new_heap := ds.Heap[commons.File]{}
+	
+	file_heap.heap = &new_heap
 	file_heap.heap.Compare_fn(commons.Lower)
-	file_heap.pending_insert = *ds.Build_new_atomic_counter()
+	file_heap.pending_insert = ds.Build_new_atomic_counter()
+
+	if file_heap.heap == nil || file_heap.pending_insert == nil {
+		panic("error wile creating new file heap object")
+	}
 
 	return &file_heap
 }
@@ -25,7 +30,7 @@ func (file_heap *FileHeap) collect() {
 	queue_size := file_heap.pending_insert.Value()
 
 	for queue_size > 0 {
-		time.Sleep(2 * time.Second)
+		time.Sleep(10 * time.Millisecond)
 		queue_size = file_heap.pending_insert.Value()
 	}
 
@@ -37,7 +42,7 @@ func (file_heap *FileHeap) collect() {
 func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap, lazy bool) {
 	file_heap.pending_insert.Increment()
 
-	hash, err := commons.Hash(&file.Name, file.Size, lazy)
+	hash, err := commons.Hash(file.Name, file.Size, lazy)
 
 	if err == nil {
 		file.Hash = hash
@@ -45,12 +50,6 @@ func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap, lazy
 	}
 
 	file_heap.pending_insert.Decrement()
-}
-
-func heap_refine_thread_pool(file_heap *FileHeap, lazy_hashing bool, in <-chan commons.File) {
-	for obj := range in {
-		refine_and_push_file_into_heap(obj, file_heap, lazy_hashing)
-	}
 }
 
 func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing bool) *ds.Heap[commons.File] {
@@ -61,12 +60,6 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 
 	refined_file_heap := build_new_file_heap()
 	last_seen_was_a_duplicate := false
-
-	input := make(chan commons.File)
-
-	for w := 1; w <= runtime.NumCPU()*4; w++ {
-		go heap_refine_thread_pool(refined_file_heap, lazy_hashing, input)
-	}
 
 	total_entries := float64(file_heap.Size())
 	ignored_files_counter := 0
@@ -88,14 +81,14 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 		last_file_seen = current_file
 		current_file = file_heap.Pop()
 		processed_entries++
-		files_are_equal = commons.Equal(&current_file, &last_file_seen)
+		files_are_equal = commons.Equal(current_file, last_file_seen)
 
 		if files_are_equal {
 			last_seen_was_a_duplicate = true
-			go refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
+			refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
 		} else {
 			if last_seen_was_a_duplicate {
-				go refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
+				refine_and_push_file_into_heap(last_file_seen, refined_file_heap, lazy_hashing)
 			}
 			last_seen_was_a_duplicate = false
 			ignored_files_counter++
@@ -106,12 +99,13 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 
 	refined_file_heap.collect()
 
-	return &refined_file_heap.heap
+	return refined_file_heap.heap
 }
 
 func display_duplicate_file_info(file_heap *ds.Heap[commons.File]) {
 	var last_file_seen commons.File
 	var current_file commons.File
+	var files_are_equal bool
 
 	is_duplicate := false
 
@@ -122,17 +116,21 @@ func display_duplicate_file_info(file_heap *ds.Heap[commons.File]) {
 	for !file_heap.Empty() {
 		last_file_seen = current_file
 		current_file = file_heap.Pop()
+		files_are_equal = commons.Equal(current_file, last_file_seen)
 
-		if current_file.Hash == last_file_seen.Hash || is_duplicate {
-			commons.Print_not_registered(main_ui, "file: %s\n", &last_file_seen)
-			is_duplicate = current_file.Hash == last_file_seen.Hash
+		if files_are_equal {
+			commons.Print_not_registered(main_ui, "file: %s\n", last_file_seen)
+			is_duplicate = true
 		} else {
+			if is_duplicate {
+				commons.Print_not_registered(main_ui, "file: %s\n", last_file_seen)
+			}
 			is_duplicate = false
 		}
 
 	}
 
 	if is_duplicate {
-		commons.Print_not_registered(main_ui, "file: %s\n", &last_file_seen)
+		commons.Print_not_registered(main_ui, "file: %s\n", last_file_seen)
 	}
 }

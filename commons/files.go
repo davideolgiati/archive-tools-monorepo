@@ -27,11 +27,11 @@ type File struct {
 	Size          int64
 }
 
-func (file *File) Format(f fmt.State, c rune) {
+func (file File) Format(f fmt.State, c rune) {
 	f.Write([]byte(file.ToString()))
 }
 
-func (f *File) ToString() string {
+func (f File) ToString() string {
 	return fmt.Sprintf(
 		"%s %4d %2s %s",
 		f.Hash,
@@ -41,20 +41,20 @@ func (f *File) ToString() string {
 	)
 }
 
-func Lower(a *File, b *File) bool {
+func Lower(a File, b File) bool {
 	return a.Hash < b.Hash && a.Size < b.Size
 }
 
-func Equal(a *File, b *File) bool {
+func Equal(a File, b File) bool {
 	return a.Hash == b.Hash && a.Size == b.Size
 }
 
-func Hash(filepath *string, size int64, quick_flag bool) (string, error) {
+func Hash(filepath string, size int64, quick_flag bool) (string, error) {
 	var err error = nil
 	var hash_accumulator hash.Hash = crc32.New(crc32.IEEETable)
 	var hash []byte
 
-	file_pointer, err := os.Open(*filepath)
+	file_pointer, err := os.Open(filepath)
 
 	if err != nil {
 		return "", err
@@ -117,75 +117,55 @@ func Format_file_size(size int64) FileSize {
 	return output
 }
 
-func Check_read_rights_on_file(obj *os.FileInfo) bool {
-	if obj == nil {
-		panic("Check_read_rights_on_file -- obj is nil")
-	}
-
-	if (*obj).IsDir() {
+func Check_read_rights_on_file(obj os.FileInfo) bool {
+	if obj.IsDir() {
 		panic("Check_read_rights_on_file -- obj is a dir")
 	}
 
 	read_bit_mask := fs.FileMode(0444)
-	file_permission_bits := (*obj).Mode().Perm()
+	file_permission_bits := obj.Mode().Perm()
 
 	return (file_permission_bits & read_bit_mask) != fs.FileMode(0000)
 }
 
-func Is_symbolic_link(path *string) bool {
-	if path == nil {
-		panic("Is_symbolic_link -- obj is nil")
-	}
-
-	if *path == "" {
+func Is_symbolic_link(path string) bool {
+	if path == "" {
 		panic("Is_symbolic_link -- obj is empty")
 	}
 
-	if (*path)[len(*path)-1] == '/' {
+	if path[len(path)-1] == '/' {
 		panic("Is_symbolic_link -- obj is a path")
 	}
 
-	dst, err := filepath.EvalSymlinks(*path)
+	dst, err := filepath.EvalSymlinks(path)
 
 	if err != nil {
 		return false
 	}
 
-	return *path != dst
+	return path != dst
 }
 
-func Is_a_device(obj *os.FileInfo) bool {
-	if obj == nil {
-		panic("Is_a_devide -- obj is nil")
-	}
-
-	if (*obj).IsDir() {
+func Is_a_device(obj os.FileInfo) bool {
+	if obj.IsDir() {
 		panic("Is_a_device -- obj is a dir")
 	}
 
-	return (*obj).Mode()&os.ModeDevice == os.ModeDevice
+	return obj.Mode()&os.ModeDevice == os.ModeDevice
 }
 
-func Is_a_socket(obj *os.FileInfo) bool {
-	if obj == nil {
-		panic("Is_a_socket -- obj is nil")
-	}
-
-	if (*obj).IsDir() {
+func Is_a_socket(obj os.FileInfo) bool {
+	if obj.IsDir() {
 		panic("Is_a_socket -- obj is a dir")
 	}
 
-	return (*obj).Mode()&os.ModeSocket == os.ModeSocket
+	return obj.Mode()&os.ModeSocket == os.ModeSocket
 }
 
-func Is_a_pipe(obj *os.FileInfo) bool {
-	if obj == nil {
-		panic("Is_a_pipe -- obj is nil")
-	}
-
-	if (*obj).IsDir() {
+func Is_a_pipe(obj os.FileInfo) bool {
+	if obj.IsDir() {
 		panic("Is_a_pipe -- obj is a dir")
 	}
 
-	return (*obj).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
+	return obj.Mode()&os.ModeNamedPipe == os.ModeNamedPipe
 }

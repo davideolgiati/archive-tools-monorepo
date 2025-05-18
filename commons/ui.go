@@ -2,6 +2,7 @@ package commons
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type ui struct {
 	id_to_lines         map[string]int
 	current_line        int
 	next_line           int
+	mutex               sync.Mutex
 }
 
 func New_UI() *ui {
@@ -29,6 +31,9 @@ func New_UI() *ui {
 }
 
 func (ui *ui) Register_line(line_id string, format string) {
+	ui.mutex.Lock()
+	defer ui.mutex.Unlock()
+
 	ui.id_to_lines[line_id] = ui.next_line
 	ui.id_to_format[line_id] = format
 
@@ -53,6 +58,9 @@ func (ui *ui) Register_line(line_id string, format string) {
 }
 
 func (ui *ui) Update_line(line_id string, a ...any) {
+	ui.mutex.Lock()
+	defer ui.mutex.Unlock()
+
 	data := fmt.Sprintf(ui.id_to_format[line_id], a...)
 	if data != ui.lines_id_last_value[line_id] && (time.Now().UnixMilli()-ui.line_last_update[line_id]) > 60 {
 		line_number := ui.id_to_lines[line_id]
@@ -62,6 +70,9 @@ func (ui *ui) Update_line(line_id string, a ...any) {
 }
 
 func Print_not_registered(ui *ui, format string, a ...any) {
+	ui.mutex.Lock()
+	defer ui.mutex.Unlock()
+
 	data := fmt.Sprintf(format, a...)
 	offset := ui.next_line - ui.current_line
 
@@ -77,6 +88,9 @@ func Print_not_registered(ui *ui, format string, a ...any) {
 }
 
 func Close_UI(ui *ui) {
+	ui.mutex.Lock()
+	defer ui.mutex.Unlock()
+
 	offset := ui.next_line - ui.current_line
 
 	if offset < 0 {

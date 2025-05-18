@@ -70,8 +70,8 @@ func TestParentLeftRightHead(t *testing.T) {
 	}
 }
 
-func is_lower(a *int, b *int) bool {
-	return *a < *b
+func is_lower(a int, b int) bool {
+	return a < b
 }
 
 func TestFullHeapWorkflow(t *testing.T) {

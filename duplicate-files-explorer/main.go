@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"flag"
 	"runtime"
+	"sync"
 )
 
 //go:embed semver.txt
@@ -20,6 +21,8 @@ func main() {
 	var ignored_dir_user string = ""
 	var skip_empty bool = false
 
+	var wg sync.WaitGroup
+
 	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
 	flag.StringVar(&ignored_dir_user, "skip_dirs", "", "Skip user defined directories during scan (separated by comma)")
 	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
@@ -30,13 +33,22 @@ func main() {
 
 	output_file_heap := build_new_file_heap()
 
+	if output_file_heap == nil || output_file_heap.heap == nil || output_file_heap.pending_insert == nil {
+		panic("error wile creating new file heap object")
+	}
+
 	file_entry_channel := make(chan FsObj, runtime.NumCPU()*4)
 
 	for w := 1; w <= runtime.NumCPU()*4; w++ {
-		go file_process_thread_pool(output_file_heap, file_entry_channel)
+		wg.Add(1)
+		go file_process_thread_pool(output_file_heap, file_entry_channel, &wg)
 	}
 
 	walker := New_dir_walker(skip_empty)
+
+	if walker == nil {
+		panic("error wile creating new file walker object")
+	}
 
 	walker.Set_entry_point(start_directory)
 	walker.Set_directory_filter_function(get_directory_filter_fn(ignored_dir_user))
@@ -44,14 +56,18 @@ func main() {
 	walker.Set_file_callback_function(get_file_callback_fn(file_entry_channel))
 
 	walker.Walk()
-
+	
 	close(file_entry_channel)
 
-	output_file_heap.collect()
+	wg.Wait()
+	
+	if output_file_heap.pending_insert.Value() > 0 {
+		panic("file heap collect() not working properly, pending_indert > 0")
+	}
 
 	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale
 	// come sembra, ci devo lavorare
-	cleaned_heap_1 := build_duplicate_entries_heap(&output_file_heap.heap, true)
+	cleaned_heap_1 := build_duplicate_entries_heap(output_file_heap.heap, true)
 	cleaned_heap := build_duplicate_entries_heap(cleaned_heap_1, false)
 
 	display_duplicate_file_info(cleaned_heap)
