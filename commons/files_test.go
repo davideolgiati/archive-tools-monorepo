@@ -151,7 +151,7 @@ func TestHash(t *testing.T) {
 		os.WriteFile(filepath, []byte(content), 0644)
 		defer os.Remove(filepath)
 
-		hash, err := Hash(filepath, int64(len(content)), true)
+		hash, err := Hash(filepath, int64(len(content)))
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -169,7 +169,7 @@ func TestHash(t *testing.T) {
 		os.WriteFile(filepath, []byte(content), 0644)
 		defer os.Remove(filepath)
 
-		hash, err := Hash(filepath, int64(len(content)), false)
+		hash, err := Hash(filepath, int64(len(content)))
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -190,7 +190,7 @@ func TestHash(t *testing.T) {
 		os.WriteFile(filepath, content, 0644)
 		defer os.Remove(filepath)
 
-		hash, err := Hash(filepath, int64(len(content)), true)
+		hash, err := Hash(filepath, int64(len(content)))
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -211,7 +211,7 @@ func TestHash(t *testing.T) {
 		os.WriteFile(filepath, content, 0644)
 		defer os.Remove(filepath)
 
-		hash, err := Hash(filepath, int64(len(content)), false)
+		hash, err := Hash(filepath, int64(len(content)))
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -225,7 +225,7 @@ func TestHash(t *testing.T) {
 	// Test Case 5: File does not exist
 	t.Run("FileDoesNotExist", func(t *testing.T) {
 		filepath := "nonexistent_file.txt"
-		_, err := Hash(filepath, 0, true)
+		_, err := Hash(filepath, 0)
 		if err == nil {
 			t.Errorf("Expected an error for nonexistent file, got nil")
 		}

@@ -3,6 +3,7 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
+	"sync"
 	"time"
 )
 
@@ -39,10 +40,10 @@ func (file_heap *FileHeap) collect() {
 	}
 }
 
-func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap, lazy bool) {
+func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap) {
 	file_heap.pending_insert.Increment()
 
-	hash, err := commons.Hash(file.Name, file.Size, lazy)
+	hash, err := commons.Hash(file.Name, file.Size)
 
 	if err == nil {
 		file.Hash = hash
@@ -52,10 +53,21 @@ func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap, lazy
 	file_heap.pending_insert.Decrement()
 }
 
-func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing bool) *ds.Heap[commons.File] {
+
+func get_file_hash_thread_fn(file_heap *FileHeap) func (chan commons.File, *sync.WaitGroup) {
+	return func (in chan commons.File, wg *sync.WaitGroup) {
+		defer wg.Done()
+		for obj := range in {
+			refine_and_push_file_into_heap(obj, file_heap)
+		}
+	}
+}
+
+func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[commons.File] {
 	var last_file_seen commons.File
 	var current_file commons.File
 	var files_are_equal bool
+	var file_thread_pool commons.ThreadPool[commons.File] = commons.ThreadPool[commons.File]{}
 
 	refined_file_heap := build_new_file_heap()
 	last_seen_was_a_duplicate := false
@@ -63,6 +75,9 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 	total_entries := float64(file_heap.Size())
 	ignored_files_counter := 0
 	processed_entries := float64(0)
+
+	file_thread_pool.Init(get_file_hash_thread_fn(refined_file_heap))
+	file_channel := file_thread_pool.Get_input_channel()
 
 	main_ui.Register_line("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
@@ -78,10 +93,10 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 
 		if files_are_equal {
 			last_seen_was_a_duplicate = true
-			refine_and_push_file_into_heap(last_file_seen, refined_file_heap, false)
+			file_channel <- last_file_seen
 		} else {
 			if last_seen_was_a_duplicate {
-				refine_and_push_file_into_heap(last_file_seen, refined_file_heap, false)
+				file_channel <- last_file_seen
 			}
 			last_seen_was_a_duplicate = false
 			ignored_files_counter++
@@ -89,6 +104,8 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File], lazy_hashing
 
 		main_ui.Update_line("cleanup-stage", "cleanup-stage", (processed_entries/total_entries)*100)
 	}
+
+	file_thread_pool.Sync_and_close()
 
 	return refined_file_heap.heap
 }

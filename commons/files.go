@@ -48,7 +48,7 @@ func Equal(a File, b File) bool {
 	return a.Hash == b.Hash && a.Size == b.Size
 }
 
-func Hash(filepath string, size int64, quick_flag bool) (string, error) {
+func Hash(filepath string, size int64) (string, error) {
 	var err error = nil
 	var hash_accumulator hash.Hash = sha1.New()
 	var hash []byte
@@ -57,10 +57,6 @@ func Hash(filepath string, size int64, quick_flag bool) (string, error) {
 
 	if err != nil {
 		return "", err
-	}
-
-	if quick_flag {
-		size = page_size * 5
 	}
 
 	defer file_pointer.Close()
