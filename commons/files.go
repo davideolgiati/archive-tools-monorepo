@@ -110,13 +110,13 @@ func Format_file_size(size int64) FileSize {
 	return output
 }
 
-func Check_read_rights_on_file(obj os.FileInfo) bool {
-	if obj.IsDir() {
+func Check_read_rights_on_file(obj *os.FileInfo) bool {
+	if (*obj).IsDir() {
 		panic("Check_read_rights_on_file -- obj is a dir")
 	}
 
 	read_bit_mask := fs.FileMode(0444)
-	file_permission_bits := obj.Mode().Perm()
+	file_permission_bits := (*obj).Mode().Perm()
 
 	return (file_permission_bits & read_bit_mask) != fs.FileMode(0000)
 }
@@ -139,26 +139,26 @@ func Is_symbolic_link(path string) bool {
 	return path != dst
 }
 
-func Is_a_device(obj os.FileInfo) bool {
-	if obj.IsDir() {
+func Is_a_device(obj *os.FileInfo) bool {
+	if (*obj).IsDir() {
 		panic("Is_a_device -- obj is a dir")
 	}
 
-	return obj.Mode()&os.ModeDevice == os.ModeDevice
+	return (*obj).Mode()&os.ModeDevice == os.ModeDevice
 }
 
-func Is_a_socket(obj os.FileInfo) bool {
-	if obj.IsDir() {
+func Is_a_socket(obj *os.FileInfo) bool {
+	if (*obj).IsDir() {
 		panic("Is_a_socket -- obj is a dir")
 	}
 
-	return obj.Mode()&os.ModeSocket == os.ModeSocket
+	return (*obj).Mode()&os.ModeSocket == os.ModeSocket
 }
 
-func Is_a_pipe(obj os.FileInfo) bool {
-	if obj.IsDir() {
+func Is_a_pipe(obj *os.FileInfo) bool {
+	if (*obj).IsDir() {
 		panic("Is_a_pipe -- obj is a dir")
 	}
 
-	return obj.Mode()&os.ModeNamedPipe == os.ModeNamedPipe
+	return (*obj).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
 }

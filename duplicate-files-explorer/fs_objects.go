@@ -48,13 +48,13 @@ func can_file_be_read(fullpath string) bool {
 	return file_read_error == nil || file_read_error == io.EOF
 }
 
-func evaluate_object_properties(fullpath string) int {
+func evaluate_object_properties(fullpath *string) int {
 
-	if fullpath == "" {
+	if *fullpath == "" {
 		panic("evaluate_object_properties - fullpath is empty")
 	}
 	
-	obj, err := os.Stat(fullpath)
+	obj, err := os.Stat(*fullpath)
 
 	if err != nil {
 		return invalid
@@ -63,15 +63,15 @@ func evaluate_object_properties(fullpath string) int {
 	switch {
 	case obj.IsDir():
 		return directory
-	case commons.Is_symbolic_link(fullpath):
+	case commons.Is_symbolic_link(*fullpath):
 		return symlink
-	case commons.Is_a_device(obj):
+	case commons.Is_a_device(&obj):
 		return device
-	case commons.Is_a_socket(obj):
+	case commons.Is_a_socket(&obj):
 		return socket
-	case commons.Is_a_pipe(obj):
+	case commons.Is_a_pipe(&obj):
 		return pipe
-	case !commons.Check_read_rights_on_file(obj):
+	case !commons.Check_read_rights_on_file(&obj):
 		return invalid
 	case obj.Mode().Perm().IsRegular():
 		return file
@@ -112,14 +112,14 @@ func get_file_process_thread_fn(file_heap *FileHeap) func (chan FsObj, *sync.Wai
 	}
 }
 
-func check_if_dir_is_allowed(full_path string, user_defined_dir []string) bool {
+func check_if_dir_is_allowed(full_path *string, user_defined_dir *[]string) bool {
 	allowed := true
 	for index := range ignored_dir {
-		allowed = allowed && !strings.Contains(full_path, ignored_dir[index])
+		allowed = allowed && !strings.Contains(*full_path, ignored_dir[index])
 	}
 
-	for index := range user_defined_dir {
-		allowed = allowed && !strings.Contains(full_path, user_defined_dir[index])
+	for index := range *user_defined_dir {
+		allowed = allowed && !strings.Contains(*full_path, (*user_defined_dir)[index])
 	}
 
 
@@ -127,16 +127,16 @@ func check_if_dir_is_allowed(full_path string, user_defined_dir []string) bool {
 }
 
 func check_if_file_is_allowed(full_path string) bool {
-	return evaluate_object_properties(full_path) == file
+	return evaluate_object_properties(&full_path) == file
 }
 
 func get_directory_filter_fn(ignored_dir_user string) func(full_path string) bool {
 	return func(full_path string) bool {
 		if ignored_dir_user == "" {
-			return check_if_dir_is_allowed(full_path, []string{})
+			return check_if_dir_is_allowed(&full_path, &[]string{})
 		} else {
 			user_dirs := strings.Split(ignored_dir_user, ",")
-			return check_if_dir_is_allowed(full_path, user_dirs)
+			return check_if_dir_is_allowed(&full_path, &user_dirs)
 		}
 	}
 }

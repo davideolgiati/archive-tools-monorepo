@@ -117,7 +117,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		}
 
 		fullpath := symlinkPath
-		result := evaluate_object_properties(fullpath)
+		result := evaluate_object_properties(&fullpath)
 		if result != symlink {
 			t.Errorf("Expected invalid for symbolic link, got %d", result)
 		}
@@ -132,7 +132,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		defer os.Remove(tmpFile.Name())
 
 		fullpath := tmpFile.Name()
-		result := evaluate_object_properties(fullpath)
+		result := evaluate_object_properties(&fullpath)
 		if result != file {
 			t.Errorf("Expected file for regular file, got %d", result)
 		}
@@ -147,7 +147,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		defer os.Remove(tmpDir)
 
 		fullpath := tmpDir
-		result := evaluate_object_properties(fullpath)
+		result := evaluate_object_properties(&fullpath)
 		if result != directory {
 			t.Errorf("Expected directory for directory, got %d", result)
 		}
@@ -167,7 +167,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		}
 
 		fullpath := tmpFile.Name()
-		result := evaluate_object_properties(fullpath)
+		result := evaluate_object_properties(&fullpath)
 		if result != invalid {
 			t.Errorf("Expected invalid for file without read permissions, got %d", result)
 		}

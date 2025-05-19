@@ -18,7 +18,7 @@ func main() {
 	var start_directory string = ""
 	var ignored_dir_user string = ""
 	var skip_empty bool = false
-	var fsobj_thread_pool commons.ThreadPool[FsObj] = commons.ThreadPool[FsObj]{}
+	var fsobj_pool commons.WriteOnlyThreadPool[FsObj] = commons.WriteOnlyThreadPool[FsObj]{}
 
 	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
 	flag.StringVar(&ignored_dir_user, "skip_dirs", "", "Skip user defined directories during scan (separated by comma)")
@@ -30,7 +30,7 @@ func main() {
 
 	output_file_heap := build_new_file_heap()
 
-	fsobj_thread_pool.Init(get_file_process_thread_fn(output_file_heap))
+	fsobj_pool.Init(get_file_process_thread_fn(output_file_heap))
 
 	if output_file_heap == nil || output_file_heap.heap == nil || output_file_heap.pending_insert == nil {
 		panic("error wile creating new file heap object")
@@ -45,11 +45,11 @@ func main() {
 	walker.Set_entry_point(start_directory)
 	walker.Set_directory_filter_function(get_directory_filter_fn(ignored_dir_user))
 	walker.Set_file_filter_function(check_if_file_is_allowed)
-	walker.Set_file_callback_function(get_file_callback_fn(fsobj_thread_pool.Get_input_channel()))
+	walker.Set_file_callback_function(get_file_callback_fn(fsobj_pool.Get_input_channel()))
 
 	walker.Walk()
 
-	fsobj_thread_pool.Sync_and_close()
+	fsobj_pool.Sync_and_close()
 
 	if output_file_heap.pending_insert.Value() > 0 {
 		panic("file heap collect() not working properly, pending_indert > 0")

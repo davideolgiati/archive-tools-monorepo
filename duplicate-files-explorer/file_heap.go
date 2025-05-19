@@ -15,7 +15,7 @@ type FileHeap struct {
 func build_new_file_heap() *FileHeap {
 	file_heap := FileHeap{}
 	new_heap := ds.Heap[commons.File]{}
-	
+
 	file_heap.heap = &new_heap
 	file_heap.heap.Compare_fn(commons.Lower)
 	file_heap.pending_insert = ds.Build_new_atomic_counter()
@@ -53,9 +53,8 @@ func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap) {
 	file_heap.pending_insert.Decrement()
 }
 
-
-func get_file_hash_thread_fn(file_heap *FileHeap) func (chan commons.File, *sync.WaitGroup) {
-	return func (in chan commons.File, wg *sync.WaitGroup) {
+func get_file_hash_thread_fn(file_heap *FileHeap) func(chan commons.File, *sync.WaitGroup) {
+	return func(in chan commons.File, wg *sync.WaitGroup) {
 		defer wg.Done()
 		for obj := range in {
 			refine_and_push_file_into_heap(obj, file_heap)
@@ -67,7 +66,7 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 	var last_file_seen commons.File
 	var current_file commons.File
 	var files_are_equal bool
-	var file_thread_pool commons.ThreadPool[commons.File] = commons.ThreadPool[commons.File]{}
+	var file_thread_pool commons.WriteOnlyThreadPool[commons.File] = commons.WriteOnlyThreadPool[commons.File]{}
 
 	refined_file_heap := build_new_file_heap()
 	last_seen_was_a_duplicate := false
