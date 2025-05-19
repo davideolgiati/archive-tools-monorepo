@@ -66,7 +66,7 @@ func (walker *dirWalker) Walk() {
 		objects, read_dir_err := os.ReadDir(walker.current_directory)
 
 		if read_dir_err == nil {
-			walker.process_directory_objects(objects)
+			walker.process_directory_objects(&objects)
 
 			formatted_size = commons.Format_file_size(walker.size_processed)
 
@@ -77,33 +77,33 @@ func (walker *dirWalker) Walk() {
 	}
 }
 
-func (walker *dirWalker) process_directory_objects(objects []os.DirEntry) {
-	for _, obj := range objects {
+func (walker *dirWalker) process_directory_objects(objects *[]os.DirEntry) {
+	for _, obj := range (*objects) {
 		walker.current_file = filepath.Join(walker.current_directory, obj.Name())
 
 		if obj.IsDir() {
-			walker.process_directory(walker.current_file)
+			walker.process_directory(&walker.current_file)
 		} else {
-			walker.process_file(obj)
+			walker.process_file(&obj)
 		}
 	}
 }
 
-func (walker *dirWalker) process_directory(directory string) {
-	if !walker.directory_filter_function(directory) {
+func (walker *dirWalker) process_directory(directory *string) {
+	if !walker.directory_filter_function(*directory) {
 		return
 	}
 
 	walker.directories_seen += 1
-	walker.directories.Push(directory)
+	walker.directories.Push(*directory)
 }
 
-func (walker *dirWalker) process_file(obj os.DirEntry) {
+func (walker *dirWalker) process_file(obj *os.DirEntry) {
 	if !walker.file_filter_function(walker.current_file) {
 		return
 	}
 
-	file_entry, err := obj.Info()
+	file_entry, err := (*obj).Info()
 
 	if err != nil {
 		return
