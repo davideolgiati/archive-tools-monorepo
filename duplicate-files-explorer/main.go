@@ -45,7 +45,7 @@ func main() {
 	walker.Set_entry_point(start_directory)
 	walker.Set_directory_filter_function(get_directory_filter_fn(ignored_dir_user))
 	walker.Set_file_filter_function(check_if_file_is_allowed)
-	walker.Set_file_callback_function(get_file_callback_fn(fsobj_pool.Get_input_channel()))
+	walker.Set_file_callback_function(get_file_callback_fn(&fsobj_pool))
 
 	walker.Walk()
 

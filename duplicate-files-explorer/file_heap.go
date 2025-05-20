@@ -3,7 +3,6 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
-	"sync"
 	"time"
 )
 
@@ -53,12 +52,9 @@ func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap) {
 	file_heap.pending_insert.Decrement()
 }
 
-func get_file_hash_thread_fn(file_heap *FileHeap) func(chan commons.File, *sync.WaitGroup) {
-	return func(in chan commons.File, wg *sync.WaitGroup) {
-		defer wg.Done()
-		for obj := range in {
-			refine_and_push_file_into_heap(obj, file_heap)
-		}
+func get_file_hash_thread_fn(file_heap *FileHeap) func(commons.File) {
+	return func(obj commons.File) {
+		refine_and_push_file_into_heap(obj, file_heap)
 	}
 }
 
@@ -76,7 +72,6 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 	processed_entries := float64(0)
 
 	file_thread_pool.Init(get_file_hash_thread_fn(refined_file_heap))
-	file_channel := file_thread_pool.Get_input_channel()
 
 	main_ui.Register_line("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
@@ -92,10 +87,10 @@ func build_duplicate_entries_heap(file_heap *ds.Heap[commons.File]) *ds.Heap[com
 
 		if files_are_equal {
 			last_seen_was_a_duplicate = true
-			file_channel <- last_file_seen
+			file_thread_pool.Submit(last_file_seen)
 		} else {
 			if last_seen_was_a_duplicate {
-				file_channel <- last_file_seen
+				file_thread_pool.Submit(last_file_seen)
 			}
 			last_seen_was_a_duplicate = false
 			ignored_files_counter++

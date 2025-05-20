@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 )
 
 const (
@@ -103,12 +102,9 @@ func process_file_entry(basedir string, entry fs.FileInfo, file_heap *FileHeap) 
 	}
 }
 
-func get_file_process_thread_fn(file_heap *FileHeap) func (chan FsObj, *sync.WaitGroup) {
-	return func (in chan FsObj, wg *sync.WaitGroup) {
-		defer wg.Done()
-		for obj := range in {
-			process_file_entry(obj.base_dir, obj.obj, file_heap)
-		}
+func get_file_process_thread_fn(file_heap *FileHeap) func(FsObj) {
+	return func (obj FsObj) {
+		process_file_entry(obj.base_dir, obj.obj, file_heap)
 	}
 }
 
@@ -141,8 +137,8 @@ func get_directory_filter_fn(ignored_dir_user string) func(full_path string) boo
 	}
 }
 
-func get_file_callback_fn(input_channel chan FsObj) func(file fs.FileInfo, current_dir string) {
+func get_file_callback_fn(tp *commons.WriteOnlyThreadPool[FsObj]) func(file fs.FileInfo, current_dir string) {
 	return func(file fs.FileInfo, current_dir string) {
-		input_channel <- FsObj{obj: file, base_dir: current_dir}
+		tp.Submit(FsObj{obj: file, base_dir: current_dir})
 	}
 }
