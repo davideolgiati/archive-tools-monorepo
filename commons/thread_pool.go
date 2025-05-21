@@ -7,27 +7,41 @@ import (
 )
 
 type WriteOnlyThreadPool[T any] struct {
-	input_channel   chan T
-	waiting         sync.WaitGroup
-	max_workers     int
-	min_workers     int
-	current_workers int
-	worker_fn       func(chan T, chan bool, *sync.WaitGroup)
-	stop_channels 	[]chan bool
+	input_channel           chan T
+	waiting                 sync.WaitGroup
+	max_workers             int
+	min_workers             int
+	current_workers         int
+	worker_fn               func(chan T, chan bool, *sync.WaitGroup)
+	stop_channels           []chan bool
+	workload_factor_samples []float64
+	mutex                   sync.Mutex
 }
 
 func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
 	tp.max_workers = runtime.NumCPU() * 4
 	tp.min_workers = 1
 	tp.current_workers = 0
-	
-	tp.input_channel = make(chan T, tp.max_workers * 2)
+
+	tp.input_channel = make(chan T, tp.max_workers*2)
 	tp.stop_channels = make([]chan bool, tp.max_workers)
 	for i := 0; i < tp.max_workers; i++ {
 		tp.stop_channels[i] = make(chan bool)
 	}
 
+	tp.workload_factor_samples = make([]float64, 100)
+
+	for i := 0; i < 100; i++ {
+		tp.workload_factor_samples[i] = 0.5
+	}
+
 	tp.worker_fn = setup_fn(fn)
+
+	for i := 0; i < tp.max_workers/2; i++ {
+		tp.add_new_worker()
+	}
+
+	go tp.sample_pool_usage()
 
 	go tp.manage_thread_pool()
 }
@@ -39,6 +53,17 @@ func (tp *WriteOnlyThreadPool[T]) Submit(data T) {
 func (tp *WriteOnlyThreadPool[T]) Sync_and_close() {
 	close(tp.input_channel)
 	tp.waiting.Wait()
+}
+
+func (tp *WriteOnlyThreadPool[T]) sample_pool_usage() {
+	var index int = 0
+	for {
+		index = (index + 1) % 100
+		tp.mutex.Lock()
+		tp.workload_factor_samples[index] = float64(len(tp.input_channel)) / float64(tp.max_workers)
+		tp.mutex.Unlock()
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 func setup_fn[T any](fn func(T)) func(chan T, chan bool, *sync.WaitGroup) {
@@ -62,23 +87,36 @@ func setup_fn[T any](fn func(T)) func(chan T, chan bool, *sync.WaitGroup) {
 func (tp *WriteOnlyThreadPool[T]) add_new_worker() {
 	tp.current_workers += 1
 	tp.waiting.Add(1)
-	go tp.worker_fn(tp.input_channel, tp.stop_channels[tp.current_workers - 1], &tp.waiting)
+	go tp.worker_fn(tp.input_channel, tp.stop_channels[tp.current_workers-1], &tp.waiting)
 }
 
 func (tp *WriteOnlyThreadPool[T]) stop_last_worker() {
-	tp.stop_channels[tp.current_workers - 1] <- true
+	tp.stop_channels[tp.current_workers-1] <- true
 	tp.current_workers = tp.current_workers - 1
 }
 
-func (tp * WriteOnlyThreadPool[T]) manage_thread_pool() {
+func (tp *WriteOnlyThreadPool[T]) manage_thread_pool() {
 	for {
-		workload_factor := float64(len(tp.input_channel)) / float64(tp.max_workers)
+		tp.mutex.Lock()
+		workload_factor := mean(tp.workload_factor_samples)
 		if workload_factor > 0.7 && tp.current_workers < tp.max_workers {
 			tp.add_new_worker()
-		} else if workload_factor < 0.3 && tp.current_workers > tp.min_workers {
+		} else if workload_factor < 0.3 {
 			tp.stop_last_worker()
 		}
+		tp.mutex.Unlock()
 
 		time.Sleep(300 * time.Millisecond)
 	}
+}
+
+func mean(data []float64) float64 {
+	if len(data) == 0 {
+		return 0
+	}
+	var sum float64
+	for _, d := range data {
+		sum += d
+	}
+	return sum / float64(len(data))
 }
