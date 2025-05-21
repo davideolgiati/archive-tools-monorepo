@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path/filepath"
 )
 
 var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
@@ -64,21 +63,20 @@ func Hash(filepath string, size int64) (string, error) {
 	reader := bufio.NewReader(file_pointer)
 
 	read_buffer := make([]byte, page_size)
-	var read_size int
+	var read_size int = 0
 
 	for size > 0 {
 		read_size, err = reader.Read(read_buffer)
-		
+
 		if err != nil {
 			if err == io.EOF {
 				err = nil
 			}
 			size = 0
 		}
-		
+
 		size = size - int64(read_size)
-		read_buffer = read_buffer[:read_size]
-		hash_accumulator.Write(read_buffer)
+		hash_accumulator.Write(read_buffer[:read_size])
 	}
 
 	hash = hash_accumulator.Sum(nil)
@@ -100,7 +98,7 @@ func Format_file_size(size int64) FileSize {
 
 	if file_size > 1000 && size_index != 3 {
 		panic(fmt.Sprintf(
-			"Format_file_size -- file_size is > 1000 and unit is  %s", 
+			"Format_file_size -- file_size is > 1000 and unit is  %s",
 			sizes_array[size_index],
 		))
 	}
@@ -111,8 +109,8 @@ func Format_file_size(size int64) FileSize {
 }
 
 func Check_read_rights_on_file(obj *os.FileInfo) bool {
-	if (*obj).IsDir() {
-		panic("Check_read_rights_on_file -- obj is a dir")
+	if *obj == nil {
+		panic("Check_read_rights_on_file -- obj is nil")
 	}
 
 	read_bit_mask := fs.FileMode(0444)
@@ -121,43 +119,33 @@ func Check_read_rights_on_file(obj *os.FileInfo) bool {
 	return (file_permission_bits & read_bit_mask) != fs.FileMode(0000)
 }
 
-func Is_symbolic_link(path string) bool {
-	if path == "" {
+func Is_symbolic_link(obj *os.FileInfo) bool {
+	if *obj == nil {
 		panic("Is_symbolic_link -- obj is empty")
 	}
 
-	if path[len(path)-1] == '/' {
-		panic("Is_symbolic_link -- obj is a path")
-	}
-
-	dst, err := filepath.EvalSymlinks(path)
-
-	if err != nil {
-		return false
-	}
-
-	return path != dst
+	return (*obj).Mode()&os.ModeSymlink != 0
 }
 
 func Is_a_device(obj *os.FileInfo) bool {
-	if (*obj).IsDir() {
-		panic("Is_a_device -- obj is a dir")
+	if *obj == nil {
+		panic("Is_a_device -- obj is nil")
 	}
 
 	return (*obj).Mode()&os.ModeDevice == os.ModeDevice
 }
 
 func Is_a_socket(obj *os.FileInfo) bool {
-	if (*obj).IsDir() {
-		panic("Is_a_socket -- obj is a dir")
+	if *obj == nil {
+		panic("Is_a_socket -- obj is nil")
 	}
 
 	return (*obj).Mode()&os.ModeSocket == os.ModeSocket
 }
 
 func Is_a_pipe(obj *os.FileInfo) bool {
-	if (*obj).IsDir() {
-		panic("Is_a_pipe -- obj is a dir")
+	if *obj == nil {
+		panic("Is_a_pipe -- obj is nil")
 	}
 
 	return (*obj).Mode()&os.ModeNamedPipe == os.ModeNamedPipe

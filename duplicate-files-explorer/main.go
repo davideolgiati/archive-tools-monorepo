@@ -4,6 +4,7 @@ import (
 	"archive-tools-monorepo/commons"
 	_ "embed"
 	"flag"
+	"strings"
 )
 
 //go:embed semver.txt
@@ -13,6 +14,15 @@ var version string
 var buildts string
 
 var main_ui = commons.New_UI()
+
+func filter[T comparable](ss []T, value T) (ret []T) {
+	for _, s := range ss {
+		if s != value {
+			ret = append(ret, s)
+		}
+	}
+	return
+}
 
 func main() {
 	var start_directory string = ""
@@ -24,6 +34,8 @@ func main() {
 	flag.StringVar(&ignored_dir_user, "skip_dirs", "", "Skip user defined directories during scan (separated by comma)")
 	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
 	flag.Parse()
+
+	user_dirs := filter(strings.Split(ignored_dir_user, ","), "")
 
 	commons.Print_not_registered(main_ui, "Running version: %s", version)
 	commons.Print_not_registered(main_ui, "Build timestamp: %s\n", buildts)
@@ -43,7 +55,7 @@ func main() {
 	}
 
 	walker.Set_entry_point(start_directory)
-	walker.Set_directory_filter_function(get_directory_filter_fn(ignored_dir_user))
+	walker.Set_directory_filter_function(get_directory_filter_fn(&user_dirs))
 	walker.Set_file_filter_function(check_if_file_is_allowed)
 	walker.Set_file_callback_function(get_file_callback_fn(&fsobj_pool))
 

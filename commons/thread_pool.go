@@ -8,13 +8,13 @@ import (
 
 type WriteOnlyThreadPool[T any] struct {
 	input_channel           chan T
+	worker_fn               func(chan T, chan bool, *sync.WaitGroup)
+	stop_channels           []chan bool
+	workload_factor_samples []float64
 	waiting                 sync.WaitGroup
 	max_workers             int
 	min_workers             int
 	current_workers         int
-	worker_fn               func(chan T, chan bool, *sync.WaitGroup)
-	stop_channels           []chan bool
-	workload_factor_samples []float64
 	mutex                   sync.Mutex
 }
 

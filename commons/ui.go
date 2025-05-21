@@ -61,12 +61,19 @@ func (ui *ui) Update_line(line_id string, a ...any) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
-	data := fmt.Sprintf(ui.id_to_format[line_id], a...)
-	if data != ui.lines_id_last_value[line_id] && (time.Now().UnixMilli()-ui.line_last_update[line_id]) > 60 {
-		line_number := ui.id_to_lines[line_id]
-		ui.current_line = ui.lines[line_id](data, ui.current_line, line_number)
-		ui.line_last_update[line_id] = time.Now().UnixMilli()
+	if (time.Now().UnixMilli()-ui.line_last_update[line_id]) < 60 {
+		return 
 	}
+
+	data := fmt.Sprintf(ui.id_to_format[line_id], a...)
+	if data == ui.lines_id_last_value[line_id] {
+		return
+	}
+	
+	line_number := ui.id_to_lines[line_id]
+	ui.current_line = ui.lines[line_id](data, ui.current_line, line_number)
+	ui.line_last_update[line_id] = time.Now().UnixMilli()
+
 }
 
 func Print_not_registered(ui *ui, format string, a ...any) {

@@ -4,7 +4,6 @@ import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
 	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -25,7 +24,7 @@ func TestCanFileBeRead(t *testing.T) {
 
 		filePath := tmpFile.Name()
 
-		if !can_file_be_read(filePath) {
+		if !can_file_be_read(&filePath) {
 			t.Errorf("Expected %s to be a valid file path", filePath)
 		}
 	})
@@ -33,7 +32,7 @@ func TestCanFileBeRead(t *testing.T) {
 	// Test Case 2: Non-Existent File
 	t.Run("NonExistentFile", func(t *testing.T) {
 		nonExistentPath := "/nonexistent/file/path"
-		if can_file_be_read(nonExistentPath) {
+		if can_file_be_read(&nonExistentPath) {
 			t.Errorf("Expected false for non-existent file, got true")
 		}
 	})
@@ -52,7 +51,7 @@ func TestCanFileBeRead(t *testing.T) {
 		}
 
 		filePath := tmpFile.Name()
-		if can_file_be_read(filePath) {
+		if can_file_be_read(&filePath) {
 			t.Errorf("Expected false for file without read permissions, got true")
 		}
 	})
@@ -65,7 +64,7 @@ func TestCanFileBeRead(t *testing.T) {
 		}
 		defer os.Remove(tmpDir)
 		dirPath := tmpDir
-		if can_file_be_read(dirPath) {
+		if can_file_be_read(&dirPath) {
 			t.Errorf("Expected false for directory, got true")
 		}
 	})
@@ -78,7 +77,7 @@ func TestCanFileBeRead(t *testing.T) {
 		}
 		defer os.Remove(tmpFile.Name())
 		filePath := tmpFile.Name()
-		if !can_file_be_read(filePath) {
+		if !can_file_be_read(&filePath) {
 			t.Errorf("Expected true for empty file, got false")
 		}
 	})
@@ -91,7 +90,7 @@ func TestCanFileBeRead(t *testing.T) {
 		}
 		defer os.Remove(tmpFile.Name())
 		filePath := tmpFile.Name()
-		if !can_file_be_read(filePath) {
+		if !can_file_be_read(&filePath) {
 			t.Errorf("Expected true for file with special characters, got false")
 		}
 	})
@@ -196,7 +195,9 @@ func TestProcessFileEntry(t *testing.T) {
 			pending_insert: ds.Build_new_atomic_counter(),
 		}
 
-		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)
+		tmp_file_name := tmpFile.Name()
+
+		process_file_entry(&tmp_file_name, &info, fileHeap)
 
 		if fileHeap.heap.Empty() {
 			t.Errorf("Expected 1 file in heap, got 0",)
@@ -220,7 +221,9 @@ func TestProcessFileEntry(t *testing.T) {
 			pending_insert: ds.Build_new_atomic_counter(),
 		}
 
-		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)
+		tmp_file_name := tmpFile.Name()
+
+		process_file_entry(&tmp_file_name, &info, fileHeap)
 
 		if fileHeap.heap.Empty() {
 			t.Errorf("Expected 1 file in heap, got 0",)
@@ -249,7 +252,9 @@ func TestProcessFileEntry(t *testing.T) {
 			pending_insert: ds.Build_new_atomic_counter(),
 		}
 
-		process_file_entry(filepath.Dir(tmpFile.Name()), info, fileHeap)
+		tmp_file_name := tmpFile.Name()
+
+		process_file_entry(&tmp_file_name, &info, fileHeap)
 
 		if !fileHeap.heap.Empty() {
 			t.Errorf("Expected 0 file in heap, got more",)

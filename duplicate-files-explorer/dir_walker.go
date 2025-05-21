@@ -5,7 +5,7 @@ import (
 	"archive-tools-monorepo/commons/ds"
 	"io/fs"
 	"os"
-	"path/filepath"
+	"path"
 )
 
 type dirWalker struct {
@@ -78,8 +78,8 @@ func (walker *dirWalker) Walk() {
 }
 
 func (walker *dirWalker) process_directory_objects(objects *[]os.DirEntry) {
-	for _, obj := range (*objects) {
-		walker.current_file = filepath.Join(walker.current_directory, obj.Name())
+	for _, obj := range *objects {
+		walker.current_file = path.Join(walker.current_directory, obj.Name())
 
 		if obj.IsDir() {
 			walker.process_directory(&walker.current_file)
@@ -108,12 +108,12 @@ func (walker *dirWalker) process_file(obj *os.DirEntry) {
 	if err != nil {
 		return
 	}
-	
+
 	if walker.skip_empty && file_entry.Size() == 0 {
 		return
 	}
 
 	walker.file_seen += 1
 	walker.size_processed += file_entry.Size()
-	walker.file_callback_function(file_entry, walker.current_directory)
+	walker.file_callback_function(file_entry, walker.current_file)
 }

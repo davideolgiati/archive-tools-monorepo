@@ -3,7 +3,6 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
-	"time"
 )
 
 type FileHeap struct {
@@ -24,19 +23,6 @@ func build_new_file_heap() *FileHeap {
 	}
 
 	return &file_heap
-}
-
-func (file_heap *FileHeap) collect() {
-	queue_size := file_heap.pending_insert.Value()
-
-	for queue_size > 0 {
-		time.Sleep(10 * time.Millisecond)
-		queue_size = file_heap.pending_insert.Value()
-	}
-
-	if file_heap.pending_insert.Value() != 0 {
-		panic("heap.collect() did not wait for all jobs to finish")
-	}
 }
 
 func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap) {
