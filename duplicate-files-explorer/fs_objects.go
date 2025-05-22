@@ -77,23 +77,19 @@ func evaluate_object_properties(fullpath *string) int {
 }
 
 func process_file_entry(full_path *string, entry *fs.FileInfo, file_heap *FileHeap) {
-	if file_heap == nil || file_heap.heap == nil || file_heap.pending_insert == nil {
+	if file_heap == nil {
 		panic("file_heap is not fully referenced")
 	}
 
 	if can_file_be_read(full_path) {
-		file_heap.pending_insert.Increment()
-
 		file_stats := commons.File{
 			Name:          *full_path,
 			Size:          (*entry).Size(),
-			Hash:          "",
+			Hash:          file_heap.hash_registry.Cache_reference(""),
 			FormattedSize: commons.Format_file_size((*entry).Size()),
 		}
 
 		file_heap.heap.Push(file_stats)
-
-		file_heap.pending_insert.Decrement()
 	}
 }
 

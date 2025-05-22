@@ -4,6 +4,10 @@ import (
 	"archive-tools-monorepo/commons"
 	_ "embed"
 	"flag"
+	"fmt"
+	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 )
 
@@ -44,7 +48,7 @@ func main() {
 
 	fsobj_pool.Init(get_file_process_thread_fn(output_file_heap))
 
-	if output_file_heap == nil || output_file_heap.heap == nil || output_file_heap.pending_insert == nil {
+	if output_file_heap == nil {
 		panic("error wile creating new file heap object")
 	}
 
@@ -63,15 +67,25 @@ func main() {
 
 	fsobj_pool.Sync_and_close()
 
-	if output_file_heap.pending_insert.Value() > 0 {
-		panic("file heap collect() not working properly, pending_indert > 0")
-	}
-
 	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale
 	// come sembra, ci devo lavorare
-	cleaned_heap := build_duplicate_entries_heap(output_file_heap.heap)
+	cleaned_heap := build_duplicate_entries_heap(output_file_heap)
 
 	display_duplicate_file_info(cleaned_heap)
 
 	commons.Close_UI(main_ui)
+
+	    
+	// Memory profiling at exit
+	if memProfile := os.Getenv("MEM_PROFILE"); memProfile != "" {
+		f, err := os.Create(memProfile)
+		if err != nil {
+			panic(fmt.Sprintf("could not create memory profile: %v", err))
+		}
+		defer f.Close()
+		runtime.GC() // Get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			panic(fmt.Sprintf("could not write memory profile: %v", err))
+		}
+	}
 }

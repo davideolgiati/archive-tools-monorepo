@@ -51,7 +51,12 @@ func (tp *WriteOnlyThreadPool[T]) Submit(data T) {
 }
 
 func (tp *WriteOnlyThreadPool[T]) Sync_and_close() {
+	for len(tp.input_channel) > 0 {
+		time.Sleep(1 * time.Second)
+	}
+	
 	close(tp.input_channel)
+	
 	tp.waiting.Wait()
 }
 

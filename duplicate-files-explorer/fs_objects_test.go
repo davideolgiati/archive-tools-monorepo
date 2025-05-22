@@ -1,8 +1,6 @@
 package main
 
 import (
-	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/ds"
 	"os"
 	"testing"
 )
@@ -190,10 +188,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := &FileHeap{
-			heap:           &ds.Heap[commons.File]{},
-			pending_insert: ds.Build_new_atomic_counter(),
-		}
+		fileHeap := &FileHeap{}
 
 		tmp_file_name := tmpFile.Name()
 
@@ -216,10 +211,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := &FileHeap{
-			heap:           &ds.Heap[commons.File]{},
-			pending_insert: ds.Build_new_atomic_counter(),
-		}
+		fileHeap := &FileHeap{}
 
 		tmp_file_name := tmpFile.Name()
 
@@ -247,10 +239,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := &FileHeap{
-			heap:           &ds.Heap[commons.File]{},
-			pending_insert: ds.Build_new_atomic_counter(),
-		}
+		fileHeap := &FileHeap{}
 
 		tmp_file_name := tmpFile.Name()
 

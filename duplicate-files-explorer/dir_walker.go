@@ -72,7 +72,7 @@ func (walker *dirWalker) Walk() {
 
 			main_ui.Update_line("directory-line", walker.directories_seen)
 			main_ui.Update_line("file-line", walker.file_seen)
-			main_ui.Update_line("size-line", formatted_size.Value, formatted_size.Unit)
+			main_ui.Update_line("size-line", formatted_size.Value, *formatted_size.Unit)
 		}
 	}
 }

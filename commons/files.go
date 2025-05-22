@@ -3,6 +3,7 @@ package commons
 import (
 	"bufio"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"hash"
 	"io"
@@ -14,13 +15,13 @@ var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
 var page_size int64 = int64(os.Getpagesize())
 
 type FileSize struct {
-	Unit  string
+	Unit  *string
 	Value int16
 }
 
 type File struct {
 	Name          string
-	Hash          string
+	Hash          *string
 	FormattedSize FileSize
 	Size          int64
 }
@@ -32,15 +33,15 @@ func (file File) Format(f fmt.State, c rune) {
 func (f File) ToString() string {
 	return fmt.Sprintf(
 		"%s %4d %2s %s",
-		f.Hash,
+		*f.Hash,
 		f.FormattedSize.Value,
-		f.FormattedSize.Unit,
+		*f.FormattedSize.Unit,
 		f.Name,
 	)
 }
 
 func Lower(a File, b File) bool {
-	return a.Hash < b.Hash && a.Size < b.Size
+	return *a.Hash < *b.Hash && a.Size < b.Size
 }
 
 func Equal(a File, b File) bool {
@@ -80,7 +81,7 @@ func Hash(filepath string, size int64) (string, error) {
 	}
 
 	hash = hash_accumulator.Sum(nil)
-	return fmt.Sprintf("%x", hash), err
+	return hex.EncodeToString(hash), err
 }
 
 func Format_file_size(size int64) FileSize {
@@ -103,7 +104,7 @@ func Format_file_size(size int64) FileSize {
 		))
 	}
 
-	output := FileSize{Value: int16(file_size), Unit: sizes_array[size_index]}
+	output := FileSize{Value: int16(file_size), Unit: &sizes_array[size_index]}
 
 	return output
 }
