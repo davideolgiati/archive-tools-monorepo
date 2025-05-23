@@ -1,195 +1,0 @@
-Running version: 0.1.296
-[1BBuild timestamp: 2025-05-18T11:27:28Z
-
-[2KDirectories seen:    188
-[2KFiles seen:          595
-[2KProcessed:          4 Gb
-[3A[2KDirectories seen:    224
-[2KFiles seen:         1257
-[2KProcessed:        166 Gb
-[3A[2KDirectories seen:    237
-[2KFiles seen:         3059
-[2KProcessed:        171 Gb
-[3A[2KDirectories seen:    382
-[2KFiles seen:         4481
-[2KProcessed:        171 Gb
-[3A[2KDirectories seen:    772
-[2KFiles seen:         4993
-[2KProcessed:        192 Gb
-[3A[2KDirectories seen:   1220
-[2KFiles seen:         5307
-[2KProcessed:        192 Gb
-[3A[2KDirectories seen:   1480
-[2KFiles seen:         5674
-[2KProcessed:        192 Gb
-[3A[2KDirectories seen:   1918
-[2KFiles seen:         6004
-[2KProcessed:        192 Gb
-[3A[2KDirectories seen:   2234
-[2KFiles seen:         6283
-[2KProcessed:        192 Gb
-[3A[2KDirectories seen:   2534
-[2KFiles seen:         6648
-[2KProcessed:        192 Gb
-[3A[2KDirectories seen:   2584
-[2KFiles seen:         7094
-[2KProcessed:        192 Gb
-[3A[2KDirectories seen:   2623
-[2KFiles seen:         9515
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   3390
-[2KFiles seen:         9765
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   3522
-[2KFiles seen:        10147
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   3861
-[2KFiles seen:        10401
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4119
-[2KFiles seen:        10709
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        11054
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        11525
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        12043
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        12499
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        12955
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        13406
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        13842
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        14321
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        14744
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        15209
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        15679
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        16182
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        16717
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4540
-[2KFiles seen:        17152
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   4811
-[2KFiles seen:        17531
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   5208
-[2KFiles seen:        17923
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   5208
-[2KFiles seen:        18277
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   5450
-[2KFiles seen:        18663
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   5705
-[2KFiles seen:        19023
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   5705
-[2KFiles seen:        19398
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   5942
-[2KFiles seen:        19789
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   6279
-[2KFiles seen:        20206
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   6425
-[2KFiles seen:        20513
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   6461
-[2KFiles seen:        21063
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   6461
-[2KFiles seen:        22117
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   6795
-[2KFiles seen:        22763
-[2KProcessed:        193 Gb
-[3A[2KDirectories seen:   6837
-[2KFiles seen:        24095
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   6903
-[2KFiles seen:        24751
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   7130
-[2KFiles seen:        25205
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   7418
-[2KFiles seen:        25820
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   7418
-[2KFiles seen:        26652
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   7418
-[2KFiles seen:        27431
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   7418
-[2KFiles seen:        28130
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   7418
-[2KFiles seen:        28838
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   7418
-[2KFiles seen:        29679
-[2KProcessed:        194 Gb
-[3A[2KDirectories seen:   7449
-[2KFiles seen:        32209
-[2KProcessed:        194 Gb
-[2KRemoving unique entries stage-1 ... 27.6 %
-[1A[2KRemoving unique entries stage-1 ... 44.1 %
-[1A[2KRemoving unique entries stage-1 ... 70.0 %
-[2Bfile: 0b56d40c0630a74abec5398e01c6cd83263feddc    4  b /home/davide/.config/qBittorrent/watched_folders.json
-[1Bfile: 0b56d40c0630a74abec5398e01c6cd83263feddc    4  b /home/davide/.config/qBittorrent/rss/feeds.json
-[1Bfile: f6a3d37941d87da0d57b4bc2d0e82f328473d83c    1 Kb /home/davide/.config/Code/User/History/4f671532/Jsek.json
-[1Bfile: f6a3d37941d87da0d57b4bc2d0e82f328473d83c    1 Kb /home/davide/.config/Code/User/History/4f671532/IgfX.json
-[1Bfile: d4e9b4464f0f5c3e0837c1059b13bea22a119c89    2 Kb /home/davide/.config/Code/User/History/518af829/OmVE.rs
-[1Bfile: d4e9b4464f0f5c3e0837c1059b13bea22a119c89    2 Kb /home/davide/.config/Code/User/History/518af829/Ntrj.rs
-[1Bfile: efc42383cc9e05182310338d0012e07f95c0850c  771  b /home/davide/.config/Code/User/History/73adc2a7/aVoV.rs
-[1Bfile: efc42383cc9e05182310338d0012e07f95c0850c  771  b /home/davide/.config/Code/User/History/73adc2a7/YsbG.rs
-[1Bfile: 3031ad1cdebd5965f0576a7429f1c3fc8acdd53c    2 Kb /home/davide/.config/Code/User/History/7a54e228/sVnV.rs
-[1Bfile: 3031ad1cdebd5965f0576a7429f1c3fc8acdd53c    2 Kb /home/davide/.config/Code/User/History/7a54e228/rdDJ.rs
-[1Bfile: cedbc375e44fd53467b86dcf0c02a20fe669cb3c   70 Kb /home/davide/.mozilla/firefox/wauxpk8i.default-release-1/storage/default/https+++tg24.sky.it/cache/morgue/7/{9188e67e-6c1f-4aa0-a9b2-a8f929012107}.final
-[1Bfile: cedbc375e44fd53467b86dcf0c02a20fe669cb3c   70 Kb /home/davide/.mozilla/firefox/wauxpk8i.default-release-1/storage/default/https+++tg24.sky.it/cache/morgue/72/{f42269ad-3f61-41c5-96f9-a87d05dfb448}.final
-[1Bfile: 0d8934ea2de0b83ae8e620b82c56088eaceb57ad    3 Kb /home/davide/.mozilla/firefox/wauxpk8i.default-release-1/storage/default/https+++www.foodspring.it/cache/morgue/241/{2271f68c-59d3-4f1e-afa6-949d31e195f1}.final
-[1Bfile: 0d8934ea2de0b83ae8e620b82c56088eaceb57ad    3 Kb /home/davide/.mozilla/firefox/wauxpk8i.default-release-1/storage/default/https+++www.foodspring.it/cache/morgue/247/{bf4dd5c8-3bb5-473c-9b4c-c666bb2996f7}.final
-[1Bfile: 1ceaf73df40e531df3bfb26b4fb7cd95fb7bff1d    4 Kb /home/davide/.mozilla/firefox/wauxpk8i.default-release-1/storage/default/https+++www.notion.so/fs/NM/NM4SZZCJM5IF7KSAVOD6VXF7RULHMWBJAH66SQEHKH65ZRRGFLNQ
-[1Bfile: 1ceaf73df40e531df3bfb26b4fb7cd95fb7bff1d    4 Kb /home/davide/.mozilla/firefox/wauxpk8i.default-release-1/storage/default/https+++www.notion.so/fs/OM/OMTFN5AU6D4UBPZ3BREP67XTXQF7UCOLMOKESQ3EOGBWULKKP53Q
-[1Bfile: 6eb0c61f36f6e0029f79831b3ef48c1a370515ce    1 Kb /home/davide/.mozilla/firefox/wauxpk8i.default-release-1/storage/default/https+++www.upwork.com/cache/morgue/138/{bbdf6b6e-0539-4fd4-8f6e-dd7223dd798a}.final
-[1Bfile: 6eb0c61f36f6e0029f79831b3ef48c1a370515ce    1 Kb /home/davide/.mozilla/firefox/wauxpk8i.default-release-1/storage/default/https+++www.upwork.com/cache/morgue/148/{644e8aba-759d-4946-9ff3-e4b2b48a3094}.final
-[1Bfile: c9346620728358c443eb6c08f69dee5cb6a8da65  527  b /home/davide/.config/Code/User/History/-22d0bdb6/WOM2.ts
-[1Bfile: c9346620728358c443eb6c08f69dee5cb6a8da65  527  b /home/davide/.config/Code/User/History/-22d0bdb6/Wkud.ts
-[1Bfile: f4459f341a4c30f33a0703a584676be5f65ce2e5   24  b /home/davide/.mozilla/firefox/z6vflget.default-release/gmp/Linux_x86_64-gcc3/gmp-widevinecdm/id/3388648178/topLevelOrigin
-[1Bfile: f4459f341a4c30f33a0703a584676be5f65ce2e5   24  b /home/davide/.mozilla/firefox/z6vflget.default-release/gmp/Linux_x86_64-gcc3/gmp-widevinecdm/id/3388648178/origin
-[1Bfile: 3637f19afd9420134da5eb8886756305a5ddf053  112  b /home/davide/.config/Code/User/History/2512ae21/C0jI.js
-[1Bfile: 3637f19afd9420134da5eb8886756305a5ddf053  112  b /home/davide/.config/Code/User/History/2512ae21/DbwI.js
-[1Bfile: 7eaab3572c2ae766a42f2de93211bf13c33ab6ee  489  b /home/davide/grub/src/catppuccin-latte-grub-theme/icons/archlinux.png
-[1Bfile: 7eaab3572c2ae766a42f2de93211bf13c33ab6ee  489  b /home/davide/grub/src/catppuccin-latte-grub-theme/icons/arch.png
-[1Bfile: 841e9c9eb78a1a87c96ea16fc43abdeccb23560b  722  b /home/davide/grub/src/catppuccin-macchiato-grub-theme/icons/linux.png
-[1Bfile: 841e9c9eb78a1a87c96ea16fc43abdeccb23560b  722  b /home/davide/grub/src/catppuccin-macchiato-grub-theme/icons/lfs.png
-[1Bfile: cd8d8f020f6c31c83cfd4b77f3378d2ca110d869  716  b /home/davide/grub/src/catppuccin-frappe-grub-theme/icons/lfs.png
-[1Bfile: cd8d8f020f6c31c83cfd4b77f3378d2ca110d869  716  b /home/davide/grub/src/catppuccin-frappe-grub-theme/icons/linux.png
-[1Bfile: f580398c124f018601cd74fcef1d2041a322062b    4 Mb /home/davide/stabl/target/debug/build/serde-599b5056e44dafd6/build-script-build
-[1Bfile: f580398c124f018601cd74fcef1d2041a322062b    4 Mb /home/davide/stabl/target/debug/build/serde-599b5056e44dafd6/build-script-build
-[1B

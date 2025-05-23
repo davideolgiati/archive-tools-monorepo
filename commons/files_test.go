@@ -29,20 +29,6 @@ func new_file(data string) string {
 	return tmpfile.Name()
 }
 
-func toOctal(number int) int {
-	// defining variables and assigning them values
-	octal := 0
-	counter := 1
-	remainder := 0
-	for number != 0 {
-	   remainder = number % 8
-	   number = number / 8
-	   octal += remainder * counter
-	   counter *= 10
-	}
-	return octal
-     }
-
 func TestFileHash(t *testing.T) {
 	t.Run("Happy Path", func(t *testing.T) {
 		test_data := "The quick brown fox jumps over the lazy dog"
@@ -165,6 +151,29 @@ func TestCheckReadRightsOnFile(t *testing.T) {
 					}
 				}
 			}
+		}
+	})
+}
+
+func TestPrintFile(t *testing.T) {
+	t.Run("Happy Path", func(t *testing.T) {
+		hash := "12345"
+		unit := "b"
+		my_file := File{
+			Name: "my_file.txt",
+			Hash: &hash,
+			FormattedSize: FileSize{
+				Unit: &unit,
+				Value: 10,
+			},
+			Size: 10,
+		}
+
+		formatted_str := fmt.Sprintf("%s", my_file)
+		expected := "12345   10  b my_file.txt"
+
+		if formatted_str != expected {
+			panic(fmt.Sprintf("expected: %s, got: %s", expected, formatted_str))
 		}
 	})
 }
