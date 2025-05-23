@@ -4,10 +4,6 @@ import (
 	"archive-tools-monorepo/commons"
 	_ "embed"
 	"flag"
-	"fmt"
-	"os"
-	"runtime"
-	"runtime/pprof"
 	"strings"
 )
 
@@ -74,18 +70,4 @@ func main() {
 	display_duplicate_file_info(cleaned_heap)
 
 	commons.Close_UI(main_ui)
-
-	    
-	// Memory profiling at exit
-	if memProfile := os.Getenv("MEM_PROFILE"); memProfile != "" {
-		f, err := os.Create(memProfile)
-		if err != nil {
-			panic(fmt.Sprintf("could not create memory profile: %v", err))
-		}
-		defer f.Close()
-		runtime.GC() // Get up-to-date statistics
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			panic(fmt.Sprintf("could not write memory profile: %v", err))
-		}
-	}
 }

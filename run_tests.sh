@@ -3,7 +3,8 @@
 function run_test_in_dir() {
         local dir="${1}"
         pushd "${dir}"
-        go test
+        go test -coverprofile=coverage.out
+        go tool cover -html=coverage.out
         popd
 }
 
@@ -12,11 +13,7 @@ export GOTMPDIR="${PWD}/tmp-test-dir/"
 mkdir $GOTMPDIR
 mkdir "${GOTMPDIR}/heap_test"
 
-echo "test1" > "${GOTMPDIR}/heap_test/file1"
-echo "test1" > "${GOTMPDIR}/heap_test/file2"
-echo "test3" > "${GOTMPDIR}/heap_test/file3"
-
-test_dirs=("./commons/ds" "./duplicate-files-explorer")
+test_dirs=("./commons" "./commons/ds" "./duplicate-files-explorer")
 
 for dir in ${test_dirs[@]}; do
         run_test_in_dir "${dir}"

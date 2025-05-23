@@ -188,7 +188,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := &FileHeap{}
+		fileHeap := build_new_file_heap()
 
 		tmp_file_name := tmpFile.Name()
 
@@ -211,7 +211,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := &FileHeap{}
+		fileHeap := build_new_file_heap()
 
 		tmp_file_name := tmpFile.Name()
 
@@ -239,7 +239,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := &FileHeap{}
+		fileHeap := build_new_file_heap()
 
 		tmp_file_name := tmpFile.Name()
 

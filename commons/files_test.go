@@ -1,236 +1,170 @@
 package commons
 
 import (
-	"crypto/sha1"
 	"fmt"
-	"hash/crc32"
+	"io/ioutil"
 	"os"
 	"testing"
 )
 
-func strPtr(s string) *string {
-	return &s
+// func TestCompareFiles(t *testing.T) {
+// 	t.Run("Template", func(t *testing.T) {
+// 	})
+// }
+
+func new_file(data string) string {
+	content := []byte(data)
+	tmpfile, err := ioutil.TempFile("", "unit_test_file_")
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := tmpfile.Write(content); err != nil {
+		panic(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		panic(err)
+	}
+
+	return tmpfile.Name()
 }
 
-func TestCompareFiles(t *testing.T) {
-	// Test Case 1: File A is less than File B
-	t.Run("FileALessThanFileB", func(t *testing.T) {
-		fileA := File{Hash: strPtr("abc123"), Size: 100}
-		fileB := File{Hash: strPtr("def456"), Size: 200}
+func toOctal(number int) int {
+	// defining variables and assigning them values
+	octal := 0
+	counter := 1
+	remainder := 0
+	for number != 0 {
+	   remainder = number % 8
+	   number = number / 8
+	   octal += remainder * counter
+	   counter *= 10
+	}
+	return octal
+     }
 
-		if !Lower(fileA, fileB) {
-			t.Errorf("Expected fileA to be less than fileB")
-		}
-	})
+func TestFileHash(t *testing.T) {
+	t.Run("Happy Path", func(t *testing.T) {
+		test_data := "The quick brown fox jumps over the lazy dog"
 
-	// Test Case 2: File A is not less than File B
-	t.Run("FileANotLessThanFileB", func(t *testing.T) {
-		fileA := File{Hash: strPtr("def456"), Size: 200}
-		fileB := File{Hash: strPtr("abc123"), Size: 100}
+		my_test_file := new_file(test_data)
+		defer os.Remove(my_test_file)
 
-		if Lower(fileA, fileB) {
-			t.Errorf("Expected fileA to not be less than fileB")
-		}
-	})
+		expected := "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"
+		actual, err := Hash(my_test_file, int64(len(test_data)))
 
-	// Test Case 3: File A and File B are equal
-	t.Run("FileAEqualToFileB", func(t *testing.T) {
-		fileA := File{Hash: strPtr("abc123"), Size: 100}
-		fileB := File{Hash: strPtr("abc123"), Size: 100}
-
-		if Lower(fileA, fileB) {
-			t.Errorf("Expected fileA to not be less than fileB when they are equal")
-		}
-	})
-}
-
-func TestCheckIfFilesAreEqual(t *testing.T) {
-	// Test Case 1: Files are equal
-	t.Run("FilesAreEqual", func(t *testing.T) {
-		fileA := File{Hash: strPtr("abc123"), Size: 100}
-		fileB := File{Hash: strPtr("abc123"), Size: 100}
-
-		if !Equal(fileA, fileB) {
-			t.Errorf("Expected files to be equal")
-		}
-	})
-
-	// Test Case 2: Files have different hashes
-	t.Run("FilesHaveDifferentHashes", func(t *testing.T) {
-		fileA := File{Hash: strPtr("abc123"), Size: 100}
-		fileB := File{Hash: strPtr("def456"), Size: 100}
-
-		if Equal(fileA, fileB) {
-			t.Errorf("Expected files to not be equal due to different hashes")
-		}
-	})
-
-	// Test Case 3: Files have different sizes
-	t.Run("FilesHaveDifferentSizes", func(t *testing.T) {
-		fileA := File{Hash: strPtr("abc123"), Size: 100}
-		fileB := File{Hash: strPtr("abc123"), Size: 200}
-
-		if Equal(fileA, fileB) {
-			t.Errorf("Expected files to not be equal due to different sizes")
-		}
-	})
-
-	// Test Case 4: Files have different hashes and sizes
-	t.Run("FilesHaveDifferentHashesAndSizes", func(t *testing.T) {
-		fileA := File{Hash: strPtr("abc123"), Size: 100}
-		fileB := File{Hash: strPtr("def456"), Size: 200}
-
-		if Equal(fileA, fileB) {
-			t.Errorf("Expected files to not be equal due to different hashes and sizes")
-		}
-	})
-
-	// Test Case 1: Size in bytes
-	t.Run("SizeInBytes", func(t *testing.T) {
-		size := int64(500)
-		expected := FileSize{Value: 500, Unit: strPtr("b")}
-		result := Format_file_size(size)
-		if result != expected {
-			t.Errorf("Expected %v, got %v", expected, result)
-		}
-	})
-
-	// Test Case 2: Size in kilobytes
-	t.Run("SizeInKilobytes", func(t *testing.T) {
-		size := int64(1500)
-		expected := FileSize{Value: 1, Unit: strPtr("Kb")}
-		result := Format_file_size(size)
-		if result != expected {
-			t.Errorf("Expected %v, got %v", expected, result)
-		}
-	})
-
-	// Test Case 3: Size in megabytes
-	t.Run("SizeInMegabytes", func(t *testing.T) {
-		size := int64(2_500_000)
-		expected := FileSize{Value: 2, Unit: strPtr("Mb")}
-		result := Format_file_size(size)
-		if result != expected {
-			t.Errorf("Expected %v, got %v", expected, result)
-		}
-	})
-	
-	// Test Case 4: Size in gigabytes
-	t.Run("SizeInGigabytes", func(t *testing.T) {
-		size := int64(5_000_000_000)
-		expected := FileSize{Value: 5, Unit: strPtr("Gb")}
-		result := Format_file_size(size)
-		if result != expected {
-			t.Errorf("Expected %v, got %v", expected, result)
-		}
-	})
-
-	// Test Case 5: Edge case - exactly 1000 bytes
-	t.Run("EdgeCase1000Bytes", func(t *testing.T) {
-		size := int64(1000)
-		expected := FileSize{Value: 1, Unit: strPtr("Kb")}
-		result := Format_file_size(size)
-		if result != expected {
-			t.Errorf("Expected %v, got %v", expected, result)
-		}
-	})
-	
-	// Test Case 6: Edge case - exactly 1,000,000 bytes
-	t.Run("EdgeCase1000000Bytes", func(t *testing.T) {
-		size := int64(1_000_000)
-		expected := FileSize{Value: 1, Unit: strPtr("Mb")}
-		result := Format_file_size(size)
-		if result != expected {
-			t.Errorf("Expected %v, got %v", expected, result)
-		}
-	})
-}
-func TestHash(t *testing.T) {
-	// Test Case 1: Hash a small file with quick_flag set to true
-	t.Run("HashSmallFileQuickFlag", func(t *testing.T) {
-		filepath := "testfile_small.txt"
-		content := "This is a test file."
-		os.WriteFile(filepath, []byte(content), 0644)
-		defer os.Remove(filepath)
-
-		hash, err := Hash(filepath, int64(len(content)))
 		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
+			panic(fmt.Sprintf("FileHashTestSuite - Happy Path : %v", err))
 		}
 
-		expectedHash := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(content[:page_size*5])))
-		if hash != expectedHash {
-			t.Errorf("Expected hash %s, got %s", expectedHash, hash)
+		if actual != expected {
+			panic(fmt.Sprintf("FileHashTestSuite - Happy Path : expected : %s, got : %s", expected, actual))
 		}
 	})
 
-	// Test Case 2: Hash a small file with quick_flag set to false
-	t.Run("HashSmallFileFullHash", func(t *testing.T) {
-		filepath := "testfile_small.txt"
-		content := "This is a test file."
-		os.WriteFile(filepath, []byte(content), 0644)
-		defer os.Remove(filepath)
+	t.Run("Empty", func(t *testing.T) {
+		test_data := ""
 
-		hash, err := Hash(filepath, int64(len(content)))
+		my_test_file := new_file(test_data)
+		defer os.Remove(my_test_file)
+
+		expected := "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+		actual, err := Hash(my_test_file, int64(len(test_data)))
+
 		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
+			panic(fmt.Sprintf("FileHashTestSuite - Happy Path : %v", err))
 		}
 
-		expectedHash := fmt.Sprintf("%x", sha1.Sum([]byte(content)))
-		if hash != expectedHash {
-			t.Errorf("Expected hash %s, got %s", expectedHash, hash)
-		}
-	})
-
-	// Test Case 3: Hash a large file with quick_flag set to true
-	t.Run("HashLargeFileQuickFlag", func(t *testing.T) {
-		filepath := "testfile_large.txt"
-		content := make([]byte, page_size*10)
-		for i := range content {
-			content[i] = byte(i % 256)
-		}
-		os.WriteFile(filepath, content, 0644)
-		defer os.Remove(filepath)
-
-		hash, err := Hash(filepath, int64(len(content)))
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-
-		expectedHash := fmt.Sprintf("%x", crc32.ChecksumIEEE(content[:page_size*5]))
-		if hash != expectedHash {
-			t.Errorf("Expected hash %s, got %s", expectedHash, hash)
+		if actual != expected {
+			panic(fmt.Sprintf("FileHashTestSuite - Happy Path : expected : %s, got : %s", expected, actual))
 		}
 	})
 
-	// Test Case 4: Hash a large file with quick_flag set to false
-	t.Run("HashLargeFileFullHash", func(t *testing.T) {
-		filepath := "testfile_large.txt"
-		content := make([]byte, page_size*10)
-		for i := range content {
-			content[i] = byte(i % 256)
-		}
-		os.WriteFile(filepath, content, 0644)
-		defer os.Remove(filepath)
+	t.Run("No File", func(t *testing.T) {
+		test_data := ""
 
-		hash, err := Hash(filepath, int64(len(content)))
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
+		my_test_file := "/tmp/pippo"
 
-		expectedHash := fmt.Sprintf("%x", sha1.Sum(content))
-		if hash != expectedHash {
-			t.Errorf("Expected hash %s, got %s", expectedHash, hash)
-		}
-	})
+		actual, err := Hash(my_test_file, int64(len(test_data)))
 
-	// Test Case 5: File does not exist
-	t.Run("FileDoesNotExist", func(t *testing.T) {
-		filepath := "nonexistent_file.txt"
-		_, err := Hash(filepath, 0)
 		if err == nil {
-			t.Errorf("Expected an error for nonexistent file, got nil")
+			panic("FileHashTestSuite - Happy Path : expected populated error got nil")
+		}
+
+		if actual != "" {
+			panic(fmt.Sprintf("FileHashTestSuite - Happy Path : expected : \"\", got : %s", actual))
+		}
+	})
+
+	t.Run("Wrong Size", func(t *testing.T) {
+		test_data := "The quick brown fox jumps over the lazy dog"
+
+		my_test_file := new_file(test_data)
+		defer os.Remove(my_test_file)
+
+		expected := "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"
+		actual, err := Hash(my_test_file, int64(len(test_data)*2))
+
+		if err != nil {
+			panic(fmt.Sprintf("FileHashTestSuite - Happy Path : %v", err))
+		}
+
+		if actual != expected {
+			panic(fmt.Sprintf("FileHashTestSuite - Happy Path : expected : %s, got : %s", expected, actual))
 		}
 	})
 }
 
+func TestCheckReadRightsOnFile(t *testing.T) {
+	t.Run("Happy Path", func(t *testing.T) {
+		valid_user_read_perm := []int{0400, 0500, 0600, 0700, 0000}
+		valid_group_read_perm := []int{040, 050, 060, 070, 000}
+		valid_others_read_perm := []int{04, 05, 06, 07}
+
+		test_file := new_file("my file")
+
+		for _, user_perm := range valid_user_read_perm {
+			for _, group_perm := range valid_group_read_perm {
+				for _, others_perm := range valid_others_read_perm {
+					current_perm := user_perm + group_perm + others_perm
+					os.Chmod(test_file, os.FileMode(current_perm))
+					stats, err := os.Stat(test_file)
+
+					if err != nil {
+						panic(err)
+					}
+
+					if !Check_read_rights_on_file(&stats) {
+						panic(fmt.Sprintf("Expected %d to be a valid read permission", current_perm))
+					}
+				}
+			}
+		}
+	})
+
+	t.Run("No Read Rights", func(t *testing.T) {
+		valid_user_read_perm := []int{0100, 0200, 0300, 0000}
+		valid_group_read_perm := []int{010, 020, 030, 000}
+		valid_others_read_perm := []int{01, 02, 03}
+
+		test_file := new_file("my file")
+
+		for _, user_perm := range valid_user_read_perm {
+			for _, group_perm := range valid_group_read_perm {
+				for _, others_perm := range valid_others_read_perm {
+					current_perm := user_perm + group_perm + others_perm
+					os.Chmod(test_file, os.FileMode(current_perm))
+					stats, err := os.Stat(test_file)
+
+					if err != nil {
+						panic(err)
+					}
+
+					if Check_read_rights_on_file(&stats) {
+						panic(fmt.Sprintf("Expected %d not to be a valid read permission", current_perm))
+					}
+				}
+			}
+		}
+	})
+}

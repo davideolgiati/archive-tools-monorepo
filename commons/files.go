@@ -9,6 +9,8 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strconv"
+	"strings"
 )
 
 var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
@@ -31,13 +33,30 @@ func (file File) Format(f fmt.State, c rune) {
 }
 
 func (f File) ToString() string {
-	return fmt.Sprintf(
-		"%s %4d %2s %s",
-		*f.Hash,
-		f.FormattedSize.Value,
-		*f.FormattedSize.Unit,
-		f.Name,
-	)
+	var b strings.Builder
+	b.WriteString(*f.Hash)
+	b.WriteByte(' ')
+	
+	// Right-align integer in 4-char space
+	valStr := strconv.Itoa(int(f.FormattedSize.Value))
+	for i := 0; i < 4-len(valStr); i++ {
+		b.WriteByte(' ')
+	}
+	b.WriteString(valStr)
+	
+	b.WriteByte(' ')
+	
+	// Right-align unit in 2-char space
+	unitStr := *f.FormattedSize.Unit
+	for i := 0; i < 2-len(unitStr); i++ {
+		b.WriteByte(' ')
+	}
+	b.WriteString(unitStr)
+	
+	b.WriteByte(' ')
+	b.WriteString(f.Name)
+	
+	return b.String()
 }
 
 func Lower(a File, b File) bool {
@@ -113,11 +132,14 @@ func Check_read_rights_on_file(obj *os.FileInfo) bool {
 	if *obj == nil {
 		panic("Check_read_rights_on_file -- obj is nil")
 	}
-
-	read_bit_mask := fs.FileMode(0444)
+	
 	file_permission_bits := (*obj).Mode().Perm()
 
-	return (file_permission_bits & read_bit_mask) != fs.FileMode(0000)
+	user_read_ok := file_permission_bits & fs.FileMode(0400) != fs.FileMode(0000)
+	group_read_ok := file_permission_bits & fs.FileMode(0040) != fs.FileMode(0000)
+	others_read_ok := file_permission_bits & fs.FileMode(0004) != fs.FileMode(0000)
+
+	return user_read_ok || group_read_ok || others_read_ok
 }
 
 func Is_symbolic_link(obj *os.FileInfo) bool {
