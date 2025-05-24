@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive-tools-monorepo/commons"
 	"os"
 	"testing"
 )
@@ -188,7 +189,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := build_new_file_heap()
+		fileHeap := build_new_file_heap(commons.SizeDescending)
 
 		tmp_file_name := tmpFile.Name()
 
@@ -211,7 +212,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := build_new_file_heap()
+		fileHeap := build_new_file_heap(commons.SizeDescending)
 
 		tmp_file_name := tmpFile.Name()
 
@@ -239,7 +240,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := build_new_file_heap()
+		fileHeap := build_new_file_heap(commons.SizeDescending)
 
 		tmp_file_name := tmpFile.Name()
 

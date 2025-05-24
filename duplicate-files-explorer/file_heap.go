@@ -10,7 +10,7 @@ type FileHeap struct {
 	hash_registry commons.Flyweight[string]
 }
 
-func build_new_file_heap() *FileHeap {
+func build_new_file_heap(compare_fn func(commons.File, commons.File) bool) *FileHeap {
 	file_heap := FileHeap{}
 
 	file_heap.heap = ds.Heap[commons.File]{}
@@ -18,7 +18,7 @@ func build_new_file_heap() *FileHeap {
 
 	file_heap.hash_registry.Init()
 
-	file_heap.heap.Compare_fn(commons.Lower)
+	file_heap.heap.Compare_fn(compare_fn)
 
 	return &file_heap
 }
@@ -44,7 +44,7 @@ func build_duplicate_entries_heap(file_heap *FileHeap) *FileHeap {
 	
 	var file_thread_pool commons.WriteOnlyThreadPool[commons.File] = commons.WriteOnlyThreadPool[commons.File]{}
 
-	refined_file_heap := build_new_file_heap()
+	refined_file_heap := build_new_file_heap(commons.HashDescending)
 	last_seen_was_a_duplicate := false
 
 	total_entries := float64(file_heap.heap.Size())

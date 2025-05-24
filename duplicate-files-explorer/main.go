@@ -40,7 +40,7 @@ func main() {
 	commons.Print_not_registered(main_ui, "Running version: %s", version)
 	commons.Print_not_registered(main_ui, "Build timestamp: %s\n", buildts)
 
-	output_file_heap := build_new_file_heap()
+	output_file_heap := build_new_file_heap(commons.SizeDescending)
 
 	fsobj_pool.Init(get_file_process_thread_fn(output_file_heap))
 

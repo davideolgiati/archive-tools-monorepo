@@ -3,7 +3,7 @@
 function run_test_in_dir() {
         local dir="${1}"
         pushd "${dir}"
-        go test -coverprofile=coverage.out
+        go test --race -coverprofile=coverage.out
         go tool cover -html=coverage.out
         popd
 }

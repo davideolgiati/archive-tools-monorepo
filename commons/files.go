@@ -59,8 +59,12 @@ func (f File) ToString() string {
 	return b.String()
 }
 
-func Lower(a File, b File) bool {
-	return *a.Hash < *b.Hash && a.Size < b.Size
+func SizeDescending(a File, b File) bool {
+	return a.Size < b.Size
+}
+
+func HashDescending(a File, b File) bool {
+	return *a.Hash < *b.Hash
 }
 
 func Equal(a File, b File) bool {

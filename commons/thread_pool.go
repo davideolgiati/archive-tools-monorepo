@@ -73,16 +73,17 @@ func (tp *WriteOnlyThreadPool[T]) sample_pool_usage() {
 
 func setup_fn[T any](fn func(T)) func(chan T, chan bool, *sync.WaitGroup) {
 	return func(in chan T, stop chan bool, wg *sync.WaitGroup) {
-		defer wg.Done()
 		for {
 			select {
 			case obj, ok := <-in:
 				if !ok {
+					wg.Done()
 					return
 				}
 
 				fn(obj)
 			case <-stop:
+				wg.Done()
 				return
 			}
 		}
