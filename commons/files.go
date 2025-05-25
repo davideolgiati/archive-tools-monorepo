@@ -13,8 +13,29 @@ import (
 	"strings"
 )
 
+
+func gcd(a int64, b int64) int64 {
+	var x int64
+	
+	a_new := a
+	b_new := b
+	
+	for b_new != 0 {
+		x = b_new
+		b_new = a_new % b_new
+		a_new = x
+	}
+
+	return a
+}
+
+func lcm(a int64, b int64) int64 {
+	return (a*b)/gcd(a,b)
+}
+
+
 var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
-var page_size int64 = int64(os.Getpagesize())
+var page_size int64 = lcm(int64(os.Getpagesize()), sha1.BlockSize)
 
 type FileSize struct {
 	Unit  *string
@@ -60,11 +81,11 @@ func (f File) ToString() string {
 }
 
 func SizeDescending(a File, b File) bool {
-	return a.Size < b.Size
+	return a.Size <= b.Size
 }
 
 func HashDescending(a File, b File) bool {
-	return *a.Hash < *b.Hash
+	return *a.Hash <= *b.Hash
 }
 
 func Equal(a File, b File) bool {

@@ -192,8 +192,10 @@ func TestProcessFileEntry(t *testing.T) {
 		fileHeap := build_new_file_heap(commons.SizeDescending)
 
 		tmp_file_name := tmpFile.Name()
+		
+		channel := make(chan commons.File)
 
-		process_file_entry(&tmp_file_name, &info, fileHeap)
+		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
 
 		if fileHeap.heap.Empty() {
 			t.Errorf("Expected 1 file in heap, got 0",)
@@ -216,7 +218,9 @@ func TestProcessFileEntry(t *testing.T) {
 
 		tmp_file_name := tmpFile.Name()
 
-		process_file_entry(&tmp_file_name, &info, fileHeap)
+		channel := make(chan commons.File)
+
+		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
 
 		if fileHeap.heap.Empty() {
 			t.Errorf("Expected 1 file in heap, got 0",)
@@ -244,7 +248,9 @@ func TestProcessFileEntry(t *testing.T) {
 
 		tmp_file_name := tmpFile.Name()
 
-		process_file_entry(&tmp_file_name, &info, fileHeap)
+		channel := make(chan commons.File)
+
+		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
 
 		if !fileHeap.heap.Empty() {
 			t.Errorf("Expected 0 file in heap, got more",)

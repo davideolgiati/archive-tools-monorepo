@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"flag"
 	"strings"
+	"sync"
 )
 
 //go:embed semver.txt
@@ -30,6 +31,9 @@ func main() {
 	var skip_empty bool = false
 	var fsobj_pool commons.WriteOnlyThreadPool[FsObj] = commons.WriteOnlyThreadPool[FsObj]{}
 
+	output_channel := make(chan commons.File)
+	output_wg := sync.WaitGroup{}
+
 	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
 	flag.StringVar(&ignored_dir_user, "skip_dirs", "", "Skip user defined directories during scan (separated by comma)")
 	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
@@ -42,17 +46,26 @@ func main() {
 
 	output_file_heap := build_new_file_heap(commons.SizeDescending)
 
-	fsobj_pool.Init(get_file_process_thread_fn(output_file_heap))
-
 	if output_file_heap == nil {
 		panic("error wile creating new file heap object")
 	}
+
+	fsobj_pool.Init(get_file_process_thread_fn(&output_file_heap.hash_registry, output_channel))
 
 	walker := New_dir_walker(skip_empty)
 
 	if walker == nil {
 		panic("error wile creating new file walker object")
 	}
+
+	output_wg.Add(1)
+
+	go func() {
+		defer output_wg.Done()
+		for data := range output_channel {
+			output_file_heap.heap.Push(data)
+		}
+	}()
 
 	walker.Set_entry_point(start_directory)
 	walker.Set_directory_filter_function(get_directory_filter_fn(&user_dirs))
@@ -62,6 +75,11 @@ func main() {
 	walker.Walk()
 
 	fsobj_pool.Sync_and_close()
+
+	close(output_channel)
+
+	output_wg.Wait()
+	
 
 	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale
 	// come sembra, ci devo lavorare

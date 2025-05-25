@@ -16,6 +16,9 @@ func (heap *Heap[T]) Compare_fn(custom_is_lower_fn func(T, T) bool) {
 }
 
 func (heap *Heap[T]) Empty() bool {
+	heap.mutex.Lock()
+	defer heap.mutex.Unlock()
+	
 	return len(heap.items) == 0
 }
 
@@ -53,7 +56,7 @@ func (heap *Heap[T]) Pop() T {
 		heap.items[0] = heap.items[len(heap.items)-1]
 		heap.items = heap.items[:len(heap.items)-1]
 
-		if(!heap.Empty()) {
+		if(len(heap.items) != 0) {
 			heapify_top_down(heap)
 		}
 	}
@@ -137,7 +140,7 @@ func heapify_top_down[T any](heap *Heap[T]) {
 
 	var swap_variable T
 
-	for heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
+	for candidate < len(heap.items) && candidate != current_index && heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
 		swap_variable = heap.items[candidate]
 		heap.items[candidate] = heap.items[current_index]
 		heap.items[current_index] = swap_variable

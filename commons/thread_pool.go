@@ -102,12 +102,12 @@ func (tp *WriteOnlyThreadPool[T]) stop_last_worker() {
 }
 
 func (tp *WriteOnlyThreadPool[T]) manage_thread_pool() {
-	for {
+	for tp.current_workers > 0 {
 		tp.mutex.Lock()
 		workload_factor := mean(tp.workload_factor_samples)
 		if workload_factor > 0.7 && tp.current_workers < tp.max_workers {
 			tp.add_new_worker()
-		} else if workload_factor < 0.3 {
+		} else if workload_factor < 0.3 && tp.current_workers > 0 {
 			tp.stop_last_worker()
 		}
 		tp.mutex.Unlock()

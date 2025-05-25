@@ -76,26 +76,22 @@ func evaluate_object_properties(fullpath *string) int {
 	}
 }
 
-func process_file_entry(full_path *string, entry *fs.FileInfo, file_heap *FileHeap) {
-	if file_heap == nil {
-		panic("file_heap is not fully referenced")
-	}
-
+func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- commons.File, flyweight *commons.Flyweight[string]) {
 	if can_file_be_read(full_path) {
 		file_stats := commons.File{
 			Name:          *full_path,
 			Size:          (*entry).Size(),
-			Hash:          file_heap.hash_registry.Cache_reference(""),
+			Hash:          flyweight.Cache_reference(""),
 			FormattedSize: commons.Format_file_size((*entry).Size()),
 		}
 
-		file_heap.heap.Push(file_stats)
+		file_chan <- file_stats
 	}
 }
 
-func get_file_process_thread_fn(file_heap *FileHeap) func(FsObj) {
+func get_file_process_thread_fn(flyweight *commons.Flyweight[string], file_chan chan<- commons.File) func(FsObj) {
 	return func(obj FsObj) {
-		process_file_entry(&obj.base_dir, &obj.obj, file_heap)
+		process_file_entry(&obj.base_dir, &obj.obj, file_chan, flyweight)
 	}
 }
 
