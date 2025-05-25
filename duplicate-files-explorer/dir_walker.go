@@ -106,7 +106,7 @@ func (walker *dirWalker) process_file(obj *os.DirEntry) {
 	file_entry, err := (*obj).Info()
 
 	if err != nil {
-		return
+		panic(err)
 	}
 
 	if walker.skip_empty && file_entry.Size() == 0 {

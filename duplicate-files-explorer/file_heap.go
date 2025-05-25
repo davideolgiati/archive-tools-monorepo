@@ -29,6 +29,8 @@ func refine_and_push_file_into_heap(file commons.File, file_heap *FileHeap) {
 	if err == nil {
 		file.Hash = file_heap.hash_registry.Cache_reference(hash)
 		file_heap.heap.Push(file)
+	} else {
+		panic(err)
 	}
 }
 
@@ -63,7 +65,7 @@ func build_duplicate_entries_heap(file_heap *FileHeap) *FileHeap {
 		current_file = file_heap.heap.Pop()
 		processed_entries++
 
-		if commons.Equal(current_file, last_file_seen) {
+		if commons.EqualBySize(current_file, last_file_seen) {
 			last_seen_was_a_duplicate = true
 			file_thread_pool.Submit(last_file_seen)
 		} else {
@@ -95,21 +97,21 @@ func display_duplicate_file_info(file_heap *FileHeap) {
 	for !file_heap.heap.Empty() {
 		last_file_seen = current_file
 		current_file = file_heap.heap.Pop()
-		files_are_equal = commons.Equal(current_file, last_file_seen)
+		files_are_equal = commons.EqualByHash(current_file, last_file_seen)
 
 		if files_are_equal {
-			commons.Print_not_registered(main_ui, "file: %s\n", last_file_seen)
-			is_duplicate = true
+			commons.Print_not_registered(main_ui, "file: %s", last_file_seen)
 		} else {
 			if is_duplicate {
-				commons.Print_not_registered(main_ui, "file: %s\n", last_file_seen)
+				commons.Print_not_registered(main_ui, "file: %s", last_file_seen)
 			}
-			is_duplicate = false
 		}
+
+		is_duplicate = files_are_equal
 
 	}
 
 	if is_duplicate {
-		commons.Print_not_registered(main_ui, "file: %s\n", last_file_seen)
+		commons.Print_not_registered(main_ui, "file: %s", last_file_seen)
 	}
 }

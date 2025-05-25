@@ -53,7 +53,7 @@ func evaluate_object_properties(fullpath *string) int {
 	obj, err := os.Lstat(*fullpath)
 
 	if err != nil {
-		return invalid
+		panic(err)
 	}
 
 	switch {

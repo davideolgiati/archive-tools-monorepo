@@ -3,7 +3,7 @@ package commons
 import "sync"
 
 type Flyweight[T comparable] struct {
-	cache map[T] *T
+	cache map[T]*T
 	mutex sync.Mutex
 }
 
@@ -16,7 +16,8 @@ func (fw *Flyweight[T]) Cache_reference(data T) *T {
 	defer fw.mutex.Unlock()
 	
 	if _, ok := fw.cache[data]; !ok {
-		fw.cache[data] = &data
+		value := data
+		fw.cache[data] = &value
 	}
 
 	return fw.cache[data]

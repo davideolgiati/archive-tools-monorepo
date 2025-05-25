@@ -29,9 +29,9 @@ func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
 		tp.stop_channels[i] = make(chan bool)
 	}
 
-	tp.workload_factor_samples = make([]float64, 100)
+	tp.workload_factor_samples = make([]float64, 10)
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		tp.workload_factor_samples[i] = 0.5
 	}
 
@@ -63,7 +63,7 @@ func (tp *WriteOnlyThreadPool[T]) Sync_and_close() {
 func (tp *WriteOnlyThreadPool[T]) sample_pool_usage() {
 	var index int = 0
 	for {
-		index = (index + 1) % 100
+		index = (index + 1) % 10
 		tp.mutex.Lock()
 		tp.workload_factor_samples[index] = float64(len(tp.input_channel)) / float64(tp.max_workers)
 		tp.mutex.Unlock()

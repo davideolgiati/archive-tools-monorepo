@@ -71,6 +71,14 @@ func Equal(a File, b File) bool {
 	return a.Hash == b.Hash && a.Size == b.Size
 }
 
+func EqualByHash(a File, b File) bool {
+	return *a.Hash == *b.Hash
+}
+
+func EqualBySize(a File, b File) bool {
+	return a.Size == b.Size 
+}
+
 func Hash(filepath string, size int64) (string, error) {
 	var err error = nil
 	var hash_accumulator hash.Hash = sha1.New()
@@ -79,7 +87,7 @@ func Hash(filepath string, size int64) (string, error) {
 	file_pointer, err := os.Open(filepath)
 
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 
 	defer file_pointer.Close()
@@ -95,8 +103,11 @@ func Hash(filepath string, size int64) (string, error) {
 		if err != nil {
 			if err == io.EOF {
 				err = nil
+				size = 0
+			} else {
+				panic(err)
 			}
-			size = 0
+
 		}
 
 		size = size - int64(read_size)

@@ -38,7 +38,7 @@ func main() {
 	user_dirs := filter(strings.Split(ignored_dir_user, ","), "")
 
 	commons.Print_not_registered(main_ui, "Running version: %s", version)
-	commons.Print_not_registered(main_ui, "Build timestamp: %s\n", buildts)
+	commons.Print_not_registered(main_ui, "Build timestamp: %s", buildts)
 
 	output_file_heap := build_new_file_heap(commons.SizeDescending)
 
