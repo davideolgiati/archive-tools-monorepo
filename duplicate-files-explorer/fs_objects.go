@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"io"
 	"io/fs"
 	"os"
 	"strings"
@@ -27,21 +26,16 @@ var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
 
 func can_file_be_read(fullpath *string) bool {
 	if *fullpath == "" {
-		panic("can_file_be_read - fullpath is empty")
+	    panic("can_file_be_read - fullpath is empty")
 	}
-
+    
 	file_pointer, file_open_error := os.Open(*fullpath)
-
 	if file_open_error != nil {
-		return false
+	    return false
 	}
-
 	defer file_pointer.Close()
-
-	buffer := make([]byte, 1)
-	_, file_read_error := file_pointer.Read(buffer)
-
-	return file_read_error == nil || file_read_error == io.EOF
+    
+	return true
 }
 
 func evaluate_object_properties(fullpath *string) int {
