@@ -3,6 +3,7 @@ package main
 import (
 	"archive-tools-monorepo/commons"
 	"archive-tools-monorepo/commons/ds"
+	"errors"
 	"io/fs"
 	"os"
 	"path"
@@ -73,6 +74,8 @@ func (walker *dirWalker) Walk() {
 			main_ui.Update_line("directory-line", walker.directories_seen)
 			main_ui.Update_line("file-line", walker.file_seen)
 			main_ui.Update_line("size-line", formatted_size.Value, *formatted_size.Unit)
+		} else if !errors.Is(read_dir_err, os.ErrPermission){
+			panic(read_dir_err)
 		}
 	}
 }

@@ -1,11 +1,9 @@
 package commons
 
 import (
-	"bufio"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"hash"
 	"io"
 	"io/fs"
 	"os"
@@ -13,29 +11,7 @@ import (
 	"strings"
 )
 
-
-func gcd(a int64, b int64) int64 {
-	var x int64
-	
-	a_new := a
-	b_new := b
-	
-	for b_new != 0 {
-		x = b_new
-		b_new = a_new % b_new
-		a_new = x
-	}
-
-	return a
-}
-
-func lcm(a int64, b int64) int64 {
-	return (a*b)/gcd(a,b)
-}
-
-
 var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
-var page_size int64 = lcm(int64(os.Getpagesize()), sha1.BlockSize)
 
 type FileSize struct {
 	Unit  *string
@@ -56,6 +32,9 @@ func (file File) Format(f fmt.State, c rune) {
 func (f File) ToString() string {
 	var b strings.Builder
 	b.WriteString(*f.Hash)
+	for i := 0; i < 40-len(*f.Hash); i++ {
+		b.WriteByte(' ')
+	}
 	b.WriteByte(' ')
 	
 	// Right-align integer in 4-char space
@@ -81,11 +60,19 @@ func (f File) ToString() string {
 }
 
 func SizeDescending(a File, b File) bool {
-	return a.Size <= b.Size
+	if a.Size == b.Size {
+		return true
+	}
+
+	return a.Size < b.Size
 }
 
 func HashDescending(a File, b File) bool {
-	return *a.Hash <= *b.Hash
+	if *a.Hash == *b.Hash {
+		return true
+	}
+
+	return *a.Hash <= *b.Hash 
 }
 
 func Equal(a File, b File) bool {
@@ -101,10 +88,6 @@ func EqualBySize(a File, b File) bool {
 }
 
 func Hash(filepath string, size int64) (string, error) {
-	var err error = nil
-	var hash_accumulator hash.Hash = sha1.New()
-	var hash []byte
-
 	file_pointer, err := os.Open(filepath)
 
 	if err != nil {
@@ -112,31 +95,11 @@ func Hash(filepath string, size int64) (string, error) {
 	}
 
 	defer file_pointer.Close()
+ 
+	sha1h := sha1.New()
+	io.Copy(sha1h, file_pointer)
 
-	reader := bufio.NewReader(file_pointer)
-
-	read_buffer := make([]byte, page_size)
-	var read_size int = 0
-
-	for size > 0 {
-		read_size, err = reader.Read(read_buffer)
-
-		if err != nil {
-			if err == io.EOF {
-				err = nil
-				size = 0
-			} else {
-				panic(err)
-			}
-
-		}
-
-		size = size - int64(read_size)
-		hash_accumulator.Write(read_buffer[:read_size])
-	}
-
-	hash = hash_accumulator.Sum(nil)
-	return hex.EncodeToString(hash), err
+	return hex.EncodeToString(sha1h.Sum(nil)), err
 }
 
 func Format_file_size(size int64) FileSize {
@@ -144,15 +107,15 @@ func Format_file_size(size int64) FileSize {
 		panic("Format_file_size -- size is negative")
 	}
 
-	file_size := size
+	file_size := float64(size)
 	size_index := 0
 
-	for size_index < 3 && file_size > 1000 {
+	for size_index < 3 && file_size >= 1000 {
 		file_size /= 1000
 		size_index++
 	}
 
-	if file_size > 1000 && size_index != 3 {
+	if file_size >= 1000 && size_index != 3 {
 		panic(fmt.Sprintf(
 			"Format_file_size -- file_size is > 1000 and unit is  %s",
 			sizes_array[size_index],
@@ -165,7 +128,7 @@ func Format_file_size(size int64) FileSize {
 }
 
 func Check_read_rights_on_file(obj *os.FileInfo) bool {
-	if *obj == nil {
+	if obj == nil {
 		panic("Check_read_rights_on_file -- obj is nil")
 	}
 	
@@ -179,15 +142,15 @@ func Check_read_rights_on_file(obj *os.FileInfo) bool {
 }
 
 func Is_symbolic_link(obj *os.FileInfo) bool {
-	if *obj == nil {
-		panic("Is_symbolic_link -- obj is empty")
+	if obj == nil {
+		panic("Is_symbolic_link -- obj is nil")
 	}
 
 	return (*obj).Mode()&os.ModeSymlink != 0
 }
 
 func Is_a_device(obj *os.FileInfo) bool {
-	if *obj == nil {
+	if obj == nil {
 		panic("Is_a_device -- obj is nil")
 	}
 
@@ -195,7 +158,7 @@ func Is_a_device(obj *os.FileInfo) bool {
 }
 
 func Is_a_socket(obj *os.FileInfo) bool {
-	if *obj == nil {
+	if obj == nil {
 		panic("Is_a_socket -- obj is nil")
 	}
 
@@ -203,7 +166,7 @@ func Is_a_socket(obj *os.FileInfo) bool {
 }
 
 func Is_a_pipe(obj *os.FileInfo) bool {
-	if *obj == nil {
+	if obj == nil {
 		panic("Is_a_pipe -- obj is nil")
 	}
 

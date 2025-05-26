@@ -83,9 +83,7 @@ func Print_not_registered(ui *ui, format string, a ...any) {
 	data := fmt.Sprintf(format, a...)
 	offset := ui.next_line - ui.current_line - 1
 
-	if offset < 0 && ui.current_line > 1 {
-		fmt.Printf("\033[%dA", -offset)
-	} else if offset > 0 {
+	if offset > 0 {
 		fmt.Printf("\033[%dB", offset)
 	}
 

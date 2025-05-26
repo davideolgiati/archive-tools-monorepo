@@ -31,7 +31,7 @@ func main() {
 	var skip_empty bool = false
 	var fsobj_pool commons.WriteOnlyThreadPool[FsObj] = commons.WriteOnlyThreadPool[FsObj]{}
 
-	output_channel := make(chan commons.File)
+	output_channel := make(chan commons.File, 1000)
 	output_wg := sync.WaitGroup{}
 
 	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
@@ -61,10 +61,10 @@ func main() {
 	output_wg.Add(1)
 
 	go func() {
-		defer output_wg.Done()
 		for data := range output_channel {
 			output_file_heap.heap.Push(data)
 		}
+		output_wg.Done()
 	}()
 
 	walker.Set_entry_point(start_directory)

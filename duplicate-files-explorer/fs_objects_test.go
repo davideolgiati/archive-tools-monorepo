@@ -117,7 +117,7 @@ func TestEvaluateObjectProperties(t *testing.T) {
 		fullpath := symlinkPath
 		result := evaluate_object_properties(&fullpath)
 		if result != symlink {
-			t.Errorf("Expected invalid for symbolic link, got %d", result)
+			t.Errorf("Expected \"symlink\" for symbolic link, got %d", result)
 		}
 	})
 

@@ -30,6 +30,10 @@ func (heap *Heap[T]) Size() int {
 }
 
 func (heap *Heap[T]) Push(data T) {
+	if heap.custom_is_lower_fn == nil {
+		panic("comapre function not set!")
+	}
+	
 	heap.mutex.Lock()
 	defer heap.mutex.Unlock()
 
@@ -61,7 +65,7 @@ func (heap *Heap[T]) Pop() T {
 		}
 	}
 	
-	if len(heap.items) != start_size - 1 {
+	if start_size != 0 && len(heap.items) != start_size - 1 {
 		panic(fmt.Sprintf("wrong heap size, expected %d, got %d", start_size - 1, len(heap.items)))
 	}
 	
@@ -90,28 +94,18 @@ func get_right_node_index(index *int) int {
 }
 
 func get_parent_node_index(index *int) int {
-	if *index == 0 {
-		return -1
-	}
-
 	return (*index - 1) / 2
 }
 
 func heapify_bottom_up[T any](heap *Heap[T]) {
 	current_index := len(heap.items) - 1
 	parent := get_parent_node_index(&current_index)
-	var swap_variable T
 
 	for current_index > 0 && heap.custom_is_lower_fn(heap.items[current_index], heap.items[parent]) {
-		swap_variable = heap.items[parent]
-		heap.items[parent] = heap.items[current_index]
-		heap.items[current_index] = swap_variable
+		heap.items[parent], heap.items[current_index] = heap.items[current_index], heap.items[parent]
 
 		current_index = parent
-		
-		if current_index > 0 {
-			parent = get_parent_node_index(&current_index)
-		}
+		parent = get_parent_node_index(&current_index)
 	}
 }
 
@@ -119,11 +113,11 @@ func get_next_candidate[T any](heap *Heap[T], current *int) int {
 	left := get_left_node_index(current)
 	right := get_right_node_index(current)
 
-	if left >= len(heap.items) {
-		return len(heap.items) - 1
+	if left >= len(heap.items) || right > len(heap.items) {
+		return len(heap.items)
 	}
 
-	if right >= len(heap.items) {
+	if right == len(heap.items) {
 		return left
 	}
 
@@ -138,12 +132,8 @@ func heapify_top_down[T any](heap *Heap[T]) {
 	current_index := 0
 	candidate := get_next_candidate(heap, &current_index)
 
-	var swap_variable T
-
-	for candidate < len(heap.items) && candidate != current_index && heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
-		swap_variable = heap.items[candidate]
-		heap.items[candidate] = heap.items[current_index]
-		heap.items[current_index] = swap_variable
+	for candidate < len(heap.items) && heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
+		heap.items[candidate], heap.items[current_index] = heap.items[current_index], heap.items[candidate]
 
 		current_index = candidate
 		candidate = get_next_candidate(heap, &candidate)
