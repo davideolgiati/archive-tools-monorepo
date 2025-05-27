@@ -130,7 +130,7 @@ func TestHash_Deterministic(t *testing.T) {
 	expectedHash := hex.EncodeToString(hasher.Sum(nil))
 
 	// Get hash using the function
-	actualHash, err := Hash(tmpfile.Name(), int64(len(content)))
+	actualHash := Hash(tmpfile.Name(), int64(len(content)))
 	if err != nil {
 		t.Fatalf("Hash returned error: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestHash_Deterministic(t *testing.T) {
 	emptyHasher := sha1.New()
 	expectedEmptyHash := hex.EncodeToString(emptyHasher.Sum(nil))
 
-	actualEmptyHash, err := Hash(emptyFile.Name(), 0)
+	actualEmptyHash := Hash(emptyFile.Name(), 0)
 	if err != nil {
 		t.Fatalf("Hash for empty file returned error: %v", err)
 	}
@@ -165,10 +165,7 @@ func TestHash_Deterministic(t *testing.T) {
 	}()
 
 	// Test non-existent file
-	_, err = Hash("/path/to/non/existent/file.txt", 0)
-	if err == nil {
-		t.Errorf("Expected error for non-existent file, got nil")
-	}
+	_ = Hash("/path/to/non/existent/file.txt", 0)
 }
 
 // TestHash_Concurrent verifies Hash is safe for concurrent calls on DIFFERENT files.
@@ -197,7 +194,6 @@ func TestHash_Concurrent(t *testing.T) {
 	results := make(chan struct {
 		path string
 		hash string
-		err  error
 	}, numFiles)
 
 	// Concurrently hash files
@@ -206,12 +202,11 @@ func TestHash_Concurrent(t *testing.T) {
 		go func(p string) {
 			defer wg.Done()
 			stats, _ := os.Stat(p)
-			hash, err := Hash(p, stats.Size())
+			hash := Hash(p, stats.Size())
 			results <- struct {
 				path string
 				hash string
-				err  error
-			}{p, hash, err}
+			}{p, hash}
 		}(path)
 	}
 
@@ -220,10 +215,6 @@ func TestHash_Concurrent(t *testing.T) {
 
 	hashedFiles := make(map[string]string)
 	for res := range results {
-		if res.err != nil {
-			t.Errorf("Error hashing file %s: %v", res.path, res.err)
-			continue
-		}
 		hashedFiles[res.path] = res.hash
 	}
 

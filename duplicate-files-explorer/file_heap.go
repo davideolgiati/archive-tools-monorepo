@@ -25,14 +25,10 @@ func build_new_file_heap(compare_fn func(commons.File, commons.File) bool) *File
 }
 
 func refine_and_push_file_into_heap(file commons.File, file_chan chan<- commons.File, flyweight *commons.Flyweight[string]) {
-	hash, err := commons.Hash(file.Name, file.Size)
+	hash := commons.Hash(file.Name, file.Size)
 
-	if err == nil {
-		file.Hash = flyweight.Cache_reference(hash)
-		file_chan <- file
-	} else {
-		panic(err)
-	}
+	file.Hash = flyweight.Cache_reference(hash)
+	file_chan <- file
 }
 
 func get_file_hash_thread_fn(file_chan chan<- commons.File, flyweight *commons.Flyweight[string]) func(commons.File) {

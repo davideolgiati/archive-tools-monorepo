@@ -60,6 +60,14 @@ func (f File) ToString() string {
 }
 
 func SizeDescending(a File, b File) bool {
+	if a.Size < 0 {
+		panic("a.Size is negative")
+	}
+
+	if b.Size < 0 {
+		panic("b.Size is negative")
+	}
+	
 	if a.Size == b.Size {
 		return true
 	}
@@ -68,6 +76,14 @@ func SizeDescending(a File, b File) bool {
 }
 
 func HashDescending(a File, b File) bool {
+	if a.Hash == nil {
+		panic("a.Hash is a nil pointer")
+	}
+
+	if b.Hash == nil {
+		panic("b.Hash is a nil pointer")
+	}
+	
 	if *a.Hash == *b.Hash {
 		return true
 	}
@@ -76,18 +92,50 @@ func HashDescending(a File, b File) bool {
 }
 
 func Equal(a File, b File) bool {
+	if a.Hash == nil {
+		panic("a.Hash is a nil pointer")
+	}
+
+	if b.Hash == nil {
+		panic("b.Hash is a nil pointer")
+	}
+	
+	if a.Size < 0 {
+		panic("a.Size is negative")
+	}
+
+	if b.Size < 0 {
+		panic("b.Size is negative")
+	}
+
 	return a.Hash == b.Hash && a.Size == b.Size
 }
 
 func EqualByHash(a File, b File) bool {
+	if a.Hash == nil {
+		panic("a.Hash is a nil pointer")
+	}
+
+	if b.Hash == nil {
+		panic("b.Hash is a nil pointer")
+	}
+	
 	return *a.Hash == *b.Hash
 }
 
 func EqualBySize(a File, b File) bool {
+	if a.Size < 0 {
+		panic("a.Size is negative")
+	}
+
+	if b.Size < 0 {
+		panic("b.Size is negative")
+	}
+
 	return a.Size == b.Size 
 }
 
-func Hash(filepath string, size int64) (string, error) {
+func Hash(filepath string, size int64) string {
 	file_pointer, err := os.Open(filepath)
 
 	if err != nil {
@@ -99,7 +147,7 @@ func Hash(filepath string, size int64) (string, error) {
 	sha1h := sha1.New()
 	io.Copy(sha1h, file_pointer)
 
-	return hex.EncodeToString(sha1h.Sum(nil)), err
+	return hex.EncodeToString(sha1h.Sum(nil))
 }
 
 func Format_file_size(size int64) FileSize {
