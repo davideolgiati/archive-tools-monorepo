@@ -20,5 +20,9 @@ func (fw *Flyweight[T]) Cache_reference(data T) *T {
 		fw.cache[data] = &value
 	}
 
+	if fw.cache[data] == nil {
+		panic("Requested data is nil!")
+	}
+
 	return fw.cache[data]
 }

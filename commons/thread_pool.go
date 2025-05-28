@@ -19,11 +19,11 @@ type WriteOnlyThreadPool[T any] struct {
 }
 
 func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
-	tp.max_workers = runtime.NumCPU() * 4
+	tp.max_workers = runtime.NumCPU()
 	tp.min_workers = 1
 	tp.current_workers = 0
 
-	tp.input_channel = make(chan T, tp.max_workers*2)
+	tp.input_channel = make(chan T, tp.max_workers)
 	tp.stop_channels = make([]chan bool, tp.max_workers)
 	for i := 0; i < tp.max_workers; i++ {
 		tp.stop_channels[i] = make(chan bool)
@@ -37,7 +37,7 @@ func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
 
 	tp.worker_fn = setup_fn(fn)
 
-	for i := 0; i < tp.max_workers/2; i++ {
+	for i := 0; i < (tp.max_workers/2) + 1; i++ {
 		tp.add_new_worker()
 	}
 
@@ -76,6 +76,10 @@ func (tp *WriteOnlyThreadPool[T]) sample_pool_usage() {
 
 func setup_fn[T any](fn func(T)) func(chan T, chan bool, *sync.WaitGroup) {
 	return func(in chan T, stop chan bool, wg *sync.WaitGroup) {
+		if wg == nil {
+			panic("waitgroup pointer is nil")
+		}
+
 		for {
 			select {
 			case obj, ok := <-in:

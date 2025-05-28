@@ -31,6 +31,11 @@ func (file File) Format(f fmt.State, c rune) {
 
 func (f File) ToString() string {
 	var b strings.Builder
+
+	if f.Hash == nil {
+		panic("Hash is a nil pointer")
+	}
+
 	b.WriteString(*f.Hash)
 	for i := 0; i < 40-len(*f.Hash); i++ {
 		b.WriteByte(' ')
@@ -136,10 +141,22 @@ func EqualBySize(a File, b File) bool {
 }
 
 func Hash(filepath string, size int64) string {
+	if filepath == "" {
+		panic("empty filepath")
+	}
+
+	if size < 0 {
+		panic("size is not positive")
+	}
+
 	file_pointer, err := os.Open(filepath)
 
 	if err != nil {
 		panic(err)
+	}
+
+	if file_pointer == nil {
+		panic("file_pointer is nil")
 	}
 
 	defer file_pointer.Close()
@@ -152,7 +169,7 @@ func Hash(filepath string, size int64) string {
 
 func Format_file_size(size int64) FileSize {
 	if size < 0 {
-		panic("Format_file_size -- size is negative")
+		panic("size is negative")
 	}
 
 	file_size := float64(size)
@@ -165,7 +182,7 @@ func Format_file_size(size int64) FileSize {
 
 	if file_size >= 1000 && size_index != 3 {
 		panic(fmt.Sprintf(
-			"Format_file_size -- file_size is > 1000 and unit is  %s",
+			"file_size is > 1000 and unit is  %s",
 			sizes_array[size_index],
 		))
 	}
@@ -177,7 +194,7 @@ func Format_file_size(size int64) FileSize {
 
 func Check_read_rights_on_file(obj *os.FileInfo) bool {
 	if obj == nil {
-		panic("Check_read_rights_on_file -- obj is nil")
+		panic("obj is nil")
 	}
 	
 	file_permission_bits := (*obj).Mode().Perm()
@@ -191,7 +208,7 @@ func Check_read_rights_on_file(obj *os.FileInfo) bool {
 
 func Is_symbolic_link(obj *os.FileInfo) bool {
 	if obj == nil {
-		panic("Is_symbolic_link -- obj is nil")
+		panic("obj is nil")
 	}
 
 	return (*obj).Mode()&os.ModeSymlink != 0
@@ -199,7 +216,7 @@ func Is_symbolic_link(obj *os.FileInfo) bool {
 
 func Is_a_device(obj *os.FileInfo) bool {
 	if obj == nil {
-		panic("Is_a_device -- obj is nil")
+		panic("obj is nil")
 	}
 
 	return (*obj).Mode()&os.ModeDevice == os.ModeDevice
@@ -207,7 +224,7 @@ func Is_a_device(obj *os.FileInfo) bool {
 
 func Is_a_socket(obj *os.FileInfo) bool {
 	if obj == nil {
-		panic("Is_a_socket -- obj is nil")
+		panic("obj is nil")
 	}
 
 	return (*obj).Mode()&os.ModeSocket == os.ModeSocket
@@ -215,7 +232,7 @@ func Is_a_socket(obj *os.FileInfo) bool {
 
 func Is_a_pipe(obj *os.FileInfo) bool {
 	if obj == nil {
-		panic("Is_a_pipe -- obj is nil")
+		panic("obj is nil")
 	}
 
 	return (*obj).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
