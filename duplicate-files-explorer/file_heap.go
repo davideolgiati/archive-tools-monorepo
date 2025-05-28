@@ -8,14 +8,14 @@ import (
 
 type FileHeap struct {
 	heap ds.Heap[commons.File]
-	hash_registry commons.Flyweight[string]
+	hash_registry ds.Flyweight[string]
 }
 
 func build_new_file_heap(compare_fn func(commons.File, commons.File) bool) *FileHeap {
 	file_heap := FileHeap{}
 
 	file_heap.heap = ds.Heap[commons.File]{}
-	file_heap.hash_registry = commons.Flyweight[string]{}
+	file_heap.hash_registry = ds.Flyweight[string]{}
 
 	file_heap.hash_registry.Init()
 
@@ -24,14 +24,14 @@ func build_new_file_heap(compare_fn func(commons.File, commons.File) bool) *File
 	return &file_heap
 }
 
-func refine_and_push_file_into_heap(file commons.File, file_chan chan<- commons.File, flyweight *commons.Flyweight[string]) {
+func refine_and_push_file_into_heap(file commons.File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
 	hash := commons.Hash(file.Name, file.Size)
 
 	file.Hash = flyweight.Cache_reference(hash)
 	file_chan <- file
 }
 
-func get_file_hash_thread_fn(file_chan chan<- commons.File, flyweight *commons.Flyweight[string]) func(commons.File) {
+func get_file_hash_thread_fn(file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) func(commons.File) {
 	return func(obj commons.File) {
 		refine_and_push_file_into_heap(obj, file_chan, flyweight)
 	}

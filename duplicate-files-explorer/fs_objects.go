@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
+	"archive-tools-monorepo/commons/ds"
 	"io/fs"
 	"os"
 	"strings"
@@ -70,7 +71,7 @@ func evaluate_object_properties(fullpath *string) int {
 	}
 }
 
-func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- commons.File, flyweight *commons.Flyweight[string]) {
+func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
 	if can_file_be_read(full_path) {
 		file_stats := commons.File{
 			Name:          *full_path,
@@ -83,7 +84,7 @@ func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- 
 	}
 }
 
-func get_file_process_thread_fn(flyweight *commons.Flyweight[string], file_chan chan<- commons.File) func(FsObj) {
+func get_file_process_thread_fn(flyweight *ds.Flyweight[string], file_chan chan<- commons.File) func(FsObj) {
 	return func(obj FsObj) {
 		process_file_entry(&obj.base_dir, &obj.obj, file_chan, flyweight)
 	}
