@@ -15,6 +15,7 @@ type ui struct {
 	current_line        int
 	next_line           int
 	mutex               sync.Mutex
+	silent              bool
 }
 
 func New_UI() *ui {
@@ -26,11 +27,20 @@ func New_UI() *ui {
 	output.lines_id_last_value = make(map[string]string)
 	output.id_to_format = make(map[string]string)
 	output.line_last_update = make(map[string]int64)
+	output.silent = false
 
 	return &output
 }
 
+func (ui *ui) Toggle_silence() {
+	ui.silent = !ui.silent
+}
+
 func (ui *ui) Register_line(line_id string, format string) {
+	if ui.silent {
+		return
+	}
+
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -58,18 +68,22 @@ func (ui *ui) Register_line(line_id string, format string) {
 }
 
 func (ui *ui) Update_line(line_id string, a ...any) {
+	if ui.silent {
+		return
+	}
+
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
-	if (time.Now().UnixMilli()-ui.line_last_update[line_id]) < 60 {
-		return 
+	if (time.Now().UnixMilli() - ui.line_last_update[line_id]) < 60 {
+		return
 	}
 
 	data := fmt.Sprintf(ui.id_to_format[line_id], a...)
 	if data == ui.lines_id_last_value[line_id] {
 		return
 	}
-	
+
 	line_number := ui.id_to_lines[line_id]
 	ui.current_line = ui.lines[line_id](data, ui.current_line, line_number)
 	ui.line_last_update[line_id] = time.Now().UnixMilli()
@@ -77,6 +91,10 @@ func (ui *ui) Update_line(line_id string, a ...any) {
 }
 
 func Print_not_registered(ui *ui, format string, a ...any) {
+	if ui.silent {
+		return
+	}
+
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -93,6 +111,10 @@ func Print_not_registered(ui *ui, format string, a ...any) {
 }
 
 func Close_UI(ui *ui) {
+	if ui.silent {
+		return
+	}
+
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 

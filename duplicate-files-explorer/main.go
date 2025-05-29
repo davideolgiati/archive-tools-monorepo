@@ -29,7 +29,9 @@ func main() {
 	var start_directory string = ""
 	var ignored_dir_user string = ""
 	var skip_empty bool = false
+	var profile bool = false
 	var fsobj_pool commons.WriteOnlyThreadPool[FsObj] = commons.WriteOnlyThreadPool[FsObj]{}
+	profiler := commons.Profiler{}
 
 	output_channel := make(chan commons.File, 1000)
 	output_wg := sync.WaitGroup{}
@@ -37,7 +39,14 @@ func main() {
 	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
 	flag.StringVar(&ignored_dir_user, "skip_dirs", "", "Skip user defined directories during scan (separated by comma)")
 	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
+	flag.BoolVar(&profile, "profile", false, "Profile program performances")
+
 	flag.Parse()
+
+	if profile {
+		main_ui.Toggle_silence()
+		profiler.Start()
+	}
 
 	user_dirs := filter(strings.Split(ignored_dir_user, ","), "")
 
@@ -88,4 +97,8 @@ func main() {
 	display_duplicate_file_info(cleaned_heap)
 
 	commons.Close_UI(main_ui)
+
+	if profile {
+		profiler.Collect()
+	}
 }
