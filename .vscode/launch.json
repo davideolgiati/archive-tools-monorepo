@@ -10,7 +10,7 @@
                         "request": "launch",
                         "mode": "auto",
                         "program": "${fileDirname}",
-                        "args": ["--dir", "/home/davide", "--no_empty", "--skip_dirs", ".vscode,.cache,.local,.rustup,.git"]
+                        "args": ["--dir", "/home/davide", "--no_empty", "--skip_dirs", ".vscode,.cache,.local,.rustup,.git", "--profile"]
                 }
         ]
 }
