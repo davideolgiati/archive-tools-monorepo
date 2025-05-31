@@ -44,7 +44,7 @@ func main() {
 	flag.Parse()
 
 	if profile {
-		main_ui.Toggle_silence()
+		//main_ui.Toggle_silence()
 		profiler.Start()
 	}
 
