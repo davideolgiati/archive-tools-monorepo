@@ -6,23 +6,27 @@ import (
 	"sort"
 	"sync"
 	"time"
+	"unsafe"
 )
 
+const target_sampling_population = 5000
+
 type Profiler struct {
-	memory_used  []uint64
-	quit_channel chan bool
-	wg           sync.WaitGroup
-	start_time   time.Time
+	memory_used    []uint64
+	quit_channel   chan bool
+	wg             sync.WaitGroup
+	start_time     time.Time
+	memory_samples int
 }
 
 func (pf *Profiler) size() uint64 {
-	return uint64(1000*64) + 8 + 16
+	return uint64(unsafe.Sizeof(*pf)) + uint64(len(pf.memory_used)*8)
 }
 
 func (pf *Profiler) Start() {
 	pf.start_time = time.Now()
 	pf.quit_channel = make(chan bool)
-	pf.memory_used = make([]uint64, 1000)
+	pf.memory_used = make([]uint64, target_sampling_population)
 
 	pf.wg.Add(1)
 
@@ -32,6 +36,7 @@ func (pf *Profiler) Start() {
 		sample := make([]metrics.Sample, 1)
 		sample[0].Name = "/memory/classes/total:bytes"
 		index := 0
+		pf.memory_samples = 0
 
 		for {
 			select {
@@ -42,7 +47,10 @@ func (pf *Profiler) Start() {
 
 				if sample[0].Value.Kind() != metrics.KindBad {
 					pf.memory_used[index] = (sample[0].Value.Uint64() - pf.size())
-					index = (index + 1) % 1000
+					index = (index + 1) % target_sampling_population
+					if pf.memory_samples < target_sampling_population {
+						pf.memory_samples++
+					}
 				}
 			}
 		}
@@ -58,11 +66,15 @@ func (pf *Profiler) Collect() {
 
 	// Memory
 
+	if pf.memory_samples < target_sampling_population {
+		pf.memory_used = pf.memory_used[:pf.memory_samples]
+	}
+
 	sort.Slice(pf.memory_used, func(i, j int) bool { return pf.memory_used[i] < pf.memory_used[j] })
 
-	p50index := 500
-	p90index := 900
-	p99index := 990
+	p50index := pf.memory_samples / 2
+	p90index := (pf.memory_samples * 90) / 100
+	p99index := (pf.memory_samples * 99) / 100
 
 	p50 := Format_file_size(int64(pf.memory_used[p50index]))
 	p90 := Format_file_size(int64(pf.memory_used[p90index]))
