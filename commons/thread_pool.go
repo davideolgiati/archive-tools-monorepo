@@ -15,6 +15,7 @@ type WriteOnlyThreadPool[T any] struct {
 	max_workers             int
 	min_workers             int
 	current_workers         int
+	worker_queue_len	int
 	mutex                   sync.Mutex
 }
 
@@ -22,8 +23,10 @@ func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
 	tp.max_workers = runtime.NumCPU()
 	tp.min_workers = 1
 	tp.current_workers = 0
+	tp.worker_queue_len = 100
 
-	tp.input_channel = make(chan T, tp.max_workers * 100)
+
+	tp.input_channel = make(chan T, tp.max_workers * tp.worker_queue_len)
 	tp.stop_channels = make([]chan bool, tp.max_workers)
 	for i := 0; i < tp.max_workers; i++ {
 		tp.stop_channels[i] = make(chan bool)
@@ -50,7 +53,7 @@ func (tp *WriteOnlyThreadPool[T]) Submit(data T) {
 	tp.mutex.Lock()
 	defer tp.mutex.Unlock()
 
-	if len(tp.input_channel) > tp.max_workers * 50 {
+	if len(tp.input_channel) > tp.max_workers * (tp.worker_queue_len / 2) {
 		time.Sleep(10 * time.Millisecond)
 	}
 
