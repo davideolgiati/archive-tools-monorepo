@@ -34,7 +34,7 @@ func can_file_be_read(fullpath *string) bool {
 	if file_open_error != nil {
 	    return false
 	}
-	defer file_pointer.Close()
+	file_pointer.Close()
     
 	return true
 }

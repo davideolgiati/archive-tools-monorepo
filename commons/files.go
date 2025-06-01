@@ -152,7 +152,7 @@ func Hash(filepath string, size int64) string {
 	file_pointer, err := os.Open(filepath)
 
 	if err != nil {
-		panic(err)
+		return ""
 	}
 
 	if file_pointer == nil {

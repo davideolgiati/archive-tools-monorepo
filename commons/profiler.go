@@ -12,9 +12,15 @@ type Profiler struct {
 	memory_used  []uint64
 	quit_channel chan bool
 	wg sync.WaitGroup
+	start_time time.Time
+}
+
+func (pf *Profiler) size() uint64 {
+	return uint64(len(pf.memory_used) * 64) + 8 + 16
 }
 
 func (pf *Profiler) Start() {
+	pf.start_time = time.Now()
 	pf.quit_channel = make(chan bool)
 
 	pf.wg.Add(1)
@@ -34,10 +40,10 @@ func (pf *Profiler) Start() {
 				metrics.Read(sample)
 
 				if sample[0].Value.Kind() != metrics.KindBad {
-					pf.memory_used = append(pf.memory_used, sample[0].Value.Uint64())
+					pf.memory_used = append(pf.memory_used, (sample[0].Value.Uint64() - pf.size()))
 				}
 
-				time.Sleep(300 * time.Millisecond)
+				time.Sleep(50 * time.Millisecond)
 
 				// if pf.memory_used.Size() == 500 {
 				// 	count := 1
@@ -63,6 +69,9 @@ func (pf *Profiler) Start() {
 
 func (pf *Profiler) Collect() {
 	pf.quit_channel <- true
+
+	fmt.Printf("Duration : %v\n", time.Since(pf.start_time))
+
 	pf.wg.Wait()
 
 	// Memory

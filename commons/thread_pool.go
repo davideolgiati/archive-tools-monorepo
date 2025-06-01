@@ -23,7 +23,7 @@ func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
 	tp.min_workers = 1
 	tp.current_workers = 0
 
-	tp.input_channel = make(chan T, tp.max_workers)
+	tp.input_channel = make(chan T, tp.max_workers * 100)
 	tp.stop_channels = make([]chan bool, tp.max_workers)
 	for i := 0; i < tp.max_workers; i++ {
 		tp.stop_channels[i] = make(chan bool)
@@ -50,12 +50,16 @@ func (tp *WriteOnlyThreadPool[T]) Submit(data T) {
 	tp.mutex.Lock()
 	defer tp.mutex.Unlock()
 
+	if len(tp.input_channel) > tp.max_workers * 50 {
+		time.Sleep(10 * time.Millisecond)
+	}
+
 	tp.input_channel <- data
 }
 
 func (tp *WriteOnlyThreadPool[T]) Sync_and_close() {
 	for len(tp.input_channel) > 0 {
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 	
 	close(tp.input_channel)
@@ -64,12 +68,16 @@ func (tp *WriteOnlyThreadPool[T]) Sync_and_close() {
 }
 
 func (tp *WriteOnlyThreadPool[T]) sample_pool_usage() {
+	update_value := func(index int) {
+		tp.mutex.Lock()
+		defer tp.mutex.Unlock()
+		tp.workload_factor_samples[index] = float64(len(tp.input_channel)) / float64(tp.max_workers)
+	}
+	
 	var index int = 0
 	for {
 		index = (index + 1) % 10
-		tp.mutex.Lock()
-		tp.workload_factor_samples[index] = float64(len(tp.input_channel)) / float64(tp.max_workers)
-		tp.mutex.Unlock()
+		update_value(index)
 		time.Sleep(10 * time.Millisecond)
 	}
 }

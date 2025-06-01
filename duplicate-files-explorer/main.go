@@ -16,13 +16,18 @@ var buildts string
 
 var main_ui = commons.New_UI()
 
-func filter[T comparable](ss []T, value T) (ret []T) {
-	for _, s := range ss {
-		if s != value {
-			ret = append(ret, s)
+func filter[T comparable](input []T, filter_value T) []T {
+	var output []T = make([]T, 0)
+	
+	for _, str := range input {
+		if str == filter_value {
+			continue
 		}
+
+		output = append(output, str)
 	}
-	return
+
+	return output
 }
 
 func main() {
@@ -33,7 +38,7 @@ func main() {
 	var fsobj_pool commons.WriteOnlyThreadPool[FsObj] = commons.WriteOnlyThreadPool[FsObj]{}
 	profiler := commons.Profiler{}
 
-	output_channel := make(chan commons.File, 1000)
+	output_channel := make(chan commons.File, 10000)
 	output_wg := sync.WaitGroup{}
 
 	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
@@ -44,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	if profile {
-		//main_ui.Toggle_silence()
+		main_ui.Toggle_silence()
 		profiler.Start()
 	}
 
