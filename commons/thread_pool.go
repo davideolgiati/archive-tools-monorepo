@@ -12,9 +12,7 @@ type WriteOnlyThreadPool[T any] struct {
 	workload_factor_samples []float64
 	waiting                 sync.WaitGroup
 	max_workers             int
-	min_workers             int
-	current_workers         int
-	mutex                   sync.Mutex
+	closed                  bool
 }
 
 func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
@@ -27,9 +25,6 @@ func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
 	if tp.max_workers < 1 {
 		panic("error while looking for CPU info in threadpool setup")
 	}
-
-	tp.min_workers = 1
-	tp.current_workers = 0
 
 	tp.input_channel = make(chan T)
 
@@ -48,19 +43,28 @@ func (tp *WriteOnlyThreadPool[T]) Init(fn func(T)) {
 	for i := 0; i < tp.max_workers; i++ {
 		tp.add_new_worker()
 	}
+
+	tp.closed = false
 }
 
 func (tp *WriteOnlyThreadPool[T]) Submit(data T) {
-	for len(tp.input_channel) == (tp.max_workers - 1) {
-		time.Sleep(1 * time.Millisecond)
+	if tp.closed {
+		panic("Send on closed thread pool")
 	}
 
-	tp.input_channel <- data
+	select {
+	case tp.input_channel <- data:
+		return
+	case <- time.After(time.Second * 3):
+		panic("submit timeout - workers may be overloaded")
+	}
 }
 
 func (tp *WriteOnlyThreadPool[T]) Sync_and_close() {
-	for len(tp.input_channel) > 0 {
-		time.Sleep(100 * time.Millisecond)
+	tp.closed = true
+	
+	for len(tp.input_channel) != 0 {
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	close(tp.input_channel)
@@ -83,10 +87,6 @@ func setup_fn[T any](fn func(T)) func(chan T, *sync.WaitGroup) {
 }
 
 func (tp *WriteOnlyThreadPool[T]) add_new_worker() {
-	tp.mutex.Lock()
-	defer tp.mutex.Unlock()
-
-	tp.current_workers += 1
 	tp.waiting.Add(1)
 	go tp.worker_fn(tp.input_channel, &tp.waiting)
 }
