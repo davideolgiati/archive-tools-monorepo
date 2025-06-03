@@ -7,13 +7,14 @@ import (
 )
 
 type line struct {
-	last_update  time.Time
-	format      string
-	line_number int
+	last_update     time.Time
+	format          string
+	line_number     int
+	last_line_value string
 }
 
 type ui struct {
-	lines        map[string]line
+	lines        map[string]*line
 	current_line int
 	next_line    int
 	mutex        sync.Mutex
@@ -24,7 +25,7 @@ func New_UI() *ui {
 	output := ui{}
 	output.current_line = 0
 	output.next_line = 1
-	output.lines = make(map[string]line)
+	output.lines = make(map[string]*line)
 	output.silent = false
 
 	return &output
@@ -42,22 +43,17 @@ func (ui *ui) Register_line(line_id string, format string) {
 		return
 	}
 
-	new_line := line{
-		last_update: time.Now(),
-		line_number: ui.next_line,
-		format:      format,
+	new_line := &line{
+		last_update:     time.Now(),
+		line_number:     ui.next_line,
+		format:          format,
+		last_line_value: "",
 	}
 
-	offset := ui.next_line - ui.current_line - 1
-
-	if offset > 0 {
-		move_cursor(offset)
-	}
-
+	ui.go_to_line(ui.next_line)
 	fmt.Println("")
 
 	ui.lines[line_id] = new_line
-	ui.current_line = ui.next_line
 	ui.next_line++
 }
 
@@ -65,11 +61,11 @@ func (ui *ui) Update_line(line_id string, a ...any) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
-	current_line := ui.lines[line_id]
-
 	if ui.silent {
 		return
 	}
+
+	current_line := ui.lines[line_id]
 
 	if time.Since(current_line.last_update).Milliseconds() < 16 {
 		return
@@ -77,10 +73,15 @@ func (ui *ui) Update_line(line_id string, a ...any) {
 
 	data := fmt.Sprintf(current_line.format, a...)
 
-	line_number := current_line.line_number
-	ui.current_line = update_line(data, ui.current_line, line_number)
-	current_line.last_update = time.Now()
+	if data == current_line.last_line_value {
+		return
+	}
 
+	line_number := current_line.line_number
+	ui.print_to_registered_line(data, line_number)
+
+	current_line.last_update = time.Now()
+	current_line.last_line_value = data
 	ui.lines[line_id] = current_line
 }
 
@@ -93,14 +94,9 @@ func (ui *ui) Print_not_registered(format string, a ...any) {
 	}
 
 	data := fmt.Sprintf(format, a...)
-	offset := ui.next_line - ui.current_line - 1
-
-	if offset > 0 {
-		move_cursor(offset)
-	}
-
+	ui.go_to_line(ui.next_line)
 	fmt.Printf("\r%s\n", data)
-	ui.current_line = ui.next_line
+
 	ui.next_line++
 }
 
@@ -117,23 +113,23 @@ func (ui *ui) Close() {
 	move_cursor(offset)
 }
 
+func (ui *ui) go_to_line(line int) {
+	offset := line - ui.current_line
+	move_cursor(offset)
+	ui.current_line = line
+}
+
+func (ui *ui) print_to_registered_line(data string, line_number int) {
+	ui.go_to_line(line_number)
+	fmt.Printf("\033[2K\r%s", data)
+}
+
 func move_cursor(n int) {
-	if n < 0 {
+	if n == 0 {
+		return
+	} else if n < 0 {
 		fmt.Printf("\033[%dA", -n)
 	} else {
 		fmt.Printf("\033[%dB", n)
 	}
-
-}
-
-func update_line(data string, current_line int, line_number int) int {
-	offset := (line_number - current_line)
-
-	if offset != 0 {
-		move_cursor(offset)
-	}
-
-	fmt.Printf("\033[2K\r%s", data)
-
-	return line_number
 }
