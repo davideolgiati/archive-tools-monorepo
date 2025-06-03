@@ -14,11 +14,11 @@ var version string
 //go:embed buildts.txt
 var buildts string
 
-var main_ui = commons.New_UI()
+var ui = commons.New_UI()
 
 func filter[T comparable](input []T, filter_value T) []T {
 	var output []T = make([]T, 0)
-	
+
 	for _, str := range input {
 		if str == filter_value {
 			continue
@@ -49,14 +49,14 @@ func main() {
 	flag.Parse()
 
 	if profile {
-		main_ui.Toggle_silence()
+		ui.Toggle_silence()
 		profiler.Start()
 	}
 
 	user_dirs := filter(strings.Split(ignored_dir_user, ","), "")
 
-	commons.Print_not_registered(main_ui, "Running version: %s", version)
-	commons.Print_not_registered(main_ui, "Build timestamp: %s", buildts)
+	ui.Print_not_registered("Running version: %s", version)
+	ui.Print_not_registered("Build timestamp: %s", buildts)
 
 	output_file_heap := build_new_file_heap(commons.SizeDescending)
 
@@ -93,7 +93,6 @@ func main() {
 	close(output_channel)
 
 	output_wg.Wait()
-	
 
 	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale
 	// come sembra, ci devo lavorare
@@ -101,7 +100,7 @@ func main() {
 
 	display_duplicate_file_info(cleaned_heap)
 
-	commons.Close_UI(main_ui)
+	ui.Close()
 
 	if profile {
 		profiler.Collect()

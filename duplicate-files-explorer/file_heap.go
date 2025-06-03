@@ -7,7 +7,7 @@ import (
 )
 
 type FileHeap struct {
-	heap ds.Heap[commons.File]
+	heap          ds.Heap[commons.File]
 	hash_registry ds.Flyweight[string]
 }
 
@@ -40,7 +40,7 @@ func get_file_hash_thread_fn(file_chan chan<- commons.File, flyweight *ds.Flywei
 func build_duplicate_entries_heap(file_heap *FileHeap) *FileHeap {
 	var last_file_seen commons.File
 	var current_file commons.File
-	
+
 	var file_thread_pool commons.WriteOnlyThreadPool[commons.File] = commons.WriteOnlyThreadPool[commons.File]{}
 
 	output_channel := make(chan commons.File)
@@ -54,7 +54,7 @@ func build_duplicate_entries_heap(file_heap *FileHeap) *FileHeap {
 
 	file_thread_pool.Init(get_file_hash_thread_fn(output_channel, &refined_file_heap.hash_registry))
 
-	main_ui.Register_line("cleanup-stage", "Removing unique entries %s ... %.1f %%")
+	ui.Register_line("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
 	output_wg.Add(1)
 
@@ -84,7 +84,7 @@ func build_duplicate_entries_heap(file_heap *FileHeap) *FileHeap {
 			last_seen_was_a_duplicate = false
 		}
 
-		main_ui.Update_line("cleanup-stage", "cleanup-stage", (processed_entries/total_entries)*100)
+		ui.Update_line("cleanup-stage", "cleanup-stage", (processed_entries/total_entries)*100)
 	}
 
 	if last_seen_was_a_duplicate {
@@ -117,10 +117,10 @@ func display_duplicate_file_info(file_heap *FileHeap) {
 		files_are_equal = commons.EqualByHash(current_file, last_file_seen)
 
 		if files_are_equal {
-			commons.Print_not_registered(main_ui, "file: %s", last_file_seen)
+			ui.Print_not_registered("file: %s", last_file_seen)
 		} else {
 			if is_duplicate {
-				commons.Print_not_registered(main_ui, "file: %s", last_file_seen)
+				ui.Print_not_registered("file: %s", last_file_seen)
 			}
 		}
 
@@ -129,6 +129,6 @@ func display_duplicate_file_info(file_heap *FileHeap) {
 	}
 
 	if is_duplicate {
-		commons.Print_not_registered(main_ui, "file: %s", last_file_seen)
+		ui.Print_not_registered("file: %s", last_file_seen)
 	}
 }

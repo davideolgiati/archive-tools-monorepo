@@ -58,9 +58,9 @@ func (walker *dirWalker) Set_file_callback_function(callback func(fs.FileInfo, s
 func (walker *dirWalker) Walk() {
 	var formatted_size commons.FileSize
 
-	main_ui.Register_line("directory-line", "Directories seen: %6d")
-	main_ui.Register_line("file-line", "Files seen: %12d")
-	main_ui.Register_line("size-line", "Processed: %10d %2s")
+	ui.Register_line("directory-line", "Directories seen: %6d")
+	ui.Register_line("file-line", "Files seen: %12d")
+	ui.Register_line("size-line", "Processed: %10d %2s")
 
 	for !walker.directories.Empty() {
 		walker.current_directory = walker.directories.Pop()
@@ -71,10 +71,10 @@ func (walker *dirWalker) Walk() {
 
 			formatted_size = commons.Format_file_size(walker.size_processed)
 
-			main_ui.Update_line("directory-line", walker.directories_seen)
-			main_ui.Update_line("file-line", walker.file_seen)
-			main_ui.Update_line("size-line", formatted_size.Value, *formatted_size.Unit)
-		} else if !errors.Is(read_dir_err, os.ErrPermission){
+			ui.Update_line("directory-line", walker.directories_seen)
+			ui.Update_line("file-line", walker.file_seen)
+			ui.Update_line("size-line", formatted_size.Value, *formatted_size.Unit)
+		} else if !errors.Is(read_dir_err, os.ErrPermission) {
 			panic(read_dir_err)
 		}
 	}
