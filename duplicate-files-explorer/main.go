@@ -58,7 +58,7 @@ func main() {
 	ui.Print_not_registered("Running version: %s", version)
 	ui.Print_not_registered("Build timestamp: %s", buildts)
 
-	output_file_heap := build_new_file_heap(commons.SizeDescending)
+	output_file_heap := new_file_heap(commons.SizeDescending)
 
 	if output_file_heap == nil {
 		panic("error wile creating new file heap object")

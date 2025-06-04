@@ -189,16 +189,16 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := build_new_file_heap(commons.SizeDescending)
+		fileHeap := new_file_heap(commons.SizeDescending)
 
 		tmp_file_name := tmpFile.Name()
-		
+
 		channel := make(chan commons.File)
 
 		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
 
 		if fileHeap.heap.Empty() {
-			t.Errorf("Expected 1 file in heap, got 0",)
+			t.Errorf("Expected 1 file in heap, got 0")
 		}
 	})
 
@@ -214,7 +214,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := build_new_file_heap(commons.SizeDescending)
+		fileHeap := new_file_heap(commons.SizeDescending)
 
 		tmp_file_name := tmpFile.Name()
 
@@ -223,7 +223,7 @@ func TestProcessFileEntry(t *testing.T) {
 		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
 
 		if fileHeap.heap.Empty() {
-			t.Errorf("Expected 1 file in heap, got 0",)
+			t.Errorf("Expected 1 file in heap, got 0")
 		}
 	})
 
@@ -244,7 +244,7 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := build_new_file_heap(commons.SizeDescending)
+		fileHeap := new_file_heap(commons.SizeDescending)
 
 		tmp_file_name := tmpFile.Name()
 
@@ -253,8 +253,7 @@ func TestProcessFileEntry(t *testing.T) {
 		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
 
 		if !fileHeap.heap.Empty() {
-			t.Errorf("Expected 0 file in heap, got more",)
+			t.Errorf("Expected 0 file in heap, got more")
 		}
 	})
 }
-

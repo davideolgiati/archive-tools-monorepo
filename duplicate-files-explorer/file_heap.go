@@ -11,7 +11,7 @@ type FileHeap struct {
 	hash_registry ds.Flyweight[string]
 }
 
-func build_new_file_heap(compare_fn func(commons.File, commons.File) bool) *FileHeap {
+func new_file_heap(compare_fn func(commons.File, commons.File) bool) *FileHeap {
 	file_heap := FileHeap{}
 
 	file_heap.heap = ds.Heap[commons.File]{}
@@ -37,7 +37,37 @@ func get_file_hash_thread_fn(file_chan chan<- commons.File, flyweight *ds.Flywei
 	}
 }
 
-func build_duplicate_entries_heap(file_heap *FileHeap) *FileHeap {
+func (file_heap *FileHeap) filter(filter_fn func(commons.File, commons.File) bool) *FileHeap {
+	var current commons.File
+	var last commons.File
+
+	output := new_file_heap(commons.HashDescending)
+	duplicate_flag := false
+
+	if !file_heap.heap.Empty() {
+		current = file_heap.heap.Pop()
+	}
+
+	for !file_heap.heap.Empty() {
+		last = current
+		current = file_heap.heap.Pop()
+
+		if filter_fn(current, last) {
+			duplicate_flag := true
+			output.heap.Push(last)
+		} else if duplicate_flag {
+			duplicate_flag := false
+			output.heap.Push(last)
+		} else {
+			duplicate_flag := false
+		}
+	}
+
+	if duplicate_flag {
+		output.heap.Push(current)
+	}
+}
+/*
 	var last_file_seen commons.File
 	var current_file commons.File
 
@@ -46,7 +76,7 @@ func build_duplicate_entries_heap(file_heap *FileHeap) *FileHeap {
 	output_channel := make(chan commons.File)
 	output_wg := sync.WaitGroup{}
 
-	refined_file_heap := build_new_file_heap(commons.HashDescending)
+	refined_file_heap := 
 	last_seen_was_a_duplicate := false
 
 	total_entries := float64(file_heap.heap.Size())
@@ -99,6 +129,7 @@ func build_duplicate_entries_heap(file_heap *FileHeap) *FileHeap {
 
 	return refined_file_heap
 }
+*/
 
 func display_duplicate_file_info(file_heap *FileHeap) {
 	var last_file_seen commons.File
