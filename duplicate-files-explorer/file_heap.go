@@ -49,7 +49,7 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 	var last commons.File
 
 	output := new_file_heap(commons.HashDescending)
-	total := float64(output.heap.Size())
+	total := float64(file_heap.heap.Size())
 	processed := 0.0
 	
 	duplicate_flag := false
