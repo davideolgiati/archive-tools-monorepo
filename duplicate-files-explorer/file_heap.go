@@ -37,99 +37,68 @@ func get_file_hash_thread_fn(file_chan chan<- commons.File, flyweight *ds.Flywei
 	}
 }
 
-func (file_heap *FileHeap) filter(filter_fn func(commons.File, commons.File) bool) *FileHeap {
+func file_channel_consumer(channel chan commons.File, waitgroup *sync.WaitGroup, heap *ds.Heap[commons.File]) {
+	defer waitgroup.Done()
+	for data := range channel {
+		heap.Push(data)
+	}
+}
+
+func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File) bool) *FileHeap {
 	var current commons.File
 	var last commons.File
 
 	output := new_file_heap(commons.HashDescending)
+	total := float64(output.heap.Size())
+	processed := 0.0
+	
 	duplicate_flag := false
+
+	file_channel := make(chan commons.File)
+	file_threadpool := commons.WriteOnlyThreadPool[commons.File]{}
+	target_fn := get_file_hash_thread_fn(file_channel, &output.hash_registry)
+	
+	file_threadpool.Init(target_fn)
+	
+	output_waitgroup := sync.WaitGroup{}
+	output_waitgroup.Add(1)
+	go file_channel_consumer(file_channel, &output_waitgroup, &output.heap)
+
+	ui.Register_line("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
 	if !file_heap.heap.Empty() {
 		current = file_heap.heap.Pop()
+		processed += 1.0
 	}
 
 	for !file_heap.heap.Empty() {
 		last = current
 		current = file_heap.heap.Pop()
+		processed += 1.0
 
 		if filter_fn(current, last) {
-			duplicate_flag := true
-			output.heap.Push(last)
+			duplicate_flag = true
+			file_threadpool.Submit(last)
 		} else if duplicate_flag {
-			duplicate_flag := false
-			output.heap.Push(last)
+			duplicate_flag = false
+			file_threadpool.Submit(last)
 		} else {
-			duplicate_flag := false
+			duplicate_flag = false
 		}
+
+		ui.Update_line("cleanup-stage", "cleanup-stage", (processed / total)*100)
 	}
 
 	if duplicate_flag {
-		output.heap.Push(current)
+		file_threadpool.Submit(current)
 	}
+
+	file_threadpool.Sync_and_close()
+	close(file_channel)
+	output_waitgroup.Wait()
+
+	return output
 }
-/*
-	var last_file_seen commons.File
-	var current_file commons.File
-
-	var file_thread_pool commons.WriteOnlyThreadPool[commons.File] = commons.WriteOnlyThreadPool[commons.File]{}
-
-	output_channel := make(chan commons.File)
-	output_wg := sync.WaitGroup{}
-
-	refined_file_heap := 
-	last_seen_was_a_duplicate := false
-
-	total_entries := float64(file_heap.heap.Size())
-	processed_entries := float64(0)
-
-	file_thread_pool.Init(get_file_hash_thread_fn(output_channel, &refined_file_heap.hash_registry))
-
-	ui.Register_line("cleanup-stage", "Removing unique entries %s ... %.1f %%")
-
-	output_wg.Add(1)
-
-	go func() {
-		defer output_wg.Done()
-		for data := range output_channel {
-			refined_file_heap.heap.Push(data)
-		}
-	}()
-
-	if !file_heap.heap.Empty() {
-		current_file = file_heap.heap.Pop()
-	}
-
-	for !file_heap.heap.Empty() {
-		last_file_seen = current_file
-		current_file = file_heap.heap.Pop()
-		processed_entries++
-
-		if commons.EqualBySize(current_file, last_file_seen) {
-			last_seen_was_a_duplicate = true
-			file_thread_pool.Submit(last_file_seen)
-		} else {
-			if last_seen_was_a_duplicate {
-				file_thread_pool.Submit(last_file_seen)
-			}
-			last_seen_was_a_duplicate = false
-		}
-
-		ui.Update_line("cleanup-stage", "cleanup-stage", (processed_entries/total_entries)*100)
-	}
-
-	if last_seen_was_a_duplicate {
-		file_thread_pool.Submit(last_file_seen)
-	}
-
-	file_thread_pool.Sync_and_close()
-
-	close(output_channel)
-
-	output_wg.Wait()
-
-	return refined_file_heap
-}
-*/
 
 func display_duplicate_file_info(file_heap *FileHeap) {
 	var last_file_seen commons.File

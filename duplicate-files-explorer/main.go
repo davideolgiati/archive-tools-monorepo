@@ -96,7 +96,7 @@ func main() {
 
 	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale
 	// come sembra, ci devo lavorare
-	cleaned_heap := build_duplicate_entries_heap(output_file_heap)
+	cleaned_heap := output_file_heap.filter_heap(commons.EqualBySize)
 
 	display_duplicate_file_info(cleaned_heap)
 
