@@ -10,16 +10,17 @@ import (
 )
 
 type dirWalker struct {
-	directory_filter_function func(string) bool
-	file_filter_function      func(string) bool
-	file_callback_function    func(fs.FileInfo, string)
-	current_directory         string
-	current_file              string
-	directories               ds.Queue[string]
-	size_processed            int64
-	file_seen                 int
-	directories_seen          int
-	skip_empty                bool
+	directory_filter_function      func(string) bool
+	file_filter_function           func(string) bool
+	file_callback_function         func(fs.FileInfo, string)
+	directory_exploration_callback func()
+	current_directory              string
+	current_file                   string
+	directories                    ds.Queue[string]
+	size_processed                 int64
+	file_seen                      int
+	directories_seen               int
+	skip_empty                     bool
 }
 
 func New_dir_walker(skip_empty bool) *dirWalker {
@@ -57,6 +58,10 @@ func (walker *dirWalker) Set_file_callback_function(callback func(fs.FileInfo, s
 	walker.file_callback_function = callback
 }
 
+func (walker *dirWalker) Set_directory_exploration_callback_function(callback func()) {
+	walker.directory_exploration_callback = callback
+}
+
 func (walker *dirWalker) Walk() {
 	var formatted_size commons.FileSize
 
@@ -79,6 +84,8 @@ func (walker *dirWalker) Walk() {
 		} else if !errors.Is(read_dir_err, os.ErrPermission) {
 			panic(read_dir_err)
 		}
+
+		walker.directory_exploration_callback()
 	}
 }
 

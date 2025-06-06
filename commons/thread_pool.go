@@ -72,6 +72,12 @@ func (tp *WriteOnlyThreadPool[T]) Sync_and_close() {
 	tp.waiting.Wait()
 }
 
+func (tp *WriteOnlyThreadPool[T]) Sync() {
+	for len(tp.input_channel) != 0 {
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 func setup_fn[T any](fn func(T)) func(chan T, *sync.WaitGroup) {
 	return func(in chan T, wg *sync.WaitGroup) {
 		if wg == nil {

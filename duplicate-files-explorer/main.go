@@ -85,6 +85,7 @@ func main() {
 	walker.Set_directory_filter_function(get_directory_filter_fn(&user_dirs))
 	walker.Set_file_filter_function(check_if_file_is_allowed)
 	walker.Set_file_callback_function(get_file_callback_fn(&fsobj_pool))
+	walker.Set_directory_exploration_callback_function(fsobj_pool.Sync)
 
 	walker.Walk()
 
