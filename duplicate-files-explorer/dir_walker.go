@@ -15,17 +15,20 @@ type dirWalker struct {
 	file_callback_function    func(fs.FileInfo, string)
 	current_directory         string
 	current_file              string
-	directories               ds.Stack[string]
+	directories               ds.PriorityQueue[string]
 	size_processed            int64
 	file_seen                 int
 	directories_seen          int
+	current_depth             uint
 	skip_empty                bool
 }
 
 func New_dir_walker(skip_empty bool) *dirWalker {
 	walker := dirWalker{}
 
-	walker.directories = ds.Stack[string]{}
+	walker.directories = ds.PriorityQueue[string]{}
+	walker.directories.Init()
+
 	walker.file_seen = 0
 	walker.directories_seen = 0
 	walker.size_processed = 0
@@ -40,7 +43,7 @@ func New_dir_walker(skip_empty bool) *dirWalker {
 }
 
 func (walker *dirWalker) Set_entry_point(directory string) {
-	walker.directories.Push(directory)
+	walker.directories.Push(directory, 0)
 }
 
 func (walker *dirWalker) Set_directory_filter_function(filter_fn func(string) bool) {
@@ -63,7 +66,7 @@ func (walker *dirWalker) Walk() {
 	ui.Register_line("size-line", "Processed: %10d %2s")
 
 	for !walker.directories.Empty() {
-		walker.current_directory = walker.directories.Pop()
+		walker.current_depth, walker.current_directory = walker.directories.Pop()
 		objects, read_dir_err := os.ReadDir(walker.current_directory)
 
 		if read_dir_err == nil {
@@ -98,7 +101,7 @@ func (walker *dirWalker) process_directory(directory *string) {
 	}
 
 	walker.directories_seen += 1
-	walker.directories.Push(*directory)
+	walker.directories.Push(*directory, walker.current_depth)
 }
 
 func (walker *dirWalker) process_file(obj *os.DirEntry) {
