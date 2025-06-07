@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"archive-tools-monorepo/commons/ds"
 )
 
 var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
@@ -20,7 +21,7 @@ type FileSize struct {
 
 type File struct {
 	Name          string
-	Hash          *string
+	Hash          ds.Constant[string]
 	FormattedSize FileSize
 	Size          int64
 }
@@ -32,12 +33,12 @@ func (file File) Format(f fmt.State, c rune) {
 func (f File) ToString() string {
 	var b strings.Builder
 
-	if f.Hash == nil {
+	if f.Hash.Ptr() == nil {
 		panic("Hash is a nil pointer")
 	}
 
-	b.WriteString(*f.Hash)
-	for i := 0; i < 40-len(*f.Hash); i++ {
+	b.WriteString(f.Hash.Value())
+	for i := 0; i < 40-len(f.Hash.Value()); i++ {
 		b.WriteByte(' ')
 	}
 	b.WriteByte(' ')
@@ -81,27 +82,27 @@ func SizeDescending(a File, b File) bool {
 }
 
 func HashDescending(a File, b File) bool {
-	if a.Hash == nil {
+	if a.Hash.Ptr() == nil {
 		panic("a.Hash is a nil pointer")
 	}
 
-	if b.Hash == nil {
+	if b.Hash.Ptr() == nil {
 		panic("b.Hash is a nil pointer")
 	}
 	
-	if *a.Hash == *b.Hash {
+	if a.Hash.Ptr() == b.Hash.Ptr() {
 		return true
 	}
 
-	return *a.Hash <= *b.Hash 
+	return a.Hash.Value() <= b.Hash.Value()
 }
 
 func Equal(a File, b File) bool {
-	if a.Hash == nil {
+	if a.Hash.Ptr() == nil {
 		panic("a.Hash is a nil pointer")
 	}
 
-	if b.Hash == nil {
+	if b.Hash.Ptr() == nil {
 		panic("b.Hash is a nil pointer")
 	}
 	
@@ -113,19 +114,19 @@ func Equal(a File, b File) bool {
 		panic("b.Size is negative")
 	}
 
-	return a.Hash == b.Hash && a.Size == b.Size
+	return a.Hash.Ptr() == b.Hash.Ptr() && a.Size == b.Size
 }
 
 func EqualByHash(a File, b File) bool {
-	if a.Hash == nil {
+	if a.Hash.Ptr() == nil {
 		panic("a.Hash is a nil pointer")
 	}
 
-	if b.Hash == nil {
+	if b.Hash.Ptr() == nil {
 		panic("b.Hash is a nil pointer")
 	}
 	
-	return *a.Hash == *b.Hash
+	return a.Hash.Ptr() == b.Hash.Ptr()
 }
 
 func EqualBySize(a File, b File) bool {

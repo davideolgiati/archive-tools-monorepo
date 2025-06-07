@@ -27,16 +27,16 @@ var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
 
 func can_file_be_read(fullpath *string) bool {
 	if *fullpath == "" {
-	    panic("can_file_be_read - fullpath is empty")
+		panic("can_file_be_read - fullpath is empty")
 	}
-    
+
 	file_pointer, file_open_error := os.Open(*fullpath)
 	if file_open_error != nil {
-	    return false
+		return false
 	}
-	
+
 	defer file_pointer.Close()
-    
+
 	return true
 }
 
@@ -89,7 +89,7 @@ func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- 
 		file_stats := commons.File{
 			Name:          *full_path,
 			Size:          (*entry).Size(),
-			Hash:          flyweight.Cache_reference(""),
+			Hash:          flyweight.Instance(""),
 			FormattedSize: commons.Format_file_size((*entry).Size()),
 		}
 
@@ -101,7 +101,7 @@ func get_file_process_thread_fn(flyweight *ds.Flyweight[string], file_chan chan<
 	if flyweight == nil {
 		panic("flyweight is a nil pointer")
 	}
-	
+
 	return func(obj FsObj) {
 		process_file_entry(&obj.base_dir, &obj.obj, file_chan, flyweight)
 	}

@@ -17,8 +17,6 @@ func new_file_heap(compare_fn func(commons.File, commons.File) bool) *FileHeap {
 	file_heap.heap = ds.Heap[commons.File]{}
 	file_heap.hash_registry = ds.Flyweight[string]{}
 
-	file_heap.hash_registry.Init()
-
 	file_heap.heap.Compare_fn(compare_fn)
 
 	return &file_heap
@@ -27,7 +25,7 @@ func new_file_heap(compare_fn func(commons.File, commons.File) bool) *FileHeap {
 func refine_and_push_file_into_heap(file commons.File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
 	hash := commons.Hash(file.Name, file.Size)
 
-	file.Hash = flyweight.Cache_reference(hash)
+	file.Hash = flyweight.Instance(hash)
 	file_chan <- file
 }
 
@@ -51,15 +49,15 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 	output := new_file_heap(commons.HashDescending)
 	total := float64(file_heap.heap.Size())
 	processed := 0.0
-	
+
 	duplicate_flag := false
 
 	file_channel := make(chan commons.File)
 	file_threadpool := commons.WriteOnlyThreadPool[commons.File]{}
 	target_fn := get_file_hash_thread_fn(file_channel, &output.hash_registry)
-	
+
 	file_threadpool.Init(target_fn)
-	
+
 	output_waitgroup := sync.WaitGroup{}
 	output_waitgroup.Add(1)
 	go file_channel_consumer(file_channel, &output_waitgroup, &output.heap)
@@ -86,7 +84,7 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 			duplicate_flag = false
 		}
 
-		ui.Update_line("cleanup-stage", "cleanup-stage", (processed / total)*100)
+		ui.Update_line("cleanup-stage", "cleanup-stage", (processed/total)*100)
 	}
 
 	if duplicate_flag {
