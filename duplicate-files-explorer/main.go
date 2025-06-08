@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
+	"archive-tools-monorepo/commons/ds"
 	_ "embed"
 	"flag"
 	"strings"
@@ -31,12 +32,15 @@ func filter[T comparable](input []T, filter_value T) []T {
 }
 
 func main() {
-	var start_directory string = ""
-	var ignored_dir_user string = ""
-	var skip_empty bool = false
-	var profile bool = false
-	var fsobj_pool commons.WriteOnlyThreadPool[FsObj] = commons.WriteOnlyThreadPool[FsObj]{}
+	start_directory := ""
+	ignored_dir_user := ""
+	skip_empty := false
+	profile := false
+	fsobj_pool := commons.WriteOnlyThreadPool[FsObj]{}
 	profiler := commons.Profiler{}
+	
+	shared_registry := ds.Flyweight[string]{}
+	output_file_heap := new_file_heap(commons.HashDescending, &shared_registry)
 
 	output_channel := make(chan commons.File, 10000)
 	output_wg := sync.WaitGroup{}
@@ -58,13 +62,12 @@ func main() {
 	ui.Print_not_registered("Running version: %s", version)
 	ui.Print_not_registered("Build timestamp: %s", buildts)
 
-	output_file_heap := new_file_heap(commons.HashDescending)
 
 	if output_file_heap == nil {
 		panic("error wile creating new file heap object")
 	}
 
-	fsobj_pool.Init(get_file_process_thread_fn(&output_file_heap.hash_registry, output_channel))
+	fsobj_pool.Init(get_file_process_thread_fn(output_file_heap.hash_registry, output_channel, &output_file_heap.size_filter))
 
 	walker := New_dir_walker(skip_empty)
 
@@ -95,7 +98,7 @@ func main() {
 
 	output_wg.Wait()
 
-	cleaned_heap := output_file_heap.filter_heap(commons.Equal)
+	cleaned_heap := output_file_heap.filter_heap(commons.Equal, &shared_registry)
 	display_duplicate_file_info(cleaned_heap)
 
 	ui.Close()

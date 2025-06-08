@@ -94,7 +94,7 @@ func HashDescending(a File, b File) bool {
 		return true
 	}
 
-	return a.Hash.Value() <= b.Hash.Value() && a.Size < b.Size
+	return a.Hash.Value() <= b.Hash.Value() && a.Size < b.Size && a.Name < b.Name
 }
 
 func Equal(a File, b File) bool {

@@ -8,14 +8,15 @@ import (
 
 type FileHeap struct {
 	heap          ds.Heap[commons.File]
-	hash_registry ds.Flyweight[string]
+	hash_registry *ds.Flyweight[string]
+	size_filter   sync.Map
 }
 
-func new_file_heap(compare_fn func(commons.File, commons.File) bool) *FileHeap {
+func new_file_heap(compare_fn func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
 	file_heap := FileHeap{}
 
 	file_heap.heap = ds.Heap[commons.File]{}
-	file_heap.hash_registry = ds.Flyweight[string]{}
+	file_heap.hash_registry = registry
 
 	file_heap.heap.Compare_fn(compare_fn)
 
@@ -44,11 +45,11 @@ func file_channel_consumer(channel chan commons.File, waitgroup *sync.WaitGroup,
 	}
 }
 
-func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File) bool) *FileHeap {
+func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
 	var current commons.File
 	var last commons.File
 
-	output := new_file_heap(commons.HashDescending)
+	output := new_file_heap(commons.HashDescending, registry)
 	output.hash_registry = file_heap.hash_registry
 
 	total := float64(file_heap.heap.Size())
@@ -58,7 +59,7 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 
 	file_channel := make(chan commons.File)
 	file_threadpool := commons.WriteOnlyThreadPool[commons.File]{}
-	target_fn := get_file_hash_thread_fn(file_channel, &output.hash_registry)
+	target_fn := get_file_hash_thread_fn(file_channel, output.hash_registry)
 
 	file_threadpool.Init(target_fn)
 

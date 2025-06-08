@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"strings"
+	"sync"
 )
 
 const (
@@ -72,7 +73,7 @@ func evaluate_object_properties(fullpath *string) int {
 	}
 }
 
-func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
+func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- commons.File, flyweight *ds.Flyweight[string], size_filter *sync.Map) {
 	if full_path == nil {
 		panic("full_path is a nil pointer")
 	}
@@ -87,14 +88,16 @@ func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- 
 
 	if can_file_be_read(full_path) {
 		hash := ""
+		size := (*entry).Size()
+		_, loaded := size_filter.LoadOrStore(size, true)
 
-		if (*entry).Size() < 1000000 {
+		if size < 5000000 && loaded {
 			hash = commons.Hash(*full_path, (*entry).Size())
 		}
 
 		file_stats := commons.File{
 			Name:          *full_path,
-			Size:          (*entry).Size(),
+			Size:          size,
 			Hash:          flyweight.Instance(hash),
 			FormattedSize: commons.Format_file_size((*entry).Size()),
 		}
@@ -103,13 +106,13 @@ func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- 
 	}
 }
 
-func get_file_process_thread_fn(flyweight *ds.Flyweight[string], file_chan chan<- commons.File) func(FsObj) {
+func get_file_process_thread_fn(flyweight *ds.Flyweight[string], file_chan chan<- commons.File, size_filter *sync.Map) func(FsObj) {
 	if flyweight == nil {
 		panic("flyweight is a nil pointer")
 	}
 
 	return func(obj FsObj) {
-		process_file_entry(&obj.base_dir, &obj.obj, file_chan, flyweight)
+		process_file_entry(&obj.base_dir, &obj.obj, file_chan, flyweight, size_filter)
 	}
 }
 
