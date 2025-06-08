@@ -86,10 +86,16 @@ func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- 
 	}
 
 	if can_file_be_read(full_path) {
+		hash := ""
+
+		if (*entry).Size() < 1000000 {
+			hash = commons.Hash(*full_path, (*entry).Size())
+		}
+
 		file_stats := commons.File{
 			Name:          *full_path,
 			Size:          (*entry).Size(),
-			Hash:          flyweight.Instance(""),
+			Hash:          flyweight.Instance(hash),
 			FormattedSize: commons.Format_file_size((*entry).Size()),
 		}
 

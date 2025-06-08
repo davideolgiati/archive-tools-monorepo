@@ -23,9 +23,11 @@ func new_file_heap(compare_fn func(commons.File, commons.File) bool) *FileHeap {
 }
 
 func refine_and_push_file_into_heap(file commons.File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
-	hash := commons.Hash(file.Name, file.Size)
+	if file.Hash.Value() == "" {
+		hash := commons.Hash(file.Name, file.Size)
+		file.Hash = flyweight.Instance(hash)
+	}
 
-	file.Hash = flyweight.Instance(hash)
 	file_chan <- file
 }
 
@@ -47,6 +49,8 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 	var last commons.File
 
 	output := new_file_heap(commons.HashDescending)
+	output.hash_registry = file_heap.hash_registry
+
 	total := float64(file_heap.heap.Size())
 	processed := 0.0
 

@@ -58,7 +58,7 @@ func main() {
 	ui.Print_not_registered("Running version: %s", version)
 	ui.Print_not_registered("Build timestamp: %s", buildts)
 
-	output_file_heap := new_file_heap(commons.SizeDescending)
+	output_file_heap := new_file_heap(commons.HashDescending)
 
 	if output_file_heap == nil {
 		panic("error wile creating new file heap object")
@@ -95,10 +95,7 @@ func main() {
 
 	output_wg.Wait()
 
-	// TODO: questi mi piacerebbe trasformarli in reduce, ma non è banale
-	// come sembra, ci devo lavorare
-	cleaned_heap := output_file_heap.filter_heap(commons.EqualBySize)
-
+	cleaned_heap := output_file_heap.filter_heap(commons.Equal)
 	display_duplicate_file_info(cleaned_heap)
 
 	ui.Close()
