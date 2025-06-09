@@ -25,7 +25,11 @@ func new_file_heap(compare_fn func(commons.File, commons.File) bool, registry *d
 
 func refine_and_push_file_into_heap(file commons.File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
 	if file.Hash.Value() == "" {
-		hash := commons.Hash(file.Name, file.Size)
+		hash, err := commons.CalculateHash(file.Name)
+		if err != nil {
+			panic(err)
+		}
+
 		file.Hash = flyweight.Instance(hash)
 	}
 
@@ -58,10 +62,12 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 	duplicate_flag := false
 
 	file_channel := make(chan commons.File)
-	file_threadpool := commons.WriteOnlyThreadPool[commons.File]{}
 	target_fn := get_file_hash_thread_fn(file_channel, output.hash_registry)
+	file_threadpool, err := commons.NewWorkerPool(target_fn)
 
-	file_threadpool.Init(target_fn)
+	if err != nil {
+		panic(err)
+	}
 
 	output_waitgroup := sync.WaitGroup{}
 	output_waitgroup.Add(1)
@@ -96,7 +102,7 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 		file_threadpool.Submit(current)
 	}
 
-	file_threadpool.Sync_and_close()
+	file_threadpool.SyncAndClose()
 	close(file_channel)
 	output_waitgroup.Wait()
 

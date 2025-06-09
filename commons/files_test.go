@@ -1,6 +1,7 @@
 package commons
 
 import (
+	"archive-tools-monorepo/commons/ds"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
@@ -10,13 +11,13 @@ import (
 	"sync"
 	"testing"
 )
-/*
+
 // TestFile_ToString verifies the formatting of the File struct.
 func TestFile_ToString(t *testing.T) {
 	hash := "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
 	file := File{
 		Name: "test_document.txt",
-		Hash: &hash,
+		Hash: ds.NewConstant(&hash),
 		FormattedSize: FileSize{
 			Value: 123,
 			Unit:  &sizes_array[1], // Kb
@@ -33,7 +34,7 @@ func TestFile_ToString(t *testing.T) {
 	hash2 := "short"
 	file2 := File{
 		Name: "another_file.log",
-		Hash: &hash2,
+		Hash: ds.NewConstant(&hash2),
 		FormattedSize: FileSize{
 			Value: 5,
 			Unit:  &sizes_array[0], // b
@@ -81,8 +82,8 @@ func TestHashDescending_Deterministic(t *testing.T) {
 	hash1 := "aaaa"
 	hash2 := "bbbb"
 
-	f1 := File{Hash: &hash1}
-	f2 := File{Hash: &hash2}
+	f1 := File{Hash: ds.NewConstant(&hash1)}
+	f2 := File{Hash: ds.NewConstant(&hash2)}
 
 	if !HashDescending(f1, f2) { // "aaaa" <= "bbbb" -> true
 		t.Errorf("Expected f1 to be <= f2")
@@ -96,8 +97,8 @@ func TestHashDescending_Deterministic(t *testing.T) {
 
 	// Test with equal hashes, different names (similar stability issue as SizeDescending)
 	equalHash := "xyz"
-	f4 := File{Name: "f4", Hash: ds.Constant[string]{&equalHash}}
-	f5 := File{Name: "f5", Hash: ds.Constant[string]{ptr: &equalHash}}
+	f4 := File{Name: "f4", Hash: ds.NewConstant(&equalHash)}
+	f5 := File{Name: "f5", Hash: ds.NewConstant(&equalHash)}
 
 	if !HashDescending(f4, f5) {
 		t.Errorf("Expected f4 to be <= f5 when hashes are equal")
@@ -106,7 +107,6 @@ func TestHashDescending_Deterministic(t *testing.T) {
 		t.Errorf("Expected f5 to be <= f4 when hashes are equal")
 	}
 }
-*/
 
 // TestHash_Deterministic verifies hash generation is consistent for identical content.
 func TestHash_Deterministic(t *testing.T) {
@@ -131,7 +131,8 @@ func TestHash_Deterministic(t *testing.T) {
 	expectedHash := hex.EncodeToString(hasher.Sum(nil))
 
 	// Get hash using the function
-	actualHash := Hash(tmpfile.Name(), int64(len(content)))
+	actualHash, err := CalculateHash(tmpfile.Name())
+
 	if err != nil {
 		t.Fatalf("Hash returned error: %v", err)
 	}
@@ -145,28 +146,29 @@ func TestHash_Deterministic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer os.Remove(emptyFile.Name())
 	emptyFile.Close()
 
 	emptyHasher := sha1.New()
 	expectedEmptyHash := hex.EncodeToString(emptyHasher.Sum(nil))
 
-	actualEmptyHash := Hash(emptyFile.Name(), 0)
+	actualEmptyHash, err := CalculateHash(emptyFile.Name())
+
 	if err != nil {
 		t.Fatalf("Hash for empty file returned error: %v", err)
 	}
+
 	if actualEmptyHash != expectedEmptyHash {
 		t.Errorf("Hash mismatch for empty file.\nExpected: %s\nGot:      %s", expectedEmptyHash, actualEmptyHash)
 	}
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic when path to non existent file was given")
-		}
-	}()
-
 	// Test non-existent file
-	_ = Hash("/path/to/non/existent/file.txt", 0)
+	_, err = CalculateHash("/path/to/non/existent/file.txt")
+
+	if err == nil {
+		t.Fatalf("Hash for unexistent file did not return error")
+	}
 }
 
 // TestHash_Concurrent verifies Hash is safe for concurrent calls on DIFFERENT files.
@@ -202,8 +204,11 @@ func TestHash_Concurrent(t *testing.T) {
 		wg.Add(1)
 		go func(p string) {
 			defer wg.Done()
-			stats, _ := os.Stat(p)
-			hash := Hash(p, stats.Size())
+			hash, err := CalculateHash(p)
+			if err != nil {
+				t.Fatalf("Hash for file returned error: %v", err)
+			}
+
 			results <- struct {
 				path string
 				hash string
@@ -255,24 +260,27 @@ func TestFormat_file_size_Deterministic(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		actual := Format_file_size(tt.input)
+		actual, err := FormatFileSize(tt.input)
+
+		if err != nil {
+			t.Fatalf("Format file size returned error: %v", err)
+		}
+
 		if actual.Value != tt.expected.Value || *actual.Unit != *tt.expected.Unit {
 			t.Errorf("Format_file_size(%d): Expected %v %s, Got %v %s",
 				tt.input, tt.expected.Value, *tt.expected.Unit, actual.Value, *actual.Unit)
 		}
 	}
 
-	// Test negative size (should panic)
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic for negative size input, but got none")
-		} else {
-			if !strings.Contains(fmt.Sprintf("%v", r), "size is negative") {
-				t.Errorf("Unexpected panic message: %v", r)
-			}
+	_, err := FormatFileSize(-100)
+
+	if err == nil {
+		t.Error("Expected panic for negative size input, but got none")
+	} else {
+		if !strings.Contains(fmt.Sprintf("%v", err), "size is negative") {
+			t.Errorf("Unexpected panic message: %v", err)
 		}
-	}()
-	Format_file_size(-100)
+	}
 }
 
 // TestCheck_read_rights_on_file verifies file permission checking.
@@ -291,7 +299,7 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 	}
 
 	// Test readable permissions (default for TempFile on Linux/macOS often includes read)
-	if !Check_read_rights_on_file(&info) {
+	if !HasReadPermission(&info) {
 		t.Errorf("Expected file to be readable by default, got false")
 	}
 
@@ -306,7 +314,7 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 		}
 	}()
 	var nilInfo *os.FileInfo = nil
-	Check_read_rights_on_file(nilInfo)
+	HasReadPermission(nilInfo)
 }
 
 // TestIs_symbolic_link verifies symbolic link detection.
@@ -323,7 +331,7 @@ func TestIs_symbolic_link(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if Is_symbolic_link(&info) {
+	if IsSymbolicLink(&info) {
 		t.Errorf("Expected regular file not to be a symlink, but it is")
 	}
 
@@ -340,7 +348,7 @@ func TestIs_symbolic_link(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !Is_symbolic_link(&symlinkInfo) {
+	if !IsSymbolicLink(&symlinkInfo) {
 		t.Errorf("Expected symlink to be detected as symlink, but it is not")
 	}
 
@@ -355,5 +363,5 @@ func TestIs_symbolic_link(t *testing.T) {
 		}
 	}()
 	var nilInfo *os.FileInfo = nil
-	Is_symbolic_link(nilInfo)
+	IsSymbolicLink(nilInfo)
 }

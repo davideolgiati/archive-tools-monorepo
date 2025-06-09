@@ -26,9 +26,7 @@ func (fw *Flyweight[T]) get(data T) (Constant[T], bool) {
 		entry_pointer = &default_entry
 	}
 
-	return Constant[T]{
-		ptr: entry_pointer.(*T),
-	}, ok
+	return NewConstant(entry_pointer.(*T)), ok
 }
 
 func (fw *Flyweight[T]) set(data T) Constant[T] {
@@ -38,8 +36,8 @@ func (fw *Flyweight[T]) set(data T) Constant[T] {
 	actual, loaded := fw.cache.LoadOrStore(data, ptr)
 
 	if !loaded {
-		return Constant[T]{ptr: ptr}
+		return NewConstant(ptr)
 	}
 
-	return Constant[T]{ptr: actual.(*T)}
+	return NewConstant(actual.(*T))
 }

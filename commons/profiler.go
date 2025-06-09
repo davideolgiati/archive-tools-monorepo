@@ -76,9 +76,20 @@ func (pf *Profiler) Collect() {
 	p90index := (pf.memory_samples * 90) / 100
 	p99index := (pf.memory_samples * 99) / 100
 
-	p50 := Format_file_size(int64(pf.memory_used[p50index]))
-	p90 := Format_file_size(int64(pf.memory_used[p90index]))
-	p99 := Format_file_size(int64(pf.memory_used[p99index]))
+	p50, err := FormatFileSize(int64(pf.memory_used[p50index]))
+	if err != nil {
+		panic(err)
+	}
+
+	p90, err := FormatFileSize(int64(pf.memory_used[p90index]))
+	if err != nil {
+		panic(err)
+	}
+
+	p99, err := FormatFileSize(int64(pf.memory_used[p99index]))
+	if err != nil {
+		panic(err)
+	}
 
 	fmt.Printf(
 		"Memery usage:\n\tp50: %d %s\n\tp90: %d %s\n\tp99: %d %s\n",

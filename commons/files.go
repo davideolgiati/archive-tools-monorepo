@@ -1,6 +1,7 @@
 package commons
 
 import (
+	"archive-tools-monorepo/commons/ds"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"archive-tools-monorepo/commons/ds"
 )
 
 var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
@@ -42,26 +42,26 @@ func (f File) ToString() string {
 		b.WriteByte(' ')
 	}
 	b.WriteByte(' ')
-	
+
 	// Right-align integer in 4-char space
 	valStr := strconv.Itoa(int(f.FormattedSize.Value))
 	for i := 0; i < 4-len(valStr); i++ {
 		b.WriteByte(' ')
 	}
 	b.WriteString(valStr)
-	
+
 	b.WriteByte(' ')
-	
+
 	// Right-align unit in 2-char space
 	unitStr := *f.FormattedSize.Unit
 	for i := 0; i < 2-len(unitStr); i++ {
 		b.WriteByte(' ')
 	}
 	b.WriteString(unitStr)
-	
+
 	b.WriteByte(' ')
 	b.WriteString(f.Name)
-	
+
 	return b.String()
 }
 
@@ -73,7 +73,7 @@ func SizeDescending(a File, b File) bool {
 	if b.Size < 0 {
 		panic("b.Size is negative")
 	}
-	
+
 	if a.Size == b.Size {
 		return true
 	}
@@ -89,12 +89,12 @@ func HashDescending(a File, b File) bool {
 	if b.Hash.Ptr() == nil {
 		panic("b.Hash is a nil pointer")
 	}
-	
+
 	if a.Hash.Ptr() == b.Hash.Ptr() {
 		return true
 	}
 
-	return a.Hash.Value() <= b.Hash.Value() && a.Size < b.Size && a.Name < b.Name
+	return a.Hash.Value() <= b.Hash.Value() || (a.Size < b.Size || a.Name < b.Name)
 }
 
 func Equal(a File, b File) bool {
@@ -105,7 +105,7 @@ func Equal(a File, b File) bool {
 	if b.Hash.Ptr() == nil {
 		panic("b.Hash is a nil pointer")
 	}
-	
+
 	if a.Size < 0 {
 		panic("a.Size is negative")
 	}
@@ -125,7 +125,7 @@ func EqualByHash(a File, b File) bool {
 	if b.Hash.Ptr() == nil {
 		panic("b.Hash is a nil pointer")
 	}
-	
+
 	return a.Hash.Ptr() == b.Hash.Ptr()
 }
 
@@ -138,39 +138,51 @@ func EqualBySize(a File, b File) bool {
 		panic("b.Size is negative")
 	}
 
-	return a.Size == b.Size 
+	return a.Size == b.Size
 }
 
-func Hash(filepath string, size int64) string {
+func CalculateHash(filepath string) (string, error) {
 	if filepath == "" {
-		panic("empty filepath")
-	}
-
-	if size < 0 {
-		panic("size is not positive")
+		return "", fmt.Errorf("empty filepath")
 	}
 
 	file_pointer, err := os.Open(filepath)
 
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	if file_pointer == nil {
-		panic("file_pointer is nil")
+		return "", fmt.Errorf("file_pointer is nil")
 	}
 
 	defer file_pointer.Close()
- 
-	sha1h := sha1.New()
-	io.Copy(sha1h, file_pointer)
 
-	return hex.EncodeToString(sha1h.Sum(nil))
+	stats, err := file_pointer.Stat()
+
+	if err != nil {
+		return "", err
+	}
+
+	size := stats.Size()
+
+	if size < 0 {
+		return "", fmt.Errorf("size is not positive")
+	}
+
+	sha1h := sha1.New()
+	_, err = io.Copy(sha1h, file_pointer)
+
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(sha1h.Sum(nil)), nil
 }
 
-func Format_file_size(size int64) FileSize {
+func FormatFileSize(size int64) (FileSize, error) {
 	if size < 0 {
-		panic("size is negative")
+		return FileSize{}, fmt.Errorf("size is negative")
 	}
 
 	file_size := float64(size)
@@ -182,7 +194,7 @@ func Format_file_size(size int64) FileSize {
 	}
 
 	if file_size >= 1000 && size_index != 3 {
-		panic(fmt.Sprintf(
+		return FileSize{}, fmt.Errorf(fmt.Sprintf(
 			"file_size is > 1000 and unit is  %s",
 			sizes_array[size_index],
 		))
@@ -190,51 +202,51 @@ func Format_file_size(size int64) FileSize {
 
 	output := FileSize{Value: int16(file_size), Unit: &sizes_array[size_index]}
 
-	return output
+	return output, nil
 }
 
-func Check_read_rights_on_file(obj *os.FileInfo) bool {
-	if obj == nil {
+func HasReadPermission(info *fs.FileInfo) bool {
+	if info == nil {
 		panic("obj is nil")
 	}
-	
-	file_permission_bits := (*obj).Mode().Perm()
 
-	user_read_ok := file_permission_bits & fs.FileMode(0400) != fs.FileMode(0000)
-	group_read_ok := file_permission_bits & fs.FileMode(0040) != fs.FileMode(0000)
-	others_read_ok := file_permission_bits & fs.FileMode(0004) != fs.FileMode(0000)
+	file_permission_bits := (*info).Mode().Perm()
+
+	user_read_ok := file_permission_bits&fs.FileMode(0400) != fs.FileMode(0000)
+	group_read_ok := file_permission_bits&fs.FileMode(0040) != fs.FileMode(0000)
+	others_read_ok := file_permission_bits&fs.FileMode(0004) != fs.FileMode(0000)
 
 	return user_read_ok || group_read_ok || others_read_ok
 }
 
-func Is_symbolic_link(obj *os.FileInfo) bool {
-	if obj == nil {
+func IsSymbolicLink(info *fs.FileInfo) bool {
+	if info == nil {
 		panic("obj is nil")
 	}
 
-	return (*obj).Mode()&os.ModeSymlink != 0
+	return (*info).Mode()&os.ModeSymlink != 0
 }
 
-func Is_a_device(obj *os.FileInfo) bool {
-	if obj == nil {
+func IsDevice(info *fs.FileInfo) bool {
+	if info == nil {
 		panic("obj is nil")
 	}
 
-	return (*obj).Mode()&os.ModeDevice == os.ModeDevice
+	return (*info).Mode()&os.ModeDevice == os.ModeDevice
 }
 
-func Is_a_socket(obj *os.FileInfo) bool {
-	if obj == nil {
+func IsSocket(info *fs.FileInfo) bool {
+	if info == nil {
 		panic("obj is nil")
 	}
 
-	return (*obj).Mode()&os.ModeSocket == os.ModeSocket
+	return (*info).Mode()&os.ModeSocket == os.ModeSocket
 }
 
-func Is_a_pipe(obj *os.FileInfo) bool {
-	if obj == nil {
+func IsPipe(info *fs.FileInfo) bool {
+	if info == nil {
 		panic("obj is nil")
 	}
 
-	return (*obj).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
+	return (*info).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
 }

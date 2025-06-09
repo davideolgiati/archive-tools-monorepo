@@ -56,15 +56,15 @@ func evaluate_object_properties(fullpath *string) int {
 	switch {
 	case obj.IsDir():
 		return directory
-	case !commons.Check_read_rights_on_file(&obj):
+	case !commons.HasReadPermission(&obj):
 		return invalid
-	case commons.Is_a_device(&obj):
+	case commons.IsDevice(&obj):
 		return device
-	case commons.Is_a_socket(&obj):
+	case commons.IsSocket(&obj):
 		return socket
-	case commons.Is_a_pipe(&obj):
+	case commons.IsPipe(&obj):
 		return pipe
-	case commons.Is_symbolic_link(&obj):
+	case commons.IsSymbolicLink(&obj):
 		return symlink
 	case obj.Mode().Perm().IsRegular():
 		return file
@@ -74,6 +74,8 @@ func evaluate_object_properties(fullpath *string) int {
 }
 
 func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- commons.File, flyweight *ds.Flyweight[string], size_filter *sync.Map) {
+	var err error
+
 	if full_path == nil {
 		panic("full_path is a nil pointer")
 	}
@@ -92,21 +94,30 @@ func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- 
 		_, loaded := size_filter.LoadOrStore(size, true)
 
 		if size < 5000000 && loaded {
-			hash = commons.Hash(*full_path, (*entry).Size())
+			hash, err = commons.CalculateHash(*full_path)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		formatted_size, err := commons.FormatFileSize((*entry).Size())
+
+		if err != nil {
+			panic(err)
 		}
 
 		file_stats := commons.File{
 			Name:          *full_path,
 			Size:          size,
 			Hash:          flyweight.Instance(hash),
-			FormattedSize: commons.Format_file_size((*entry).Size()),
+			FormattedSize: formatted_size,
 		}
 
 		file_chan <- file_stats
 	}
 }
 
-func get_file_process_thread_fn(flyweight *ds.Flyweight[string], file_chan chan<- commons.File, size_filter *sync.Map) func(FsObj) {
+func getFileProcessWorker(flyweight *ds.Flyweight[string], file_chan chan<- commons.File, size_filter *sync.Map) func(FsObj) {
 	if flyweight == nil {
 		panic("flyweight is a nil pointer")
 	}

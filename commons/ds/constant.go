@@ -4,6 +4,10 @@ type Constant[T any] struct {
 	ptr *T
 }
 
+func NewConstant[T any](data *T) Constant[T] {
+	return Constant[T]{ptr: data}
+}
+
 func (ro Constant[T]) Value() T {
 	return *ro.ptr
 }

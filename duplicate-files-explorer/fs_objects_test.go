@@ -2,7 +2,9 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
+	"archive-tools-monorepo/commons/ds"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -189,13 +191,16 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := new_file_heap(commons.SizeDescending)
+		hash_registry := ds.Flyweight[string]{}
+		size_filter := sync.Map{}
+
+		fileHeap := new_file_heap(commons.SizeDescending, &hash_registry)
 
 		tmp_file_name := tmpFile.Name()
 
 		channel := make(chan commons.File)
 
-		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
+		process_file_entry(&tmp_file_name, &info, channel, fileHeap.hash_registry, &size_filter)
 
 		if fileHeap.heap.Empty() {
 			t.Errorf("Expected 1 file in heap, got 0")
@@ -214,13 +219,16 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := new_file_heap(commons.SizeDescending)
+		hash_registry := ds.Flyweight[string]{}
+		size_filter := sync.Map{}
+
+		fileHeap := new_file_heap(commons.SizeDescending, &hash_registry)
 
 		tmp_file_name := tmpFile.Name()
 
 		channel := make(chan commons.File)
 
-		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
+		process_file_entry(&tmp_file_name, &info, channel, fileHeap.hash_registry, &size_filter)
 
 		if fileHeap.heap.Empty() {
 			t.Errorf("Expected 1 file in heap, got 0")
@@ -244,13 +252,16 @@ func TestProcessFileEntry(t *testing.T) {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
 
-		fileHeap := new_file_heap(commons.SizeDescending)
+		hash_registry := ds.Flyweight[string]{}
+		size_filter := sync.Map{}
+
+		fileHeap := new_file_heap(commons.SizeDescending, &hash_registry)
 
 		tmp_file_name := tmpFile.Name()
 
 		channel := make(chan commons.File)
 
-		process_file_entry(&tmp_file_name, &info, channel, &fileHeap.hash_registry)
+		process_file_entry(&tmp_file_name, &info, channel, fileHeap.hash_registry, &size_filter)
 
 		if !fileHeap.heap.Empty() {
 			t.Errorf("Expected 0 file in heap, got more")

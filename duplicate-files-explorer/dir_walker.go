@@ -64,6 +64,7 @@ func (walker *dirWalker) Set_directory_exploration_callback_function(callback fu
 
 func (walker *dirWalker) Walk() {
 	var formatted_size commons.FileSize
+	var err error
 
 	ui.Register_line("directory-line", "Directories seen: %6d")
 	ui.Register_line("file-line", "Files seen: %12d")
@@ -76,7 +77,10 @@ func (walker *dirWalker) Walk() {
 		if read_dir_err == nil {
 			walker.process_directory_objects(&objects)
 
-			formatted_size = commons.Format_file_size(walker.size_processed)
+			formatted_size, err = commons.FormatFileSize(walker.size_processed)
+			if err != nil {
+				panic(err)
+			}
 
 			ui.Update_line("directory-line", walker.directories_seen)
 			ui.Update_line("file-line", walker.file_seen)

@@ -52,6 +52,8 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 		processedFiles = append(processedFiles, path)
 	})
 
+	walker.Set_directory_exploration_callback_function(func() {})
+
 	// Execute the walk.
 	walker.Walk()
 
@@ -102,6 +104,8 @@ func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 		processedFiles = append(processedFiles, path)
 	})
 
+	walker.Set_directory_exploration_callback_function(func() {})
+
 	walker.Walk()
 
 	// Should process only the non-empty file.
@@ -143,6 +147,8 @@ func TestDirWalker_NoSkipEmptyFiles(t *testing.T) {
 	walker.Set_file_callback_function(func(info fs.FileInfo, path string) {
 		processedFiles = append(processedFiles, path)
 	})
+
+	walker.Set_directory_exploration_callback_function(func() {})
 
 	walker.Walk()
 

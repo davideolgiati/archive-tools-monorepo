@@ -36,9 +36,10 @@ func main() {
 	ignored_dir_user := ""
 	skip_empty := false
 	profile := false
-	fsobj_pool := commons.WriteOnlyThreadPool[FsObj]{}
 	profiler := commons.Profiler{}
 	
+	var fsobjPool *commons.WriteOnlyThreadPool[FsObj]
+
 	shared_registry := ds.Flyweight[string]{}
 	output_file_heap := new_file_heap(commons.HashDescending, &shared_registry)
 
@@ -62,12 +63,16 @@ func main() {
 	ui.Print_not_registered("Running version: %s", version)
 	ui.Print_not_registered("Build timestamp: %s", buildts)
 
-
 	if output_file_heap == nil {
 		panic("error wile creating new file heap object")
 	}
 
-	fsobj_pool.Init(get_file_process_thread_fn(output_file_heap.hash_registry, output_channel, &output_file_heap.size_filter))
+	workerFn := getFileProcessWorker(output_file_heap.hash_registry, output_channel, &output_file_heap.size_filter)
+	fsobjPool, err := commons.NewWorkerPool(workerFn)
+
+	if err != nil {
+		panic(err)
+	}
 
 	walker := New_dir_walker(skip_empty)
 
@@ -87,12 +92,12 @@ func main() {
 	walker.Set_entry_point(start_directory)
 	walker.Set_directory_filter_function(get_directory_filter_fn(&user_dirs))
 	walker.Set_file_filter_function(check_if_file_is_allowed)
-	walker.Set_file_callback_function(get_file_callback_fn(&fsobj_pool))
-	walker.Set_directory_exploration_callback_function(fsobj_pool.Sync)
+	walker.Set_file_callback_function(get_file_callback_fn(fsobjPool))
+	walker.Set_directory_exploration_callback_function(fsobjPool.Sync)
 
 	walker.Walk()
 
-	fsobj_pool.Sync_and_close()
+	fsobjPool.SyncAndClose()
 
 	close(output_channel)
 
