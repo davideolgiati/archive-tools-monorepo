@@ -206,7 +206,7 @@ func TestHash_Concurrent(t *testing.T) {
 			defer wg.Done()
 			hash, err := CalculateHash(p)
 			if err != nil {
-				t.Fatalf("Hash for file returned error: %v", err)
+				panic(fmt.Sprintf("Hash for file returned error: %v", err))
 			}
 
 			results <- struct {

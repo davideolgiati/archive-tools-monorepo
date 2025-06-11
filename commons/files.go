@@ -194,10 +194,10 @@ func FormatFileSize(size int64) (FileSize, error) {
 	}
 
 	if file_size >= 1000 && size_index != 3 {
-		return FileSize{}, fmt.Errorf(fmt.Sprintf(
+		return FileSize{}, fmt.Errorf(
 			"file_size is > 1000 and unit is  %s",
 			sizes_array[size_index],
-		))
+		)
 	}
 
 	output := FileSize{Value: int16(file_size), Unit: &sizes_array[size_index]}
