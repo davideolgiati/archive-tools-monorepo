@@ -15,7 +15,7 @@ var version string
 //go:embed buildts.txt
 var buildts string
 
-var ui = commons.New_UI()
+var ui = commons.NewUI()
 
 func filter[T comparable](input []T, filter_value T) []T {
 	var output []T = make([]T, 0)
@@ -37,8 +37,8 @@ func main() {
 	skip_empty := false
 	profile := false
 	profiler := commons.Profiler{}
-	
-	var fsobjPool *commons.WriteOnlyThreadPool[FsObj]
+
+	var fsobjPool *commons.WriteOnlyThreadPool[File]
 
 	shared_registry := ds.Flyweight[string]{}
 	output_file_heap := new_file_heap(commons.HashDescending, &shared_registry)
@@ -54,14 +54,14 @@ func main() {
 	flag.Parse()
 
 	if profile {
-		ui.Toggle_silence()
+		ui.ToggleSilence()
 		profiler.Start()
 	}
 
 	user_dirs := filter(strings.Split(ignored_dir_user, ","), "")
 
-	ui.Print_not_registered("Running version: %s", version)
-	ui.Print_not_registered("Build timestamp: %s", buildts)
+	ui.Println("Running version: %s", version)
+	ui.Println("Build timestamp: %s", buildts)
 
 	if output_file_heap == nil {
 		panic("error wile creating new file heap object")
@@ -74,7 +74,7 @@ func main() {
 		panic(err)
 	}
 
-	walker := New_dir_walker(skip_empty)
+	walker := NewWalker(skip_empty)
 
 	if walker == nil {
 		panic("error wile creating new file walker object")
@@ -89,15 +89,14 @@ func main() {
 		output_wg.Done()
 	}()
 
-	walker.Set_entry_point(start_directory)
-	walker.Set_directory_filter_function(get_directory_filter_fn(&user_dirs))
-	walker.Set_file_filter_function(check_if_file_is_allowed)
-	walker.Set_file_callback_function(get_file_callback_fn(fsobjPool))
-	walker.Set_directory_exploration_callback_function(fsobjPool.Sync)
+	walker.SetEntryPoint(start_directory)
+	walker.SetDirectoryFilter(get_directory_filter_fn(&user_dirs))
+	walker.SetFileCallback(get_file_callback_fn(fsobjPool))
+	walker.SetDirectoryCallback(fsobjPool.Wait)
 
 	walker.Walk()
 
-	fsobjPool.SyncAndClose()
+	fsobjPool.Release()
 
 	close(output_channel)
 

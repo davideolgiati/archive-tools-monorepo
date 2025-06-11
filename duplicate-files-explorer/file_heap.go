@@ -73,7 +73,7 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 	output_waitgroup.Add(1)
 	go file_channel_consumer(file_channel, &output_waitgroup, &output.heap)
 
-	ui.Register_line("cleanup-stage", "Removing unique entries %s ... %.1f %%")
+	ui.AddNewNamedLine("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
 	if !file_heap.heap.Empty() {
 		current = file_heap.heap.Pop()
@@ -95,14 +95,14 @@ func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File
 			duplicate_flag = false
 		}
 
-		ui.Update_line("cleanup-stage", "cleanup-stage", (processed/total)*100)
+		ui.UpdateNamedLine("cleanup-stage", "cleanup-stage", (processed/total)*100)
 	}
 
 	if duplicate_flag {
 		file_threadpool.Submit(current)
 	}
 
-	file_threadpool.SyncAndClose()
+	file_threadpool.Release()
 	close(file_channel)
 	output_waitgroup.Wait()
 
@@ -126,10 +126,10 @@ func display_duplicate_file_info(file_heap *FileHeap) {
 		files_are_equal = commons.EqualByHash(current_file, last_file_seen)
 
 		if files_are_equal {
-			ui.Print_not_registered("file: %s", last_file_seen)
+			ui.Println("file: %s", last_file_seen)
 		} else {
 			if is_duplicate {
-				ui.Print_not_registered("file: %s", last_file_seen)
+				ui.Println("file: %s", last_file_seen)
 			}
 		}
 
@@ -138,6 +138,6 @@ func display_duplicate_file_info(file_heap *FileHeap) {
 	}
 
 	if is_duplicate {
-		ui.Print_not_registered("file: %s", last_file_seen)
+		ui.Println("file: %s", last_file_seen)
 	}
 }

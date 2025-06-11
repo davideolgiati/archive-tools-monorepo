@@ -7,35 +7,35 @@ import (
 )
 
 type line struct {
-	last_update     time.Time
-	format          string
-	line_number     int
-	last_line_value string
+	last_update      time.Time
+	format           string
+	lineNumber       int
+	currentLineValue string
 }
 
 type ui struct {
-	lines        map[string]*line
-	current_line int
-	next_line    int
-	mutex        sync.Mutex
-	silent       bool
+	lines             map[string]*line
+	currentLineNumber int
+	nextLineNumber    int
+	mutex             sync.Mutex
+	silent            bool
 }
 
-func New_UI() *ui {
+func NewUI() *ui {
 	output := ui{}
-	output.current_line = 0
-	output.next_line = 1
+	output.currentLineNumber = 0
+	output.nextLineNumber = 1
 	output.lines = make(map[string]*line)
 	output.silent = false
 
 	return &output
 }
 
-func (ui *ui) Toggle_silence() {
+func (ui *ui) ToggleSilence() {
 	ui.silent = !ui.silent
 }
 
-func (ui *ui) Register_line(line_id string, format string) {
+func (ui *ui) AddNewNamedLine(line_id string, format string) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -44,20 +44,20 @@ func (ui *ui) Register_line(line_id string, format string) {
 	}
 
 	new_line := &line{
-		last_update:     time.Now(),
-		line_number:     ui.next_line,
-		format:          format,
-		last_line_value: "",
+		last_update:      time.Now(),
+		lineNumber:       ui.nextLineNumber,
+		format:           format,
+		currentLineValue: "",
 	}
 
-	ui.go_to_line(ui.next_line)
+	ui.goToLine(ui.nextLineNumber)
 	fmt.Println("")
 
 	ui.lines[line_id] = new_line
-	ui.next_line++
+	ui.nextLineNumber++
 }
 
-func (ui *ui) Update_line(line_id string, a ...any) {
+func (ui *ui) UpdateNamedLine(line_id string, a ...any) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -73,19 +73,19 @@ func (ui *ui) Update_line(line_id string, a ...any) {
 
 	data := fmt.Sprintf(current_line.format, a...)
 
-	if data == current_line.last_line_value {
+	if data == current_line.currentLineValue {
 		return
 	}
 
-	line_number := current_line.line_number
-	ui.print_to_registered_line(data, line_number)
+	line_number := current_line.lineNumber
+	ui.printToNamedLine(data, line_number)
 
 	current_line.last_update = time.Now()
-	current_line.last_line_value = data
+	current_line.currentLineValue = data
 	ui.lines[line_id] = current_line
 }
 
-func (ui *ui) Print_not_registered(format string, a ...any) {
+func (ui *ui) Println(format string, a ...any) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -94,10 +94,10 @@ func (ui *ui) Print_not_registered(format string, a ...any) {
 	}
 
 	data := fmt.Sprintf(format, a...)
-	ui.go_to_line(ui.next_line)
+	ui.goToLine(ui.nextLineNumber)
 	fmt.Printf("\r%s\n", data)
 
-	ui.next_line++
+	ui.nextLineNumber++
 }
 
 func (ui *ui) Close() {
@@ -108,23 +108,23 @@ func (ui *ui) Close() {
 		return
 	}
 
-	offset := ui.next_line - ui.current_line
+	offset := ui.nextLineNumber - ui.currentLineNumber
 
-	move_cursor(offset)
+	moveCursor(offset)
 }
 
-func (ui *ui) go_to_line(line int) {
-	offset := line - ui.current_line
-	move_cursor(offset)
-	ui.current_line = line
+func (ui *ui) goToLine(line int) {
+	offset := line - ui.currentLineNumber
+	moveCursor(offset)
+	ui.currentLineNumber = line
 }
 
-func (ui *ui) print_to_registered_line(data string, line_number int) {
-	ui.go_to_line(line_number)
+func (ui *ui) printToNamedLine(data string, line_number int) {
+	ui.goToLine(line_number)
 	fmt.Printf("\033[2K\r%s", data)
 }
 
-func move_cursor(n int) {
+func moveCursor(n int) {
 	if n == 0 {
 		return
 	} else if n < 0 {

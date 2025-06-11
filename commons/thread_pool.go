@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -11,8 +12,9 @@ type WriteOnlyThreadPool[T any] struct {
 	inputChannel          chan T
 	workerFn              func(chan T, *sync.WaitGroup)
 	workloadFactorSamples []float64
-	waiting               sync.WaitGroup
+	waitingGroup          sync.WaitGroup
 	maxWorkers            int
+	activeTasks           atomic.Int64
 	closed                bool
 }
 
@@ -37,8 +39,11 @@ func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
 	threadPool.maxWorkers = workersCount
 	threadPool.inputChannel = inputChannel
 	threadPool.workloadFactorSamples = sampleArray
-	threadPool.workerFn = setupWorkerFunction(workerFn)
+	threadPool.workerFn = setupWorkerFunction(workerFn, &threadPool.activeTasks)
 	threadPool.closed = false
+
+	threadPool.activeTasks = atomic.Int64{}
+	threadPool.activeTasks.Store(0)
 
 	for i := 0; i < threadPool.maxWorkers; i++ {
 		threadPool.addNewWorker()
@@ -54,31 +59,29 @@ func (tp *WriteOnlyThreadPool[T]) Submit(data T) error {
 
 	select {
 	case tp.inputChannel <- data:
+		tp.activeTasks.Add(1)
 		return nil
 	case <-time.After(time.Second * 3):
 		return fmt.Errorf("submit timeout - workers may be overloaded")
 	}
 }
 
-func (tp *WriteOnlyThreadPool[T]) SyncAndClose() {
+func (tp *WriteOnlyThreadPool[T]) Release() {
 	tp.closed = true
 
-	for len(tp.inputChannel) != 0 {
-		time.Sleep(10 * time.Millisecond)
-	}
-
+	tp.Wait()
 	close(tp.inputChannel)
 
-	tp.waiting.Wait()
+	tp.waitingGroup.Wait()
 }
 
-func (tp *WriteOnlyThreadPool[T]) Sync() {
-	for len(tp.inputChannel) != 0 {
-		time.Sleep(10 * time.Millisecond)
+func (tp *WriteOnlyThreadPool[T]) Wait() {
+	for tp.activeTasks.Load() > 0 {
+		time.Sleep(1 * time.Millisecond)
 	}
 }
 
-func setupWorkerFunction[T any](fn func(T)) func(chan T, *sync.WaitGroup) {
+func setupWorkerFunction[T any](fn func(T), activeTasks *atomic.Int64) func(chan T, *sync.WaitGroup) {
 	return func(in chan T, wg *sync.WaitGroup) {
 		if wg == nil {
 			panic("waitgroup pointer is nil")
@@ -88,11 +91,12 @@ func setupWorkerFunction[T any](fn func(T)) func(chan T, *sync.WaitGroup) {
 
 		for obj := range in {
 			fn(obj)
+			activeTasks.Add(-1)
 		}
 	}
 }
 
 func (tp *WriteOnlyThreadPool[T]) addNewWorker() {
-	tp.waiting.Add(1)
-	go tp.workerFn(tp.inputChannel, &tp.waiting)
+	tp.waitingGroup.Add(1)
+	go tp.workerFn(tp.inputChannel, &tp.waitingGroup)
 }

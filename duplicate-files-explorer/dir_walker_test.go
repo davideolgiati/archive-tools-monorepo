@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -35,24 +34,19 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 	}
 
 	// Create a new walker with skip_empty=true.
-	walker := New_dir_walker(true)
-	walker.Set_entry_point(baseDir)
+	walker := NewWalker(true)
+	walker.SetEntryPoint(baseDir)
 	// Directory filter: allow all directories.
-	walker.Set_directory_filter_function(func(dir string) bool {
+	walker.SetDirectoryFilter(func(dir string) bool {
 		return true
 	})
-	// File filter: allow only .txt files.
-	walker.Set_file_filter_function(func(file string) bool {
-		return filepath.Ext(file) == ".txt"
+
+	processedFiles := []File{}
+	walker.SetFileCallback(func(info File) {
+		processedFiles = append(processedFiles, info)
 	})
 
-	// Record processed file paths.
-	processedFiles := []string{}
-	walker.Set_file_callback_function(func(info fs.FileInfo, path string) {
-		processedFiles = append(processedFiles, path)
-	})
-
-	walker.Set_directory_exploration_callback_function(func() {})
+	walker.SetDirectoryCallback(func() {})
 
 	// Execute the walk.
 	walker.Walk()
@@ -67,7 +61,7 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 		t.Errorf("expected 2 files processed, got %d", len(processedFiles))
 	}
 	for _, file := range processedFiles {
-		if !expected[file] {
+		if !expected[file.path] {
 			t.Errorf("unexpected processed file: %s", file)
 		}
 	}
@@ -90,21 +84,18 @@ func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	walker := New_dir_walker(true)
-	walker.Set_entry_point(baseDir)
-	walker.Set_directory_filter_function(func(dir string) bool {
-		return true
-	})
-	walker.Set_file_filter_function(func(file string) bool {
+	walker := NewWalker(true)
+	walker.SetEntryPoint(baseDir)
+	walker.SetDirectoryFilter(func(dir string) bool {
 		return true
 	})
 
-	processedFiles := []string{}
-	walker.Set_file_callback_function(func(info fs.FileInfo, path string) {
-		processedFiles = append(processedFiles, path)
+	processedFiles := []File{}
+	walker.SetFileCallback(func(info File) {
+		processedFiles = append(processedFiles, info)
 	})
 
-	walker.Set_directory_exploration_callback_function(func() {})
+	walker.SetDirectoryCallback(func() {})
 
 	walker.Walk()
 
@@ -112,7 +103,7 @@ func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 	if len(processedFiles) != 1 {
 		t.Errorf("expected 1 file processed, got %d", len(processedFiles))
 	}
-	if processedFiles[0] != nonEmptyFile {
+	if processedFiles[0].path != nonEmptyFile {
 		t.Errorf("expected non-empty file to be processed")
 	}
 }
@@ -134,21 +125,18 @@ func TestDirWalker_NoSkipEmptyFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	walker := New_dir_walker(false) // Do not skip empty files.
-	walker.Set_entry_point(baseDir)
-	walker.Set_directory_filter_function(func(dir string) bool {
-		return true
-	})
-	walker.Set_file_filter_function(func(file string) bool {
+	walker := NewWalker(false) // Do not skip empty files.
+	walker.SetEntryPoint(baseDir)
+	walker.SetDirectoryFilter(func(dir string) bool {
 		return true
 	})
 
-	processedFiles := []string{}
-	walker.Set_file_callback_function(func(info fs.FileInfo, path string) {
-		processedFiles = append(processedFiles, path)
+	processedFiles := []File{}
+	walker.SetFileCallback(func(info File) {
+		processedFiles = append(processedFiles, info)
 	})
 
-	walker.Set_directory_exploration_callback_function(func() {})
+	walker.SetDirectoryCallback(func() {})
 
 	walker.Walk()
 

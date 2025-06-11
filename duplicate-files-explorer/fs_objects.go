@@ -19,19 +19,24 @@ const (
 	invalid   = iota
 )
 
-type FsObj struct {
-	obj      fs.FileInfo
-	base_dir string
-}
-
 var ignored_dir = [...]string{"/dev", "/run", "/proc", "/sys"}
 
-func can_file_be_read(fullpath *string) bool {
-	if *fullpath == "" {
+type FilesystemObject interface {
+	CanBeRead() bool
+	Type() int
+}
+
+type File struct {
+	infos fs.FileInfo
+	path  string
+}
+
+func (f *File) CanBeRead() bool {
+	if f.path == "" {
 		panic("can_file_be_read - fullpath is empty")
 	}
 
-	file_pointer, file_open_error := os.Open(*fullpath)
+	file_pointer, file_open_error := os.Open(f.path)
 	if file_open_error != nil {
 		return false
 	}
@@ -41,13 +46,13 @@ func can_file_be_read(fullpath *string) bool {
 	return true
 }
 
-func evaluate_object_properties(fullpath *string) int {
+func (f *File)Type() int {
 
-	if *fullpath == "" {
+	if f.path == "" {
 		panic("evaluate_object_properties - fullpath is empty")
 	}
 
-	obj, err := os.Lstat(*fullpath)
+	obj, err := os.Lstat(f.path)
 
 	if err != nil {
 		panic(err)
@@ -73,41 +78,37 @@ func evaluate_object_properties(fullpath *string) int {
 	}
 }
 
-func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- commons.File, flyweight *ds.Flyweight[string], size_filter *sync.Map) {
+func process_file_entry(file *File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string], size_filter *sync.Map) {
 	var err error
 
-	if full_path == nil {
-		panic("full_path is a nil pointer")
-	}
-
-	if entry == nil {
-		panic("user_defined_dir is a nil pointer")
+	if file == nil {
+		panic("file is a nil pointer")
 	}
 
 	if flyweight == nil {
 		panic("flyweight is a nil pointer")
 	}
 
-	if can_file_be_read(full_path) {
+	if file.CanBeRead() {
 		hash := ""
-		size := (*entry).Size()
+		size := file.infos.Size()
 		_, loaded := size_filter.LoadOrStore(size, true)
 
 		if size < 5000000 && loaded {
-			hash, err = commons.CalculateHash(*full_path)
+			hash, err = commons.CalculateHash(file.path)
 			if err != nil {
 				panic(err)
 			}
 		}
 
-		formatted_size, err := commons.FormatFileSize((*entry).Size())
+		formatted_size, err := commons.FormatFileSize(file.infos.Size())
 
 		if err != nil {
 			panic(err)
 		}
 
 		file_stats := commons.File{
-			Name:          *full_path,
+			Name:          file.path,
 			Size:          size,
 			Hash:          flyweight.Instance(hash),
 			FormattedSize: formatted_size,
@@ -117,13 +118,13 @@ func process_file_entry(full_path *string, entry *fs.FileInfo, file_chan chan<- 
 	}
 }
 
-func getFileProcessWorker(flyweight *ds.Flyweight[string], file_chan chan<- commons.File, size_filter *sync.Map) func(FsObj) {
+func getFileProcessWorker(flyweight *ds.Flyweight[string], fileChannel chan<- commons.File, sizeFilter *sync.Map) func(File) {
 	if flyweight == nil {
 		panic("flyweight is a nil pointer")
 	}
 
-	return func(obj FsObj) {
-		process_file_entry(&obj.base_dir, &obj.obj, file_chan, flyweight, size_filter)
+	return func(file File) {
+		process_file_entry(&file, fileChannel, flyweight, sizeFilter)
 	}
 }
 
@@ -148,12 +149,12 @@ func check_if_dir_is_allowed(full_path *string, user_defined_dir *[]string) bool
 	return allowed
 }
 
-func check_if_file_is_allowed(full_path string) bool {
-	if full_path == "" {
+func (f *File) IsAllowed() bool {
+	if f.path == "" {
 		panic("full_path is empty")
 	}
 
-	return evaluate_object_properties(&full_path) == file
+	return f.Type() == file
 }
 
 func get_directory_filter_fn(user_dirs *[]string) func(full_path string) bool {
@@ -166,12 +167,12 @@ func get_directory_filter_fn(user_dirs *[]string) func(full_path string) bool {
 	}
 }
 
-func get_file_callback_fn(tp *commons.WriteOnlyThreadPool[FsObj]) func(file fs.FileInfo, current_dir string) {
+func get_file_callback_fn(tp *commons.WriteOnlyThreadPool[File]) func(file File) {
 	if tp == nil {
 		panic("threadpool is nil")
 	}
 
-	return func(file fs.FileInfo, current_dir string) {
-		tp.Submit(FsObj{obj: file, base_dir: current_dir})
+	return func(file File) {
+		tp.Submit(file)
 	}
 }
