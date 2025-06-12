@@ -46,7 +46,7 @@ func (heap *Heap[T]) Push(data T) {
 	heap.items = append(heap.items, data)
 
 	if len(heap.items) > 1 {
-		heapify_bottom_up(heap)
+		heap.heapifyBottomUp()
 	}
 
 	if len(heap.items) != start_size+1 {
@@ -72,7 +72,7 @@ func (heap *Heap[T]) Pop() T {
 		heap.items = heap.items[:len(heap.items)-1]
 
 		if len(heap.items) != 0 {
-			heapify_top_down(heap)
+			heap.heapifyTopDown()
 		}
 	}
 
@@ -100,7 +100,7 @@ func (heap *Heap[T]) Peak() *T {
 	return item
 }
 
-func get_left_node_index(index *int) int {
+func getLeftNode(index *int) int {
 	if index == nil {
 		panic("provide index pointer is nil")
 	}
@@ -112,7 +112,7 @@ func get_left_node_index(index *int) int {
 	return (*index * 2) + 1
 }
 
-func get_right_node_index(index *int) int {
+func getRightNode(index *int) int {
 	if index == nil {
 		panic("provide index pointer is nil")
 	}
@@ -124,7 +124,7 @@ func get_right_node_index(index *int) int {
 	return (*index * 2) + 2
 }
 
-func get_parent_node_index(index *int) int {
+func getParent(index *int) int {
 	if index == nil {
 		panic("provide index pointer is nil")
 	}
@@ -136,17 +136,17 @@ func get_parent_node_index(index *int) int {
 	return (*index - 1) / 2
 }
 
-func heapify_bottom_up[T any](heap *Heap[T]) {
+func (heap *Heap[T]) heapifyBottomUp() {
 	start_size := len(heap.items)
 	current_index := len(heap.items) - 1
-	parent := get_parent_node_index(&current_index)
+	parent := getParent(&current_index)
 
 	for current_index > 0 && heap.custom_is_lower_fn(heap.items[current_index], heap.items[parent]) {
 		heap.items[parent], heap.items[current_index] = heap.items[current_index], heap.items[parent]
 
 		current_index = parent
 		if current_index > 0 {
-			parent = get_parent_node_index(&current_index)
+			parent = getParent(&current_index)
 		}
 
 		if current_index < 0 {
@@ -167,7 +167,7 @@ func heapify_bottom_up[T any](heap *Heap[T]) {
 	}
 }
 
-func get_next_candidate[T any](heap *Heap[T], current *int) int {
+func (heap *Heap[T]) getSmallestChild(current *int) int {
 	if heap == nil {
 		panic("heap pointer is nil")
 	}
@@ -180,8 +180,8 @@ func get_next_candidate[T any](heap *Heap[T], current *int) int {
 		panic("current is beyond heap scope")
 	}
 
-	left := get_left_node_index(current)
-	right := get_right_node_index(current)
+	left := getLeftNode(current)
+	right := getRightNode(current)
 
 	if left == right {
 		panic("left is right")
@@ -202,16 +202,16 @@ func get_next_candidate[T any](heap *Heap[T], current *int) int {
 	}
 }
 
-func heapify_top_down[T any](heap *Heap[T]) {
+func (heap *Heap[T]) heapifyTopDown() {
 	start_size := len(heap.items)
 	current_index := 0
-	candidate := get_next_candidate(heap, &current_index)
+	candidate := heap.getSmallestChild(&current_index)
 
 	for candidate < len(heap.items) && heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
 		heap.items[candidate], heap.items[current_index] = heap.items[current_index], heap.items[candidate]
 
 		current_index = candidate
-		candidate = get_next_candidate(heap, &candidate)
+		candidate = heap.getSmallestChild(&candidate)
 
 		if current_index < 0 {
 			panic("current_index is not positive")
