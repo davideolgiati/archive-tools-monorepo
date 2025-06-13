@@ -1,7 +1,7 @@
 package commons
 
 import (
-	"archive-tools-monorepo/commons/ds"
+	"archive-tools-monorepo/dataStructures"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
@@ -20,10 +20,10 @@ type FileSize struct {
 }
 
 type File struct {
-	Name          string
-	Hash          ds.Constant[string]
-	FormattedSize FileSize
-	Size          int64
+	Name                      string
+	Hash                      dataStructures.Constant[string]
+	FormattedataStructuresize FileSize
+	Size                      int64
 }
 
 func (file File) Format(f fmt.State, c rune) {
@@ -44,7 +44,7 @@ func (f File) ToString() string {
 	b.WriteByte(' ')
 
 	// Right-align integer in 4-char space
-	valStr := strconv.Itoa(int(f.FormattedSize.Value))
+	valStr := strconv.Itoa(int(f.FormattedataStructuresize.Value))
 	for i := 0; i < 4-len(valStr); i++ {
 		b.WriteByte(' ')
 	}
@@ -53,7 +53,7 @@ func (f File) ToString() string {
 	b.WriteByte(' ')
 
 	// Right-align unit in 2-char space
-	unitStr := *f.FormattedSize.Unit
+	unitStr := *f.FormattedataStructuresize.Unit
 	for i := 0; i < 2-len(unitStr); i++ {
 		b.WriteByte(' ')
 	}

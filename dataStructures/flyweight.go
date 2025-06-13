@@ -1,4 +1,4 @@
-package ds
+package dataStructures
 
 import "sync"
 
@@ -27,7 +27,7 @@ func (fw *Flyweight[T]) get(data T) (Constant[T], bool) {
 	}
 
 	newConstant, err := NewConstant(entry_pointer.(*T))
-	
+
 	if err != nil {
 		ok = false
 	}

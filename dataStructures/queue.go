@@ -1,4 +1,4 @@
-package ds
+package dataStructures
 
 type Queue[T comparable] struct {
 	queue []T
@@ -18,7 +18,7 @@ func (queue *Queue[T]) Push(value T) {
 	if queue.size == len(queue.queue) {
 		queue.resize()
 	}
-	
+
 	queue.queue[queue.tail] = value
 	queue.tail = (queue.tail + 1) % len(queue.queue)
 	queue.size++
@@ -42,11 +42,11 @@ func (queue *Queue[T]) Empty() bool {
 
 func (queue *Queue[T]) resize() {
 	newQueue := make([]T, len(queue.queue)*2)
-	
+
 	for i := 0; i < queue.size; i++ {
 		newQueue[i] = queue.queue[(queue.head+i)%len(queue.queue)]
 	}
-	
+
 	queue.queue = newQueue
 	queue.head = 0
 	queue.tail = queue.size

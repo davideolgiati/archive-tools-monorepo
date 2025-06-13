@@ -1,4 +1,4 @@
-package ds
+package dataStructures
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ func NewHeap[T any](sortFunction func(T, T) bool) *Heap[T] {
 
 	heap.custom_is_lower_fn = sortFunction
 	heap.items = make([]T, 0)
-	
+
 	return &heap
 }
 
@@ -229,7 +229,6 @@ func (heap *Heap[T]) heapifyTopDown() {
 		if candidate > len(heap.items) {
 			panic("candidate is beyond heap scope")
 		}
-
 
 		if current_index > len(heap.items) {
 			panic("candidate is beyond heap scope")

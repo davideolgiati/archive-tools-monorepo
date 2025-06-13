@@ -2,7 +2,7 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/ds"
+	"archive-tools-monorepo/dataStructures"
 	"errors"
 	"os"
 	"path"
@@ -18,7 +18,7 @@ type dirWalkerConfiguration struct {
 type dirWalkerState struct {
 	currentDirectory string
 	currentFile      string
-	directoriesQueue ds.Queue[string]
+	directoriesQueue dataStructures.Queue[string]
 }
 
 type dirwalkerStatistics struct {
@@ -48,7 +48,7 @@ func NewWalker(skipEmpty bool) *dirWalker {
 	walker.configuration.fileCallback = nil
 
 	walker.state = dirWalkerState{}
-	walker.state.directoriesQueue = ds.Queue[string]{}
+	walker.state.directoriesQueue = dataStructures.Queue[string]{}
 	walker.state.directoriesQueue.Init()
 	walker.state.currentDirectory = ""
 	walker.state.currentFile = ""

@@ -1,4 +1,4 @@
-package ds
+package dataStructures
 
 import (
 	"fmt"
@@ -43,8 +43,8 @@ func (stack *Stack[T]) Pop() T {
 		if len(stack.items) != start_size-1 {
 			panic(fmt.Sprintf("Error while popping - popping, start_size: %d, end_size: %d", start_size, len(stack.items)))
 		}
-	} 
-	
+	}
+
 	if start_size == 0 && len(stack.items) != start_size {
 		panic(fmt.Sprintf("Error while popping - noop, start_size: %d, end_size: %d", start_size, len(stack.items)))
 	}

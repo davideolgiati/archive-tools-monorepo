@@ -2,7 +2,7 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/ds"
+	"archive-tools-monorepo/dataStructures"
 	"io/fs"
 	"os"
 	"strings"
@@ -46,7 +46,7 @@ func (f *File) CanBeRead() bool {
 	return true
 }
 
-func (f *File)Type() int {
+func (f *File) Type() int {
 
 	if f.path == "" {
 		panic("evaluate_object_properties - fullpath is empty")
@@ -78,7 +78,7 @@ func (f *File)Type() int {
 	}
 }
 
-func process_file_entry(file *File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string], size_filter *sync.Map) {
+func process_file_entry(file *File, file_chan chan<- commons.File, flyweight *dataStructures.Flyweight[string], size_filter *sync.Map) {
 	var err error
 
 	if file == nil {
@@ -114,17 +114,17 @@ func process_file_entry(file *File, file_chan chan<- commons.File, flyweight *ds
 		}
 
 		file_stats := commons.File{
-			Name:          file.path,
-			Size:          size,
-			Hash:          hashPointer,
-			FormattedSize: formatted_size,
+			Name:                      file.path,
+			Size:                      size,
+			Hash:                      hashPointer,
+			FormattedataStructuresize: formatted_size,
 		}
 
 		file_chan <- file_stats
 	}
 }
 
-func getFileProcessWorker(flyweight *ds.Flyweight[string], fileChannel chan<- commons.File, sizeFilter *sync.Map) func(File) {
+func getFileProcessWorker(flyweight *dataStructures.Flyweight[string], fileChannel chan<- commons.File, sizeFilter *sync.Map) func(File) {
 	if flyweight == nil {
 		panic("flyweight is a nil pointer")
 	}

@@ -13,7 +13,7 @@ export GOTMPDIR="${PWD}/tmp-test-dir/"
 mkdir $GOTMPDIR
 mkdir "${GOTMPDIR}/heap_test"
 
-test_dirs=("./commons" "./commons/ds" "./duplicate-files-explorer")
+test_dirs=("./commons" "./commons/dataStructures" "./duplicate-files-explorer")
 
 for dir in ${test_dirs[@]}; do
         run_test_in_dir "${dir}"

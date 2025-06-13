@@ -1,4 +1,4 @@
-package ds
+package dataStructures
 
 import (
 	"math/rand"
@@ -240,7 +240,7 @@ func TestHeap_Concurrency_PushAndPop(t *testing.T) {
 	// either some pushes didn't happen or some pops returned zero values due to empty heap.
 	// The size comparison is more robust for confirming no data corruption (panics in size checks).
 	// If we just check `panic` messages within the test itself, we'd need to use `recover`.
-	// The internal panic checks `if len(heap.items) != start_size + 1` etc. are the main guards for correctness here.
+	// The internal panic checks `if len(heap.items) != start_size + 1` etc. are the main guardataStructures for correctness here.
 	t.Logf("Total pushed elements: %d", len(pushVals))
 	t.Logf("Total final elements (popped + remaining): %d", len(finalElements))
 
@@ -258,14 +258,13 @@ func TestHeap_Concurrency_PushAndPop(t *testing.T) {
 	// The focus here is on *no corruption* and *heap property maintained*.
 }
 
-
 // TestHeap_Concurrency_PushOnly verifies thread-safety under concurrent Push operations.
 func TestHeap_Concurrency_PushOnly(t *testing.T) {
 	heap := NewHeap(func(a, b int) bool { return a < b }) // Min-heap for ints
 
 	numGoroutines := 20
 	numPushesPerGoroutine := 500
-	expectedSize := numGoroutines * numPushesPerGoroutine
+	expectedataStructuresize := numGoroutines * numPushesPerGoroutine
 
 	var wg sync.WaitGroup
 	for i := 0; i < numGoroutines; i++ {
@@ -279,8 +278,8 @@ func TestHeap_Concurrency_PushOnly(t *testing.T) {
 	}
 	wg.Wait()
 
-	if heap.Size() != expectedSize {
-		t.Errorf("Expected heap size %d after concurrent pushes, got %d", expectedSize, heap.Size())
+	if heap.Size() != expectedataStructuresize {
+		t.Errorf("Expected heap size %d after concurrent pushes, got %d", expectedataStructuresize, heap.Size())
 	}
 
 	// Verify heap property by popping all elements
@@ -313,7 +312,7 @@ func TestHeap_Concurrency_PopOnly(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for {
-				item := heap.Pop() // Pop a single item. Pop on empty returns zero value.
+				item := heap.Pop()                 // Pop a single item. Pop on empty returns zero value.
 				if item == 0 && heap.Size() == 0 { // Assuming 0 is not a valid element and heap is truly empty
 					break
 				}
@@ -358,7 +357,7 @@ func TestHeap_Stability_EqualElements(t *testing.T) {
 		return a.Value < b.Value // Min-heap based on Value
 	})
 
-	// Push items with the same Value but different IDs
+	// Push items with the same Value but different IdataStructures
 	heap.Push(Item{Value: 10, ID: 3})
 	heap.Push(Item{Value: 5, ID: 1})
 	heap.Push(Item{Value: 10, ID: 2})
@@ -377,7 +376,7 @@ func TestHeap_Stability_EqualElements(t *testing.T) {
 		t.Errorf("Expected second popped value 5, got %d", secondPopped.Value)
 	}
 
-	// This is the key: we cannot guarantee the order of IDs if Values are equal.
+	// This is the key: we cannot guarantee the order of IdataStructures if Values are equal.
 	// The following assert might fail depending on heap internal state, and that's OK.
 	// This test simply demonstrates that the order of equal elements is not stable.
 	if firstPopped.ID == 1 && secondPopped.ID == 4 {
@@ -385,7 +384,7 @@ func TestHeap_Stability_EqualElements(t *testing.T) {
 	} else if firstPopped.ID == 4 && secondPopped.ID == 1 {
 		t.Logf("Unstable pop order for 5s: 4 then 1 (expected non-stability)")
 	} else {
-		t.Errorf("Unexpected IDs for value 5: first %d, second %d", firstPopped.ID, secondPopped.ID)
+		t.Errorf("Unexpected IdataStructures for value 5: first %d, second %d", firstPopped.ID, secondPopped.ID)
 	}
 
 	// Further pops
@@ -396,7 +395,7 @@ func TestHeap_Stability_EqualElements(t *testing.T) {
 		t.Errorf("Expected values 10, got %d and %d", thirdPopped.Value, fourthPopped.Value)
 	}
 
-	// Again, no guarantee on IDs for 10s.
+	// Again, no guarantee on IdataStructures for 10s.
 }
 
 // TestHeap_CompareFnNil checks behavior when custom_is_lower_fn is not set.

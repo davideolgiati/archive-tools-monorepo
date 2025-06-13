@@ -2,7 +2,7 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/ds"
+	"archive-tools-monorepo/dataStructures"
 	_ "embed"
 	"flag"
 	"strings"
@@ -40,7 +40,7 @@ func main() {
 
 	var fileProcessorPool *commons.WriteOnlyThreadPool[File]
 
-	sharedRegistry := ds.Flyweight[string]{}
+	sharedRegistry := dataStructures.Flyweight[string]{}
 	outputFileHheap := newFileHeap(commons.HashDescending, &sharedRegistry)
 
 	outputChannel := make(chan commons.File, 10000)

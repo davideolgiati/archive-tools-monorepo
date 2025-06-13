@@ -2,26 +2,26 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/commons/ds"
+	"archive-tools-monorepo/dataStructures"
 	"sync"
 )
 
 type FileHeap struct {
-	heap         ds.Heap[commons.File]
-	hashRegistry *ds.Flyweight[string]
+	heap         dataStructures.Heap[commons.File]
+	hashRegistry *dataStructures.Flyweight[string]
 	sizeFilter   sync.Map
 }
 
-func newFileHeap(sortFunction func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
+func newFileHeap(sortFunction func(commons.File, commons.File) bool, registry *dataStructures.Flyweight[string]) *FileHeap {
 	fileHeap := FileHeap{}
 
-	fileHeap.heap = *ds.NewHeap(sortFunction)
+	fileHeap.heap = *dataStructures.NewHeap(sortFunction)
 	fileHeap.hashRegistry = registry
 
 	return &fileHeap
 }
 
-func refineAndPushFileInHeap(file commons.File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
+func refineAndPushFileInHeap(file commons.File, file_chan chan<- commons.File, flyweight *dataStructures.Flyweight[string]) {
 	if file.Hash.Value() == "" {
 		file_chan <- file
 		return
@@ -42,20 +42,20 @@ func refineAndPushFileInHeap(file commons.File, file_chan chan<- commons.File, f
 	file_chan <- file
 }
 
-func getFileHashGoruotine(file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) func(commons.File) {
+func getFileHashGoruotine(file_chan chan<- commons.File, flyweight *dataStructures.Flyweight[string]) func(commons.File) {
 	return func(obj commons.File) {
 		refineAndPushFileInHeap(obj, file_chan, flyweight)
 	}
 }
 
-func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup, heap *ds.Heap[commons.File]) {
+func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup, heap *dataStructures.Heap[commons.File]) {
 	defer waitgroup.Done()
 	for data := range channel {
 		heap.Push(data)
 	}
 }
 
-func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
+func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) bool, registry *dataStructures.Flyweight[string]) *FileHeap {
 	var current commons.File
 	var last commons.File
 

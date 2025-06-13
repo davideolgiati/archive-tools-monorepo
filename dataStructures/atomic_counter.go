@@ -1,4 +1,4 @@
-package ds
+package dataStructures
 
 import (
 	"sync"
@@ -33,7 +33,7 @@ func (counter *AtomicCounter) Decrement() {
 func (counter *AtomicCounter) Value() int64 {
 	counter.mutex.Lock()
 	defer counter.mutex.Unlock()
-	
+
 	output := counter.value
 
 	return output
