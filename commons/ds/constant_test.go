@@ -20,8 +20,8 @@ func TestConstant_NewConstant_WhenValueIsSet_ReturnOk(t *testing.T) {
 }
 
 func TestConstant_NewConstant_WhenValueNotSet_Panic(t *testing.T) {
-	var data string
-	_, err := NewConstant(&data)
+	var data *string = nil
+	_, err := NewConstant(data)
 
 	if err == nil {
 		t.Error("Expected panic for nil pointer input, but got none")
