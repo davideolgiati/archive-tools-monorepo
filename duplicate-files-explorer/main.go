@@ -32,23 +32,23 @@ func filter[T comparable](input []T, filter_value T) []T {
 }
 
 func main() {
-	start_directory := ""
-	ignored_dir_user := ""
-	skip_empty := false
+	startDirectory := ""
+	ignoredDirUser := ""
+	skipEmpty := false
 	profile := false
 	profiler := commons.Profiler{}
 
-	var fsobjPool *commons.WriteOnlyThreadPool[File]
+	var fileProcessorPool *commons.WriteOnlyThreadPool[File]
 
-	shared_registry := ds.Flyweight[string]{}
-	output_file_heap := new_file_heap(commons.HashDescending, &shared_registry)
+	sharedRegistry := ds.Flyweight[string]{}
+	outputFileHheap := newFileHeap(commons.HashDescending, &sharedRegistry)
 
-	output_channel := make(chan commons.File, 10000)
-	output_wg := sync.WaitGroup{}
+	outputChannel := make(chan commons.File, 10000)
+	outputWg := sync.WaitGroup{}
 
-	flag.StringVar(&start_directory, "dir", "", "Scan starting point  directory")
-	flag.StringVar(&ignored_dir_user, "skip_dirs", "", "Skip user defined directories during scan (separated by comma)")
-	flag.BoolVar(&skip_empty, "no_empty", false, "Skip empty files during scan")
+	flag.StringVar(&startDirectory, "dir", "", "Scan starting point  directory")
+	flag.StringVar(&ignoredDirUser, "skip_dirs", "", "Skip user defined directories during scan (separated by comma)")
+	flag.BoolVar(&skipEmpty, "no_empty", false, "Skip empty files during scan")
 	flag.BoolVar(&profile, "profile", false, "Profile program performances")
 
 	flag.Parse()
@@ -58,52 +58,52 @@ func main() {
 		profiler.Start()
 	}
 
-	user_dirs := filter(strings.Split(ignored_dir_user, ","), "")
+	userDirectories := filter(strings.Split(ignoredDirUser, ","), "")
 
 	ui.Println("Running version: %s", version)
 	ui.Println("Build timestamp: %s", buildts)
 
-	if output_file_heap == nil {
+	if outputFileHheap == nil {
 		panic("error wile creating new file heap object")
 	}
 
-	workerFn := getFileProcessWorker(output_file_heap.hash_registry, output_channel, &output_file_heap.size_filter)
-	fsobjPool, err := commons.NewWorkerPool(workerFn)
+	workerFn := getFileProcessWorker(outputFileHheap.hashRegistry, outputChannel, &outputFileHheap.sizeFilter)
+	fileProcessorPool, err := commons.NewWorkerPool(workerFn)
 
 	if err != nil {
 		panic(err)
 	}
 
-	walker := NewWalker(skip_empty)
+	walker := NewWalker(skipEmpty)
 
 	if walker == nil {
 		panic("error wile creating new file walker object")
 	}
 
-	output_wg.Add(1)
+	outputWg.Add(1)
 
 	go func() {
-		for data := range output_channel {
-			output_file_heap.heap.Push(data)
+		for data := range outputChannel {
+			outputFileHheap.heap.Push(data)
 		}
-		output_wg.Done()
+		outputWg.Done()
 	}()
 
-	walker.SetEntryPoint(start_directory)
-	walker.SetDirectoryFilter(get_directory_filter_fn(&user_dirs))
-	walker.SetFileCallback(get_file_callback_fn(fsobjPool))
-	walker.SetDirectoryCallback(fsobjPool.Wait)
+	walker.SetEntryPoint(startDirectory)
+	walker.SetDirectoryFilter(get_directory_filter_fn(&userDirectories))
+	walker.SetFileCallback(get_file_callback_fn(fileProcessorPool))
+	walker.SetDirectoryCallback(fileProcessorPool.Wait)
 
 	walker.Walk()
 
-	fsobjPool.Release()
+	fileProcessorPool.Release()
 
-	close(output_channel)
+	close(outputChannel)
 
-	output_wg.Wait()
+	outputWg.Wait()
 
-	cleaned_heap := output_file_heap.filter_heap(commons.Equal, &shared_registry)
-	display_duplicate_file_info(cleaned_heap)
+	cleanedHeap := outputFileHheap.filterHeap(commons.Equal, &sharedRegistry)
+	cleanedHeap.display_duplicate_file_info()
 
 	ui.Close()
 

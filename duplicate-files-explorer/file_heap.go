@@ -7,139 +7,143 @@ import (
 )
 
 type FileHeap struct {
-	heap          ds.Heap[commons.File]
-	hash_registry *ds.Flyweight[string]
-	size_filter   sync.Map
+	heap         ds.Heap[commons.File]
+	hashRegistry *ds.Flyweight[string]
+	sizeFilter   sync.Map
 }
 
-func new_file_heap(sortFunction func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
-	file_heap := FileHeap{}
+func newFileHeap(sortFunction func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
+	fileHeap := FileHeap{}
 
-	file_heap.heap = *ds.NewHeap(sortFunction)
-	file_heap.hash_registry = registry
+	fileHeap.heap = *ds.NewHeap(sortFunction)
+	fileHeap.hashRegistry = registry
 
-	return &file_heap
+	return &fileHeap
 }
 
-func refine_and_push_file_into_heap(file commons.File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
+func refineAndPushFileInHeap(file commons.File, file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) {
 	if file.Hash.Value() == "" {
-		hash, err := commons.CalculateHash(file.Name)
-		if err != nil {
-			panic(err)
-		}
+		file_chan <- file
+		return
+	}
 
-		file.Hash, err = flyweight.Instance(hash)
+	hash, err := commons.CalculateHash(file.Name)
 
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		panic(err)
+	}
+
+	file.Hash, err = flyweight.Instance(hash)
+
+	if err != nil {
+		panic(err)
 	}
 
 	file_chan <- file
 }
 
-func get_file_hash_thread_fn(file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) func(commons.File) {
+func getFileHashGoruotine(file_chan chan<- commons.File, flyweight *ds.Flyweight[string]) func(commons.File) {
 	return func(obj commons.File) {
-		refine_and_push_file_into_heap(obj, file_chan, flyweight)
+		refineAndPushFileInHeap(obj, file_chan, flyweight)
 	}
 }
 
-func file_channel_consumer(channel chan commons.File, waitgroup *sync.WaitGroup, heap *ds.Heap[commons.File]) {
+func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup, heap *ds.Heap[commons.File]) {
 	defer waitgroup.Done()
 	for data := range channel {
 		heap.Push(data)
 	}
 }
 
-func (file_heap *FileHeap) filter_heap(filter_fn func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
+func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
 	var current commons.File
 	var last commons.File
 
-	output := new_file_heap(commons.HashDescending, registry)
-	output.hash_registry = file_heap.hash_registry
+	output := newFileHeap(commons.HashDescending, registry)
+	output.hashRegistry = fh.hashRegistry
 
-	total := float64(file_heap.heap.Size())
+	total := float64(fh.heap.Size())
 	processed := 0.0
 
-	duplicate_flag := false
+	duplicateFlag := false
 
-	file_channel := make(chan commons.File)
-	target_fn := get_file_hash_thread_fn(file_channel, output.hash_registry)
-	file_threadpool, err := commons.NewWorkerPool(target_fn)
+	fileChannel := make(chan commons.File)
+	targetFunction := getFileHashGoruotine(fileChannel, output.hashRegistry)
+	fileThreadPool, err := commons.NewWorkerPool(targetFunction)
 
 	if err != nil {
 		panic(err)
 	}
 
-	output_waitgroup := sync.WaitGroup{}
-	output_waitgroup.Add(1)
-	go file_channel_consumer(file_channel, &output_waitgroup, &output.heap)
+	outputWaitgroup := sync.WaitGroup{}
+	outputWaitgroup.Add(1)
+	go consumeFromFileChannel(fileChannel, &outputWaitgroup, &output.heap)
 
 	ui.AddNewNamedLine("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
-	if !file_heap.heap.Empty() {
-		current = file_heap.heap.Pop()
+	if !fh.heap.Empty() {
+		current = fh.heap.Pop()
 		processed += 1.0
 	}
 
-	for !file_heap.heap.Empty() {
+	for !fh.heap.Empty() {
 		last = current
-		current = file_heap.heap.Pop()
+		current = fh.heap.Pop()
 		processed += 1.0
 
-		if filter_fn(current, last) {
-			duplicate_flag = true
-			file_threadpool.Submit(last)
-		} else if duplicate_flag {
-			duplicate_flag = false
-			file_threadpool.Submit(last)
+		if filterFunction(current, last) {
+			duplicateFlag = true
+			fileThreadPool.Submit(last)
+		} else if duplicateFlag {
+			duplicateFlag = false
+			fileThreadPool.Submit(last)
 		} else {
-			duplicate_flag = false
+			duplicateFlag = false
 		}
 
 		ui.UpdateNamedLine("cleanup-stage", "cleanup-stage", (processed/total)*100)
 	}
 
-	if duplicate_flag {
-		file_threadpool.Submit(current)
+	if duplicateFlag {
+		fileThreadPool.Submit(current)
 	}
 
-	file_threadpool.Release()
-	close(file_channel)
-	output_waitgroup.Wait()
+	fileThreadPool.Release()
+	close(fileChannel)
+	outputWaitgroup.Wait()
 
 	return output
 }
 
-func display_duplicate_file_info(file_heap *FileHeap) {
-	var last_file_seen commons.File
-	var current_file commons.File
-	var files_are_equal bool
+func (fh *FileHeap) display_duplicate_file_info() {
+	var lastSeen commons.File
+	var current commons.File
+	var areEqual bool
 
-	is_duplicate := false
+	isDuplicate := false
 
-	if !file_heap.heap.Empty() {
-		current_file = file_heap.heap.Pop()
+	if !fh.heap.Empty() {
+		current = fh.heap.Pop()
 	}
 
-	for !file_heap.heap.Empty() {
-		last_file_seen = current_file
-		current_file = file_heap.heap.Pop()
-		files_are_equal = commons.EqualByHash(current_file, last_file_seen)
+	for !fh.heap.Empty() {
+		lastSeen = current
+		current = fh.heap.Pop()
+		areEqual = commons.EqualByHash(current, lastSeen)
 
-		if files_are_equal {
-			ui.Println("file: %s", last_file_seen)
+		if areEqual {
+			ui.Println("file: %s", lastSeen)
 		} else {
-			if is_duplicate {
-				ui.Println("file: %s", last_file_seen)
+			if isDuplicate {
+				ui.Println("file: %s", lastSeen)
 			}
 		}
 
-		is_duplicate = files_are_equal
+		isDuplicate = areEqual
 
 	}
 
-	if is_duplicate {
-		ui.Println("file: %s", last_file_seen)
+	if isDuplicate {
+		ui.Println("file: %s", lastSeen)
 	}
 }

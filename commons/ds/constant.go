@@ -8,7 +8,7 @@ type Constant[T any] struct {
 
 func NewConstant[T any](data *T) (Constant[T], error) {
 	if data == nil {
-		return Constant[T]{}, fmt.Errorf("Data pointer is nil")
+		return Constant[T]{}, fmt.Errorf("data pointer is nil")
 	}
 	return Constant[T]{ptr: data}, nil
 }
