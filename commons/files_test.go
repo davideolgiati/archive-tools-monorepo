@@ -15,9 +15,10 @@ import (
 // TestFile_ToString verifies the formatting of the File struct.
 func TestFile_ToString(t *testing.T) {
 	hash := "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
+	hashConstant, _ := ds.NewConstant(&hash)
 	file := File{
 		Name: "test_document.txt",
-		Hash: ds.NewConstant(&hash),
+		Hash: hashConstant,
 		FormattedSize: FileSize{
 			Value: 123,
 			Unit:  &sizes_array[1], // Kb
@@ -32,9 +33,10 @@ func TestFile_ToString(t *testing.T) {
 
 	// Test with different unit and hash length
 	hash2 := "short"
+	hashConstant, _ = ds.NewConstant(&hash2)
 	file2 := File{
 		Name: "another_file.log",
-		Hash: ds.NewConstant(&hash2),
+		Hash: hashConstant,
 		FormattedSize: FileSize{
 			Value: 5,
 			Unit:  &sizes_array[0], // b
@@ -81,9 +83,11 @@ func TestSizeDescending_Deterministic(t *testing.T) {
 func TestHashDescending_Deterministic(t *testing.T) {
 	hash1 := "aaaa"
 	hash2 := "bbbb"
+	hashConstant1, _ := ds.NewConstant(&hash1)
+	hashConstant2, _ := ds.NewConstant(&hash2)
 
-	f1 := File{Hash: ds.NewConstant(&hash1)}
-	f2 := File{Hash: ds.NewConstant(&hash2)}
+	f1 := File{Hash: hashConstant1}
+	f2 := File{Hash: hashConstant2}
 
 	if !HashDescending(f1, f2) { // "aaaa" <= "bbbb" -> true
 		t.Errorf("Expected f1 to be <= f2")
@@ -97,8 +101,10 @@ func TestHashDescending_Deterministic(t *testing.T) {
 
 	// Test with equal hashes, different names (similar stability issue as SizeDescending)
 	equalHash := "xyz"
-	f4 := File{Name: "f4", Hash: ds.NewConstant(&equalHash)}
-	f5 := File{Name: "f5", Hash: ds.NewConstant(&equalHash)}
+	hashConstant3, _ := ds.NewConstant(&equalHash)
+	hashConstant4, _ := ds.NewConstant(&equalHash)
+	f4 := File{Name: "f4", Hash: hashConstant3}
+	f5 := File{Name: "f5", Hash: hashConstant4}
 
 	if !HashDescending(f4, f5) {
 		t.Errorf("Expected f4 to be <= f5 when hashes are equal")

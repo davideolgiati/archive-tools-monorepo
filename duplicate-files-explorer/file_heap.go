@@ -12,13 +12,11 @@ type FileHeap struct {
 	size_filter   sync.Map
 }
 
-func new_file_heap(compare_fn func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
+func new_file_heap(sortFunction func(commons.File, commons.File) bool, registry *ds.Flyweight[string]) *FileHeap {
 	file_heap := FileHeap{}
 
-	file_heap.heap = ds.Heap[commons.File]{}
+	file_heap.heap = *ds.NewHeap(sortFunction)
 	file_heap.hash_registry = registry
-
-	file_heap.heap.Compare_fn(compare_fn)
 
 	return &file_heap
 }
@@ -30,7 +28,11 @@ func refine_and_push_file_into_heap(file commons.File, file_chan chan<- commons.
 			panic(err)
 		}
 
-		file.Hash = flyweight.Instance(hash)
+		file.Hash, err = flyweight.Instance(hash)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	file_chan <- file

@@ -107,10 +107,16 @@ func process_file_entry(file *File, file_chan chan<- commons.File, flyweight *ds
 			panic(err)
 		}
 
+		hashPointer, err := flyweight.Instance(hash)
+
+		if err != nil {
+			panic(err)
+		}
+
 		file_stats := commons.File{
 			Name:          file.path,
 			Size:          size,
-			Hash:          flyweight.Instance(hash),
+			Hash:          hashPointer,
 			FormattedSize: formatted_size,
 		}
 

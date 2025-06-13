@@ -11,12 +11,17 @@ type Heap[T any] struct {
 	mutex              sync.Mutex
 }
 
-func (heap *Heap[T]) Compare_fn(custom_is_lower_fn func(T, T) bool) {
-	if custom_is_lower_fn == nil {
+func NewHeap[T any](sortFunction func(T, T) bool) *Heap[T] {
+	heap := Heap[T]{}
+
+	if sortFunction == nil {
 		panic("Provided function is a nil pointer")
 	}
 
-	heap.custom_is_lower_fn = custom_is_lower_fn
+	heap.custom_is_lower_fn = sortFunction
+	heap.items = make([]T, 0)
+	
+	return &heap
 }
 
 func (heap *Heap[T]) Empty() bool {
