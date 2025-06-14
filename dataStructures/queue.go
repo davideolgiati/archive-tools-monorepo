@@ -1,5 +1,7 @@
 package dataStructures
 
+import "fmt"
+
 type Queue[T comparable] struct {
 	queue []T
 	head  int
@@ -24,20 +26,26 @@ func (queue *Queue[T]) Push(value T) {
 	queue.size++
 }
 
-func (queue *Queue[T]) Pop() T {
+func (queue *Queue[T]) Pop() (T, error) {
+	var value T
+
 	if queue.size == 0 {
-		panic("Pop on empty queue")
+		return value, fmt.Errorf("Pop on empty queue")
 	}
 
-	value := queue.queue[queue.head]
+	value = queue.queue[queue.head]
 	queue.head = (queue.head + 1) % len(queue.queue)
 	queue.size--
 
-	return value
+	return value, nil
 }
 
 func (queue *Queue[T]) Empty() bool {
 	return queue.size == 0
+}
+
+func (queue *Queue[T]) Size() int {
+	return queue.size
 }
 
 func (queue *Queue[T]) resize() {

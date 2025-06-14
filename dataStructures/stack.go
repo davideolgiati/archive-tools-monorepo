@@ -17,6 +17,13 @@ func (stack *Stack[T]) Empty() bool {
 	return len(stack.items) == 0
 }
 
+func (stack *Stack[T]) Size() int {
+	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
+
+	return len(stack.items)
+}
+
 func (stack *Stack[T]) Push(data T) {
 	stack.mutex.Lock()
 	defer stack.mutex.Unlock()

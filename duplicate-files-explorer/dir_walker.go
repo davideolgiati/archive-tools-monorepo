@@ -81,7 +81,12 @@ func (walker *dirWalker) Walk() {
 	ui.AddNewNamedLine("size-line", "Processed: %10d %2s")
 
 	for !walker.state.directoriesQueue.Empty() {
-		walker.state.currentDirectory = walker.state.directoriesQueue.Pop()
+		walker.state.currentDirectory, err = walker.state.directoriesQueue.Pop()
+
+		if err != nil {
+			panic(err)
+		}
+
 		objects, read_dir_err := os.ReadDir(walker.state.currentDirectory)
 
 		if read_dir_err == nil {
