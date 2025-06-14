@@ -2,79 +2,109 @@ package fuzztests
 
 import (
 	"archive-tools-monorepo/dataStructures"
+	"fmt"
+	"strings"
 	"testing"
 )
 
-
 func FuzzQueue(f *testing.F) {
-	testcases := []int{
-		10, 100, 1000,
+	testCases := []string{
+		"p:1;s;o;e",
+		"",
+		"",
+		"o;o;o;o;o;o;o;o;o",
+		"p:10",
+		"s",
+		"e",
+		"o",
 	}
-	for _, tc := range testcases {
-		f.Add(tc)
-	}
-	f.Fuzz(func(t *testing.T, target int) {
-		if target < 0 {
-			target *= -1
+
+	for i := 0; i < 35; i++ {
+		var data string
+		if i%10 == 0 {
+			data = "o;"
+		} else {
+			data = fmt.Sprintf("p:%d;", i)
 		}
-		array := make([]*string, target)
 
-		queue := dataStructures.Queue[*string]{}
-		queue.Init()
+		testCases[1] += data
+	}
 
-		offset := 0
-		treshold := 29
+	testCases[1] += "e;s"
 
-		for i := 0; i < target; i++ {
-			array[i] = getRandomString()
-			queue.Push(array[i])
-			if queue.Size() == treshold {
-				for !queue.Empty() {
-					data, err := queue.Pop()
+	testCases[2] = testCases[1] + ";"
 
+	for i := 0; i < 35; i++ {
+		testCases[2] += "o;"
+	}
+
+	for i := 0; i < 70; i++ {
+		var data string
+		if i%10 == 0 {
+			data = "o;"
+		} else {
+			data = fmt.Sprintf("p:%d;", i)
+		}
+
+		testCases[2] += data
+	}
+
+	for _, testCase := range testCases {
+		f.Add(testCase)
+	}
+
+	f.Fuzz(func(t *testing.T, actions string) {
+		var q dataStructures.Queue[string]
+		q.Init()
+
+		var model []string
+
+		for i, raw := range strings.Split(actions, ";") {
+			switch {
+			case strings.HasPrefix(raw, "p:"):
+				// Push operation
+				valStr := strings.TrimPrefix(raw, "p:")
+				q.Push(valStr)
+				model = append(model, valStr)
+			case raw == "o":
+				// Pop operation
+				val, err := q.Pop()
+				if len(model) == 0 {
+					if err == nil {
+						t.Fatalf("Step %d: expected error on empty pop, got %v", i, val)
+					}
+				} else {
+					expected := model[0]
+					model = model[1:]
 					if err != nil {
-						t.Errorf("Error while popping from queue: %v", err)
+						t.Fatalf("Step %d: unexpected error: %v", i, err)
 					}
-
-					if *data != *array[offset] {
-						t.Errorf("Error while popping from queue:\n\texpected: %v\n\t got: %v", *array[i], *data)
+					if val != expected {
+						t.Fatalf("Step %d: pop mismatch: got %v, expected %v", i, val, expected)
 					}
-
-					if data != array[offset] {
-						t.Errorf("Error while popping from queue:\n\texpected: %v\n\t got: %v", array[i], data)
-					}
-
-					offset++
 				}
-				treshold = (treshold * 2) + 1
-			}
-			if queue.Size() != ((i + 1) - offset) {
-				t.Errorf("Error in queue size:\n\texpected: %v\n\t got: %v", ((i + 1) - offset), queue.Size())
-			}
-		}
-
-		for i := offset; i < target; i++ {
-			data, err := queue.Pop()
-
-			if err != nil {
-				t.Errorf("Error while popping from queue: %v", err)
-			}
-
-			if data != array[i] {
-				t.Errorf("Error while popping from queue:\n\texpected: %v\n\t got: %v", array[i], data)
+			case raw == "s":
+				queueLen := q.Size()
+				if queueLen != len(model) {
+					t.Fatalf("Step %d: size mismatch: got %v, expected %v", i, queueLen, len(model))
+				}
+			case raw == "e":
+				isEmpty := q.Empty()
+				if isEmpty != (len(model) == 0) {
+					t.Fatalf("Step %d: size mismatch: got %v, expected %v", i, isEmpty, len(model) == 0)
+				}
+			default:
+				// Unknown op, skip
+				continue
 			}
 
-			if *data != *array[i] {
-				t.Errorf("Error while popping from queue:\n\texpected: %v\n\t got: %v", *array[i], *data)
+			// Invariant checks
+			if q.Size() != len(model) {
+				t.Fatalf("Step %d: size mismatch: got %d, expected %d", i, q.Size(), len(model))
 			}
-		}
-
-		if !queue.Empty() {
-			t.Errorf("Error! Queue not empty!")
-		}
-
-		if queue.Size() != 0 {
-			t.Errorf("Error! Queue empty but size != 0!")
+			if q.Empty() != (len(model) == 0) {
+				t.Fatalf("Step %d: empty mismatch: got %v, expected %v", i, q.Empty(), len(model) == 0)
+			}
 		}
 	})
 }
