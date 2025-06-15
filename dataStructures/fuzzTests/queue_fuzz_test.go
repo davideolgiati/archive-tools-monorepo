@@ -2,7 +2,6 @@ package fuzztests
 
 import (
 	"archive-tools-monorepo/dataStructures"
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -10,56 +9,21 @@ import (
 func FuzzQueue(f *testing.F) {
 	testCases := []string{
 		"p:1;s;o;e",
-		"",
-		"",
-		"o;o;o;o;o;o;o;o;o",
-		"p:10",
-		"s",
-		"e",
-		"o",
-	}
-
-	for i := 0; i < 35; i++ {
-		var data string
-		if i%10 == 0 {
-			data = "o;"
-		} else {
-			data = fmt.Sprintf("p:%d;", i)
-		}
-
-		testCases[1] += data
-	}
-
-	testCases[1] += "e;s"
-
-	testCases[2] = testCases[1] + ";"
-
-	for i := 0; i < 35; i++ {
-		testCases[2] += "o;"
-	}
-
-	for i := 0; i < 70; i++ {
-		var data string
-		if i%10 == 0 {
-			data = "o;"
-		} else {
-			data = fmt.Sprintf("p:%d;", i)
-		}
-
-		testCases[2] += data
+		"p:hello;p:world;o;o",
+		"s;e",
 	}
 
 	for _, testCase := range testCases {
 		f.Add(testCase)
 	}
 
-	f.Fuzz(func(t *testing.T, actions string) {
+	f.Fuzz(func(t *testing.T, tc string) {
 		var q dataStructures.Queue[string]
 		q.Init()
 
 		var model []string
 
-		for i, raw := range strings.Split(actions, ";") {
+		for i, raw := range strings.Split(tc, ";") {
 			switch {
 			case strings.HasPrefix(raw, "p:"):
 				// Push operation

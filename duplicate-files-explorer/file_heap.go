@@ -30,13 +30,15 @@ func refineAndPushFileInHeap(file commons.File, file_chan chan<- commons.File, f
 	hash, err := commons.CalculateHash(file.Name)
 
 	if err != nil {
-		panic(err)
+		return
+		//panic(err)
 	}
 
 	file.Hash, err = flyweight.Instance(hash)
 
 	if err != nil {
-		panic(err)
+		return
+		//panic(err)
 	}
 
 	file_chan <- file

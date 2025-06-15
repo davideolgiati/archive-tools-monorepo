@@ -2,42 +2,57 @@ package dataStructures
 
 import "fmt"
 
-type Queue[T comparable] struct {
-	queue []T
-	head  int
-	tail  int
+type node[T any] struct {
+	value T
+	next *node[T]
+}
+
+type Queue[T any] struct {
+	head  *node[T]
+	tail  *node[T]
 	size  int
 }
 
 func (queue *Queue[T]) Init() {
-	queue.queue = make([]T, 30)
-	queue.head = 0
-	queue.tail = 0
+	queue.head = nil
+	queue.tail = nil
 	queue.size = 0
 }
 
 func (queue *Queue[T]) Push(value T) {
-	if queue.size == len(queue.queue) {
-		queue.resize()
+	newNode := node[T]{
+		value: value,
+		next: nil,
 	}
 
-	queue.queue[queue.tail] = value
-	queue.tail = (queue.tail + 1) % len(queue.queue)
+	if queue.head == nil {
+		queue.head = &newNode
+	} else {
+		queue.tail.next = &newNode
+	}
+
+	queue.tail = &newNode
 	queue.size++
 }
 
 func (queue *Queue[T]) Pop() (T, error) {
 	var value T
 
-	if queue.size == 0 {
+	switch{
+	case queue.size == 0:
 		return value, fmt.Errorf("Pop on empty queue")
+	case queue.size == 1:
+		data := queue.tail.value
+		queue.head = nil
+		queue.tail = nil
+		queue.size = 0
+		return data, nil
+	default:
+		data := queue.head.value
+		queue.head = queue.head.next
+		queue.size--
+		return data, nil
 	}
-
-	value = queue.queue[queue.head]
-	queue.head = (queue.head + 1) % len(queue.queue)
-	queue.size--
-
-	return value, nil
 }
 
 func (queue *Queue[T]) Empty() bool {
@@ -46,16 +61,4 @@ func (queue *Queue[T]) Empty() bool {
 
 func (queue *Queue[T]) Size() int {
 	return queue.size
-}
-
-func (queue *Queue[T]) resize() {
-	newQueue := make([]T, len(queue.queue)*2)
-
-	for i := 0; i < queue.size; i++ {
-		newQueue[i] = queue.queue[(queue.head+i)%len(queue.queue)]
-	}
-
-	queue.queue = newQueue
-	queue.head = 0
-	queue.tail = queue.size
 }

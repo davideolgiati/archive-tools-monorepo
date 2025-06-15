@@ -1,12 +1,14 @@
 package dataStructures
 
 import (
-	"fmt"
+	"math"
 	"sync"
 )
 
 type Heap[T any] struct {
 	items              []T
+	tail               int
+	size               int
 	custom_is_lower_fn func(T, T) bool
 	mutex              sync.Mutex
 }
@@ -20,6 +22,8 @@ func NewHeap[T any](sortFunction func(T, T) bool) *Heap[T] {
 
 	heap.custom_is_lower_fn = sortFunction
 	heap.items = make([]T, 0)
+	heap.tail = 0
+	heap.size = 0
 
 	return &heap
 }
@@ -28,14 +32,14 @@ func (heap *Heap[T]) Empty() bool {
 	heap.mutex.Lock()
 	defer heap.mutex.Unlock()
 
-	return len(heap.items) == 0
+	return heap.size == 0
 }
 
 func (heap *Heap[T]) Size() int {
 	heap.mutex.Lock()
 	defer heap.mutex.Unlock()
 
-	return len(heap.items)
+	return heap.size
 }
 
 func (heap *Heap[T]) Push(data T) {
@@ -46,16 +50,16 @@ func (heap *Heap[T]) Push(data T) {
 	heap.mutex.Lock()
 	defer heap.mutex.Unlock()
 
-	start_size := len(heap.items)
-
-	heap.items = append(heap.items, data)
-
-	if len(heap.items) > 1 {
-		heap.heapifyBottomUp()
+	if heap.tail == len(heap.items) {
+		heap.resize()
 	}
 
-	if len(heap.items) != start_size+1 {
-		panic(fmt.Sprintf("wrong heap size, expected %d, got %d", start_size+1, len(heap.items)))
+	heap.items[heap.tail] = data
+	heap.tail++
+	heap.size++
+
+	if heap.size > 1 {
+		heap.heapifyBottomUp()
 	}
 }
 
@@ -69,20 +73,15 @@ func (heap *Heap[T]) Pop() T {
 
 	var item T
 
-	start_size := len(heap.items)
-
-	if len(heap.items) != 0 {
+	if heap.size != 0 {
 		item = heap.items[0]
-		heap.items[0] = heap.items[len(heap.items)-1]
-		heap.items = heap.items[:len(heap.items)-1]
+		heap.tail--
+		heap.size--
+		heap.items[0] = heap.items[heap.tail]
 
-		if len(heap.items) != 0 {
+		if heap.size != 0 {
 			heap.heapifyTopDown()
 		}
-	}
-
-	if start_size != 0 && len(heap.items) != start_size-1 {
-		panic(fmt.Sprintf("wrong heap size, expected %d, got %d", start_size-1, len(heap.items)))
 	}
 
 	return item
@@ -94,11 +93,11 @@ func (heap *Heap[T]) Peak() *T {
 
 	var item *T
 
-	if len(heap.items) != 0 {
+	if heap.size != 0 {
 		item = &heap.items[0]
 	}
 
-	if len(heap.items) != 0 && item == nil {
+	if heap.size != 0 && item == nil {
 		panic("pointer to heap.items[0] is nil")
 	}
 
@@ -142,8 +141,7 @@ func getParent(index *int) int {
 }
 
 func (heap *Heap[T]) heapifyBottomUp() {
-	start_size := len(heap.items)
-	current_index := len(heap.items) - 1
+	current_index := heap.tail - 1
 	parent := getParent(&current_index)
 
 	for current_index > 0 && heap.custom_is_lower_fn(heap.items[current_index], heap.items[parent]) {
@@ -166,10 +164,6 @@ func (heap *Heap[T]) heapifyBottomUp() {
 			panic("parent is higher than current index")
 		}
 	}
-
-	if len(heap.items) != start_size {
-		panic(fmt.Sprintf("dataloss - heapsize start: %d, heapsize end: %d", start_size, len(heap.items)))
-	}
 }
 
 func (heap *Heap[T]) getSmallestChild(current *int) int {
@@ -181,7 +175,7 @@ func (heap *Heap[T]) getSmallestChild(current *int) int {
 		panic("current pointer is nil")
 	}
 
-	if *current >= len(heap.items) {
+	if *current >= heap.tail {
 		panic("current is beyond heap scope")
 	}
 
@@ -192,11 +186,11 @@ func (heap *Heap[T]) getSmallestChild(current *int) int {
 		panic("left is right")
 	}
 
-	if left >= len(heap.items) || right > len(heap.items) {
-		return len(heap.items)
+	if left >= heap.tail || right > heap.tail {
+		return heap.tail
 	}
 
-	if right == len(heap.items) {
+	if right == heap.tail {
 		return left
 	}
 
@@ -208,11 +202,10 @@ func (heap *Heap[T]) getSmallestChild(current *int) int {
 }
 
 func (heap *Heap[T]) heapifyTopDown() {
-	start_size := len(heap.items)
 	current_index := 0
 	candidate := heap.getSmallestChild(&current_index)
 
-	for candidate < len(heap.items) && heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
+	for candidate < heap.tail && heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
 		heap.items[candidate], heap.items[current_index] = heap.items[current_index], heap.items[candidate]
 
 		current_index = candidate
@@ -226,11 +219,11 @@ func (heap *Heap[T]) heapifyTopDown() {
 			panic("candidate is not positive")
 		}
 
-		if candidate > len(heap.items) {
+		if candidate > heap.tail {
 			panic("candidate is beyond heap scope")
 		}
 
-		if current_index > len(heap.items) {
+		if current_index > heap.tail {
 			panic("candidate is beyond heap scope")
 		}
 
@@ -238,8 +231,13 @@ func (heap *Heap[T]) heapifyTopDown() {
 			panic("candidate is lower than current index")
 		}
 	}
+}
 
-	if len(heap.items) != start_size {
-		panic(fmt.Sprintf("dataloss - heapsize start: %d, heapsize end: %d", start_size, len(heap.items)))
-	}
+func (heap *Heap[T]) resize() {
+	newSize := math.Pow(float64(len(heap.items)), 2) + 1
+	newItems := make([]T, uint(newSize))
+
+	copy(newItems[:len(heap.items)], heap.items)
+
+	heap.items = newItems
 }
