@@ -6,22 +6,22 @@ import (
 )
 
 type Heap[T any] struct {
-	items              []T
-	tail               int
-	size               int
-	custom_is_lower_fn func(T, T) bool
-	mutex              sync.Mutex
+	items       []*T
+	tail        int
+	size        int
+	minFunction func(*T, *T) bool
+	mutex       sync.Mutex
 }
 
-func NewHeap[T any](sortFunction func(T, T) bool) *Heap[T] {
+func NewHeap[T any](sortFunction func(*T, *T) bool) *Heap[T] {
 	heap := Heap[T]{}
 
 	if sortFunction == nil {
 		panic("Provided function is a nil pointer")
 	}
 
-	heap.custom_is_lower_fn = sortFunction
-	heap.items = make([]T, 0)
+	heap.minFunction = sortFunction
+	heap.items = make([]*T, 0)
 	heap.tail = 0
 	heap.size = 0
 
@@ -43,7 +43,7 @@ func (heap *Heap[T]) Size() int {
 }
 
 func (heap *Heap[T]) Push(data T) {
-	if heap.custom_is_lower_fn == nil {
+	if heap.minFunction == nil {
 		panic("comapre function not set!")
 	}
 
@@ -54,32 +54,30 @@ func (heap *Heap[T]) Push(data T) {
 		heap.resize()
 	}
 
-	heap.items[heap.tail] = data
+	heap.items[heap.tail] = &data
 	heap.tail++
 	heap.size++
 
-	if heap.size > 1 {
-		heap.heapifyBottomUp()
-	}
+	heap.heapifyBottomUp()
 }
 
 func (heap *Heap[T]) Pop() T {
-	if heap.custom_is_lower_fn == nil {
+	if heap.minFunction == nil {
 		panic("comapre function not set!")
 	}
-
-	heap.mutex.Lock()
-	defer heap.mutex.Unlock()
 
 	var item T
 
 	if heap.size != 0 {
-		item = heap.items[0]
+		heap.mutex.Lock()
+		defer heap.mutex.Unlock()
+
+		item = *heap.items[0]
 		heap.tail--
 		heap.size--
-		heap.items[0] = heap.items[heap.tail]
 
 		if heap.size != 0 {
+			heap.items[0] = heap.items[heap.tail]
 			heap.heapifyTopDown()
 		}
 	}
@@ -88,116 +86,40 @@ func (heap *Heap[T]) Pop() T {
 }
 
 func (heap *Heap[T]) Peak() *T {
-	heap.mutex.Lock()
-	defer heap.mutex.Unlock()
-
 	var item *T
 
 	if heap.size != 0 {
-		item = &heap.items[0]
-	}
+		heap.mutex.Lock()
+		defer heap.mutex.Unlock()
 
-	if heap.size != 0 && item == nil {
-		panic("pointer to heap.items[0] is nil")
+		item = heap.items[0]
 	}
 
 	return item
 }
 
-func getLeftNode(index *int) int {
-	if index == nil {
-		panic("provide index pointer is nil")
-	}
-
-	if *index < 0 {
-		panic("provide index is < 0")
-	}
-
-	return (*index * 2) + 1
-}
-
-func getRightNode(index *int) int {
-	if index == nil {
-		panic("provide index pointer is nil")
-	}
-
-	if *index < 0 {
-		panic("provide index is < 0")
-	}
-
-	return (*index * 2) + 2
-}
-
-func getParent(index *int) int {
-	if index == nil {
-		panic("provide index pointer is nil")
-	}
-
-	if *index <= 0 {
-		panic("provide index is <= 0")
-	}
-
-	return (*index - 1) / 2
-}
-
 func (heap *Heap[T]) heapifyBottomUp() {
 	current_index := heap.tail - 1
-	parent := getParent(&current_index)
+	parent := (heap.tail - 2) / 2
 
-	for current_index > 0 && heap.custom_is_lower_fn(heap.items[current_index], heap.items[parent]) {
+	for current_index > 0 && heap.minFunction(heap.items[current_index], heap.items[parent]) {
 		heap.items[parent], heap.items[current_index] = heap.items[current_index], heap.items[parent]
 
 		current_index = parent
-		if current_index > 0 {
-			parent = getParent(&current_index)
-		}
-
-		if current_index < 0 {
-			panic("current_index is not positive")
-		}
-
-		if parent < 0 {
-			panic("parent is not positive")
-		}
-
-		if parent > current_index {
-			panic("parent is higher than current index")
-		}
+		parent = (current_index - 1) / 2
 	}
 }
 
 func (heap *Heap[T]) getSmallestChild(current *int) int {
-	if heap == nil {
-		panic("heap pointer is nil")
-	}
+	left := ((*current) * 2) + 1
 
-	if current == nil {
-		panic("current pointer is nil")
-	}
-
-	if *current >= heap.tail {
-		panic("current is beyond heap scope")
-	}
-
-	left := getLeftNode(current)
-	right := getRightNode(current)
-
-	if left == right {
-		panic("left is right")
-	}
-
-	if left >= heap.tail || right > heap.tail {
+	switch {
+	case left >= heap.tail || left+1 > heap.tail:
 		return heap.tail
-	}
-
-	if right == heap.tail {
+	case left+1 == heap.tail || heap.minFunction(heap.items[left], heap.items[left+1]):
 		return left
-	}
-
-	if heap.custom_is_lower_fn(heap.items[left], heap.items[right]) {
-		return left
-	} else {
-		return right
+	default:
+		return left + 1
 	}
 }
 
@@ -205,37 +127,21 @@ func (heap *Heap[T]) heapifyTopDown() {
 	current_index := 0
 	candidate := heap.getSmallestChild(&current_index)
 
-	for candidate < heap.tail && heap.custom_is_lower_fn(heap.items[candidate], heap.items[current_index]) {
+	for candidate < heap.tail && heap.minFunction(heap.items[candidate], heap.items[current_index]) {
 		heap.items[candidate], heap.items[current_index] = heap.items[current_index], heap.items[candidate]
-
 		current_index = candidate
+
+		if current_index * 2 > heap.tail{
+			continue
+		}
+
 		candidate = heap.getSmallestChild(&candidate)
-
-		if current_index < 0 {
-			panic("current_index is not positive")
-		}
-
-		if candidate < 0 {
-			panic("candidate is not positive")
-		}
-
-		if candidate > heap.tail {
-			panic("candidate is beyond heap scope")
-		}
-
-		if current_index > heap.tail {
-			panic("candidate is beyond heap scope")
-		}
-
-		if candidate < current_index {
-			panic("candidate is lower than current index")
-		}
 	}
 }
 
 func (heap *Heap[T]) resize() {
 	newSize := math.Pow(float64(len(heap.items)), 2) + 1
-	newItems := make([]T, uint(newSize))
+	newItems := make([]*T, uint(newSize))
 
 	copy(newItems[:len(heap.items)], heap.items)
 

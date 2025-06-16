@@ -12,7 +12,7 @@ type FileHeap struct {
 	sizeFilter   sync.Map
 }
 
-func newFileHeap(sortFunction func(commons.File, commons.File) bool, registry *dataStructures.Flyweight[string]) *FileHeap {
+func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry *dataStructures.Flyweight[string]) *FileHeap {
 	fileHeap := FileHeap{}
 
 	fileHeap.heap = *dataStructures.NewHeap(sortFunction)

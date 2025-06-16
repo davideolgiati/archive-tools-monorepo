@@ -3,6 +3,8 @@ package fuzztests
 import (
 	"archive-tools-monorepo/dataStructures"
 	"container/heap"
+	"sync"
+
 	//"fmt"
 	"sort"
 	"strconv"
@@ -57,8 +59,8 @@ func FuzzHeap(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, tc string) {
 		// Create our heap with integer comparison (min heap)
-		ourHeap := dataStructures.NewHeap(func(a, b int) bool {
-			return a < b
+		ourHeap := dataStructures.NewHeap(func(a, b *int) bool {
+			return *a < *b
 		})
 
 		// Reference heap for comparison
@@ -69,7 +71,7 @@ func FuzzHeap(f *testing.F) {
 		var model []int
 
 		operations := strings.Split(tc, ";")
-		
+
 		for i, raw := range operations {
 			// Skip empty operations
 			if raw == "" {
@@ -101,30 +103,30 @@ func FuzzHeap(f *testing.F) {
 				if ourHeap.Empty() {
 					// Verify both heaps are empty
 					if len(refHeap) != 0 {
-						t.Fatalf("Step %d: heap state inconsistency - our heap empty but ref heap has %d items", 
+						t.Fatalf("Step %d: heap state inconsistency - our heap empty but ref heap has %d items",
 							i, len(refHeap))
 					}
-					
+
 					// Test that popping from empty heap returns zero value
 					result := ourHeap.Pop()
 					var zeroVal int
 					if result != zeroVal {
-						t.Fatalf("Step %d: pop from empty heap should return zero value, got %v", 
+						t.Fatalf("Step %d: pop from empty heap should return zero value, got %v",
 							i, result)
 					}
 				} else {
 					ourVal := ourHeap.Pop()
 					expectedVal := heap.Pop(&refHeap).(int)
-					
+
 					if ourVal != expectedVal {
-						t.Fatalf("Step %d: pop mismatch - got %v, expected %v", 
+						t.Fatalf("Step %d: pop mismatch - got %v, expected %v",
 							i, ourVal, expectedVal)
 					}
-					
+
 					// Remove from model (should be the minimum)
 					if len(model) > 0 {
 						if model[0] != ourVal {
-							t.Fatalf("Step %d: model inconsistency - expected min %v, got %v", 
+							t.Fatalf("Step %d: model inconsistency - expected min %v, got %v",
 								i, model[0], ourVal)
 						}
 						model = model[1:]
@@ -134,23 +136,23 @@ func FuzzHeap(f *testing.F) {
 			case raw == "k":
 				// Peak operation
 				peak := ourHeap.Peak()
-				
+
 				if ourHeap.Empty() {
 					if peak != nil {
-						t.Fatalf("Step %d: peak on empty heap should return nil, got %v", 
+						t.Fatalf("Step %d: peak on empty heap should return nil, got %v",
 							i, *peak)
 					}
 				} else {
 					if peak == nil {
 						t.Fatalf("Step %d: peak on non-empty heap returned nil", i)
 					}
-					
+
 					expectedPeak := refHeap[0] // Min element in reference heap
 					if *peak != expectedPeak {
-						t.Fatalf("Step %d: peak mismatch - got %v, expected %v", 
+						t.Fatalf("Step %d: peak mismatch - got %v, expected %v",
 							i, *peak, expectedPeak)
 					}
-					
+
 					// Verify peak doesn't modify heap
 					sizeBefore := ourHeap.Size()
 					_ = ourHeap.Peak()
@@ -165,14 +167,14 @@ func FuzzHeap(f *testing.F) {
 				ourSize := ourHeap.Size()
 				refSize := len(refHeap)
 				modelSize := len(model)
-				
+
 				if ourSize != refSize {
-					t.Fatalf("Step %d: size mismatch with reference - got %d, expected %d", 
+					t.Fatalf("Step %d: size mismatch with reference - got %d, expected %d",
 						i, ourSize, refSize)
 				}
-				
+
 				if ourSize != modelSize {
-					t.Fatalf("Step %d: size mismatch with model - got %d, expected %d", 
+					t.Fatalf("Step %d: size mismatch with model - got %d, expected %d",
 						i, ourSize, modelSize)
 				}
 
@@ -181,14 +183,14 @@ func FuzzHeap(f *testing.F) {
 				ourEmpty := ourHeap.Empty()
 				refEmpty := len(refHeap) == 0
 				modelEmpty := len(model) == 0
-				
+
 				if ourEmpty != refEmpty {
-					t.Fatalf("Step %d: empty state mismatch with reference - got %v, expected %v", 
+					t.Fatalf("Step %d: empty state mismatch with reference - got %v, expected %v",
 						i, ourEmpty, refEmpty)
 				}
-				
+
 				if ourEmpty != modelEmpty {
-					t.Fatalf("Step %d: empty state mismatch with model - got %v, expected %v", 
+					t.Fatalf("Step %d: empty state mismatch with model - got %v, expected %v",
 						i, ourEmpty, modelEmpty)
 				}
 
@@ -204,7 +206,7 @@ func FuzzHeap(f *testing.F) {
 
 			// Size consistency
 			if ourSize != refSize || ourSize != modelSize {
-				t.Fatalf("Step %d: size invariant violation - our: %d, ref: %d, model: %d", 
+				t.Fatalf("Step %d: size invariant violation - our: %d, ref: %d, model: %d",
 					i, ourSize, refSize, modelSize)
 			}
 
@@ -212,7 +214,7 @@ func FuzzHeap(f *testing.F) {
 			ourEmpty := ourHeap.Empty()
 			expectedEmpty := (ourSize == 0)
 			if ourEmpty != expectedEmpty {
-				t.Fatalf("Step %d: empty invariant violation - empty: %v, size: %d", 
+				t.Fatalf("Step %d: empty invariant violation - empty: %v, size: %d",
 					i, ourEmpty, ourSize)
 			}
 
@@ -222,10 +224,10 @@ func FuzzHeap(f *testing.F) {
 				if peak == nil {
 					t.Fatalf("Step %d: peak returned nil on non-empty heap", i)
 				}
-				
+
 				// Peak should match reference heap's minimum
 				if len(refHeap) > 0 && *peak != refHeap[0] {
-					t.Fatalf("Step %d: heap property violation - peak %v != ref min %v", 
+					t.Fatalf("Step %d: heap property violation - peak %v != ref min %v",
 						i, *peak, refHeap[0])
 				}
 			}
@@ -239,17 +241,17 @@ func FuzzHeap(f *testing.F) {
 		// Final verification - ensure heap is in valid state
 		finalSize := ourHeap.Size()
 		finalEmpty := ourHeap.Empty()
-		
+
 		if (finalSize == 0) != finalEmpty {
 			t.Fatalf("Final state inconsistency: size %d, empty %v", finalSize, finalEmpty)
 		}
-		
+
 		// Drain remaining elements and verify they come out in sorted order
 		var drainedElements []int
 		for !ourHeap.Empty() {
 			drainedElements = append(drainedElements, ourHeap.Pop())
 		}
-		
+
 		// Verify sorted order (min heap property)
 		for i := 1; i < len(drainedElements); i++ {
 			if drainedElements[i] < drainedElements[i-1] {
@@ -259,30 +261,44 @@ func FuzzHeap(f *testing.F) {
 	})
 }
 
-/*
 // Additional fuzz test for concurrent safety
 func FuzzHeapConcurrency(f *testing.F) {
 	testCases := []string{
-		"p:1;p:2;p:3",
-		"p:5;o;p:1",
-		"s;e;k",
+		// Basic operations
+		"p:1;p:2;p:3;o;o;o",
+		"p:5;p:1;p:3;o;p:2;o;o;o",
+		// Size and empty checks
+		"p:10;s;e;o;s;e",
+		// Peak operations
+		"p:1;k;p:0;k;o;k",
+		// Large numbers to test overflow scenarios
+		"p:2147483647;p:-2147483648;o;o",
+		// Duplicate values
+		"p:5;p:5;p:5;o;o;o",
+		// Mixed operations
+		"p:3;p:1;k;p:4;o;k;p:2;o;o;o",
+		// Empty operations (should handle gracefully)
+		"o;k;s;e",
+		// Stress test with many operations
+		"p:1;p:2;p:3;p:4;p:5;o;o;p:6;p:7;o;o;o;o;o",
 	}
 
 	for _, testCase := range testCases {
 		f.Add(testCase)
 	}
 
-	f.Fuzz(func(t *testing.T, tc string) {
-		ourHeap := dataStructures.NewHeap[int](func(a, b int) bool {
-			return a < b
-		})
+	ourHeap := dataStructures.NewHeap(func(a, b *int) bool {
+		return *a < *b
+	})
 
+	f.Fuzz(func(t *testing.T, tc string) {
 		operations := strings.Split(tc, ";")
-		
+
 		// Test that operations don't panic under concurrent access
 		// Note: This is a basic test - full concurrency testing would require
 		// more sophisticated techniques
-		
+		var wg sync.WaitGroup
+
 		for _, raw := range operations {
 			if raw == "" {
 				continue
@@ -292,27 +308,51 @@ func FuzzHeapConcurrency(f *testing.F) {
 			case strings.HasPrefix(raw, "p:"):
 				valStr := strings.TrimPrefix(raw, "p:")
 				if val, err := strconv.Atoi(valStr); err == nil {
-					if ourHeap.Size() < 1000 { // Prevent resource exhaustion
-						ourHeap.Push(val)
+					if ourHeap.Size() < 100000000 { // Prevent resource exhaustion
+						wg.Add(1)
+						go func() {
+							defer wg.Done()
+							ourHeap.Push(val)
+						}()
 					}
 				}
 			case raw == "o":
-				ourHeap.Pop()
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					ourHeap.Pop()
+				}()
 			case raw == "s":
-				ourHeap.Size()
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					ourHeap.Size()
+				}()
 			case raw == "e":
-				ourHeap.Empty()
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					ourHeap.Empty()
+				}()
 			case raw == "k":
-				ourHeap.Peak()
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					ourHeap.Peak()
+				}()
+			default:
+				return
 			}
 		}
+		wg.Wait()
 	})
 }
 
+/*
 // Test for edge cases and error conditions
 func FuzzHeapEdgeCases(f *testing.F) {
 	f.Add("boundary_test")
-	
+
 	f.Fuzz(func(t *testing.T, input string) {
 		// Test with nil comparison function should panic during creation
 		defer func() {
@@ -332,7 +372,7 @@ func FuzzHeapEdgeCases(f *testing.F) {
 
 		// Test normal operations
 		h := dataStructures.NewHeap[int](func(a, b int) bool { return a < b })
-		
+
 		// Test multiple peaks don't affect state
 		for i := 0; i < 5; i++ {
 			peak1 := h.Peak()
@@ -341,7 +381,7 @@ func FuzzHeapEdgeCases(f *testing.F) {
 				t.Fatal("Peak operations returned different results")
 			}
 		}
-		
+
 		// Test pop on empty heap
 		emptyResult := h.Pop()
 		var zeroInt int

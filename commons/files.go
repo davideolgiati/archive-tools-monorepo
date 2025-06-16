@@ -81,7 +81,7 @@ func SizeDescending(a File, b File) bool {
 	return a.Size < b.Size
 }
 
-func HashDescending(a File, b File) bool {
+func HashDescending(a *File, b *File) bool {
 	if a.Hash.Ptr() == nil {
 		panic("a.Hash is a nil pointer")
 	}

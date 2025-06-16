@@ -89,13 +89,13 @@ func TestHashDescending_Deterministic(t *testing.T) {
 	f1 := File{Hash: hashConstant1}
 	f2 := File{Hash: hashConstant2}
 
-	if !HashDescending(f1, f2) { // "aaaa" <= "bbbb" -> true
+	if !HashDescending(&f1, &f2) { // "aaaa" <= "bbbb" -> true
 		t.Errorf("Expected f1 to be <= f2")
 	}
-	if HashDescending(f2, f1) { // "bbbb" <= "aaaa" -> false
+	if HashDescending(&f2, &f1) { // "bbbb" <= "aaaa" -> false
 		t.Errorf("Expected f2 not to be <= f1")
 	}
-	if !HashDescending(f1, f1) { // "aaaa" <= "aaaa" -> true
+	if !HashDescending(&f1, &f1) { // "aaaa" <= "aaaa" -> true
 		t.Errorf("Expected f1 to be <= f1 (equality check failed)")
 	}
 
@@ -106,10 +106,10 @@ func TestHashDescending_Deterministic(t *testing.T) {
 	f4 := File{Name: "f4", Hash: hashConstant3}
 	f5 := File{Name: "f5", Hash: hashConstant4}
 
-	if !HashDescending(f4, f5) {
+	if !HashDescending(&f4, &f5) {
 		t.Errorf("Expected f4 to be <= f5 when hashes are equal")
 	}
-	if !HashDescending(f5, f4) {
+	if !HashDescending(&f5, &f4) {
 		t.Errorf("Expected f5 to be <= f4 when hashes are equal")
 	}
 }
