@@ -9,6 +9,9 @@ import (
 	"sync"
 )
 
+//go:embed logo.txt
+var logo string
+
 //go:embed semver.txt
 var version string
 
@@ -60,6 +63,7 @@ func main() {
 
 	userDirectories := filter(strings.Split(ignoredDirUser, ","), "")
 
+	ui.Println("%s", logo)
 	ui.Println("Running version: %s", version)
 	ui.Println("Build timestamp: %s", buildts)
 
