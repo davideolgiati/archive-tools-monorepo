@@ -132,7 +132,7 @@ func (heap *Heap[T]) heapifyTopDown() {
 		current_index = candidate
 
 		if current_index * 2 > heap.tail{
-			continue
+			break
 		}
 
 		candidate = heap.getSmallestChild(&candidate)
