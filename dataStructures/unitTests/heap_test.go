@@ -38,7 +38,11 @@ func MaxHashFn(a, b TestFile) bool {
 
 // TestHeap_BasicOperations verifies fundamental Push and Pop behavior.
 func TestHeap_BasicOperations(t *testing.T) {
-	heap := dataStructures.NewHeap(MinSizeFn)
+	heap, err := dataStructures.NewHeap(MinSizeFn)
+
+	if err != nil {
+		panic(err)
+	}
 
 	// Push some elements
 	heap.Push(TestFile{Name: "fileA", Size: 10})
@@ -81,7 +85,11 @@ func TestHeap_BasicOperations(t *testing.T) {
 
 // TestHeap_Peak verifies Peak functionality without altering the heap.
 func TestHeap_Peak(t *testing.T) {
-	heap := dataStructures.NewHeap(MinSizeFn)
+	heap, err := dataStructures.NewHeap(MinSizeFn)
+
+	if err != nil {
+		panic(err)
+	}
 
 	heap.Push(TestFile{Name: "fileA", Size: 10})
 	heap.Push(TestFile{Name: "fileB", Size: 5})
@@ -114,7 +122,11 @@ func TestHeap_Peak(t *testing.T) {
 
 // TestHeap_EdgeCases tests behavior with single element and empty heap.
 func TestHeap_EdgeCases(t *testing.T) {
-	heap := dataStructures.NewHeap(MinSizeFn)
+	heap, err := dataStructures.NewHeap(MinSizeFn)
+
+	if err != nil {
+		panic(err)
+	}
 
 	// Test with single element
 	heap.Push(TestFile{Name: "single", Size: 100})
@@ -132,7 +144,11 @@ func TestHeap_EdgeCases(t *testing.T) {
 // TestHeap_RandomData verifies heap property with a large number of random insertions.
 func TestHeap_RandomData(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	heap := dataStructures.NewHeap(func(a, b *int) bool { return *a < *b }) // Min-heap for ints
+	heap, err := dataStructures.NewHeap(func(a, b *int) bool { return *a < *b }) // Min-heap for ints
+
+	if err != nil {
+		panic(err)
+	}
 
 	numElements := 1000
 	elements := make([]int, numElements)
@@ -162,7 +178,11 @@ func TestHeap_RandomData(t *testing.T) {
 
 // TestHeap_Concurrency_PushAndPop verifies thread-safety under concurrent Push and Pop.
 func TestHeap_Concurrency_PushAndPop(t *testing.T) {
-	heap := dataStructures.NewHeap(func(a, b *int) bool { return *a < *b }) // Min-heap for ints
+	heap, err := dataStructures.NewHeap(func(a, b *int) bool { return *a < *b }) // Min-heap for ints
+
+	if err != nil {
+		panic(err)
+	}
 
 	numGoroutines := 10
 	numOperationsPerGoroutine := 1000
@@ -261,7 +281,11 @@ func TestHeap_Concurrency_PushAndPop(t *testing.T) {
 
 // TestHeap_Concurrency_PushOnly verifies thread-safety under concurrent Push operations.
 func TestHeap_Concurrency_PushOnly(t *testing.T) {
-	heap := dataStructures.NewHeap(func(a, b *int) bool { return *a < *b }) // Min-heap for ints
+	heap, err := dataStructures.NewHeap(func(a, b *int) bool { return *a < *b }) // Min-heap for ints
+
+	if err != nil {
+		panic(err)
+	}
 
 	numGoroutines := 20
 	numPushesPerGoroutine := 500
@@ -296,7 +320,11 @@ func TestHeap_Concurrency_PushOnly(t *testing.T) {
 
 // TestHeap_Concurrency_PopOnly verifies thread-safety under concurrent Pop operations from a pre-filled heap.
 func TestHeap_Concurrency_PopOnly(t *testing.T) {
-	heap := dataStructures.NewHeap(func(a, b *int) bool { return *a < *b }) // Min-heap for ints
+	heap, err := dataStructures.NewHeap(func(a, b *int) bool { return *a < *b }) // Min-heap for ints
+
+	if err != nil {
+		panic(err)
+	}
 
 	numElements := 10000
 	for i := 0; i < numElements; i++ {
@@ -354,9 +382,13 @@ func TestHeap_Stability_EqualElements(t *testing.T) {
 		ID    int // Unique ID to track original insertion order
 	}
 
-	heap := dataStructures.NewHeap(func(a, b *Item) bool {
+	heap, err := dataStructures.NewHeap(func(a, b *Item) bool {
 		return a.Value < b.Value // Min-heap based on Value
 	})
+
+	if err != nil {
+		panic(err)
+	}
 
 	// Push items with the same Value but different IdataStructures
 	heap.Push(Item{Value: 10, ID: 3})
@@ -402,10 +434,15 @@ func TestHeap_Stability_EqualElements(t *testing.T) {
 // TestHeap_CompareFnNil checks behavior when custom_is_lower_fn is not set.
 func TestHeap_CompareFnNil(t *testing.T) {
 	var test func(a, b *int) bool
-	heap := dataStructures.NewHeap(test)
+	heap, err := dataStructures.NewHeap(test)
 	// Calling Push/Pop without setting Compare_fn should ideally panic or fail
 	// Currently, it would panic on `heap.custom_is_lower_fn(heap.items[current_index], heap.items[parent])`
 	// because `custom_is_lower_fn` would be nil. This is expected and good.
+
+	if err != nil {
+		panic(err)
+	}
+
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("The code did not panic when custom_is_lower_fn was not set")
@@ -416,7 +453,11 @@ func TestHeap_CompareFnNil(t *testing.T) {
 
 // TestHeap_ZeroValueType ensures that zero values of `T` behave correctly.
 func TestHeap_ZeroValueType(t *testing.T) {
-	heap := dataStructures.NewHeap(func(a, b *string) bool { return *a < *b }) // Min-heap for strings
+	heap, err := dataStructures.NewHeap(func(a, b *string) bool { return *a < *b }) // Min-heap for strings
+
+	if err != nil {
+		panic(err)
+	}
 
 	heap.Push("c")
 	heap.Push("a")

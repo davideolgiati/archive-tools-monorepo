@@ -1,6 +1,7 @@
 package dataStructures
 
 import (
+	"fmt"
 	"math"
 	"sync"
 )
@@ -13,11 +14,11 @@ type Heap[T any] struct {
 	mutex       sync.Mutex
 }
 
-func NewHeap[T any](sortFunction func(*T, *T) bool) *Heap[T] {
+func NewHeap[T any](sortFunction func(*T, *T) bool) (*Heap[T], error) {
 	heap := Heap[T]{}
 
 	if sortFunction == nil {
-		panic("Provided function is a nil pointer")
+		return nil, fmt.Errorf("provided function is a nil pointer")
 	}
 
 	heap.minFunction = sortFunction
@@ -25,7 +26,7 @@ func NewHeap[T any](sortFunction func(*T, *T) bool) *Heap[T] {
 	heap.tail = 0
 	heap.size = 0
 
-	return &heap
+	return &heap, nil
 }
 
 func (heap *Heap[T]) Empty() bool {
@@ -42,9 +43,9 @@ func (heap *Heap[T]) Size() int {
 	return heap.size
 }
 
-func (heap *Heap[T]) Push(data T) {
+func (heap *Heap[T]) Push(data T) error {
 	if heap.minFunction == nil {
-		panic("comapre function not set!")
+		return fmt.Errorf("comapre function not set")
 	}
 
 	heap.mutex.Lock()
@@ -59,19 +60,22 @@ func (heap *Heap[T]) Push(data T) {
 	heap.size++
 
 	heap.heapifyBottomUp()
+
+	return nil
 }
 
-func (heap *Heap[T]) Pop() T {
+func (heap *Heap[T]) Pop() (T, error) {
+	var item T
+	
 	if heap.minFunction == nil {
-		panic("comapre function not set!")
+		return item, fmt.Errorf("comapre function not set")
 	}
 
-	var item T
+
+	heap.mutex.Lock()
+	defer heap.mutex.Unlock()
 
 	if heap.size != 0 {
-		heap.mutex.Lock()
-		defer heap.mutex.Unlock()
-
 		item = *heap.items[0]
 		heap.tail--
 		heap.size--
@@ -82,16 +86,15 @@ func (heap *Heap[T]) Pop() T {
 		}
 	}
 
-	return item
+	return item, nil
 }
 
 func (heap *Heap[T]) Peak() *T {
 	var item *T
 
+	heap.mutex.Lock()
+	defer heap.mutex.Unlock()
 	if heap.size != 0 {
-		heap.mutex.Lock()
-		defer heap.mutex.Unlock()
-
 		item = heap.items[0]
 	}
 
@@ -131,7 +134,7 @@ func (heap *Heap[T]) heapifyTopDown() {
 		heap.items[candidate], heap.items[current_index] = heap.items[current_index], heap.items[candidate]
 		current_index = candidate
 
-		if current_index * 2 > heap.tail{
+		if current_index*2 > heap.tail {
 			break
 		}
 

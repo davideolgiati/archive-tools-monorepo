@@ -35,9 +35,13 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 	for x := 0; x < 100; x++ {
-		ourHeap := dataStructures.NewHeap(func(a, b *string) bool {
+		ourHeap, err := dataStructures.NewHeap(func(a, b *string) bool {
 			return *a < *b
 		})
+
+		if err != nil {
+			panic(err)
+		}
 
 		for i := 0; i < 10000000; i++ {
 			raw := generateNextOp()
@@ -45,9 +49,17 @@ func main() {
 			switch {
 			case strings.HasPrefix(raw, "p:"):
 				valStr := strings.TrimPrefix(raw, "p:")
-				ourHeap.Push(valStr)
+				err := ourHeap.Push(valStr)
+
+				if err != nil {
+					panic(err)
+				}
 			case raw == "o":
-				_ = ourHeap.Pop()
+				_, err = ourHeap.Pop()
+				
+				if err != nil {
+					panic(err)
+				}
 			case raw == "k":
 				_ = ourHeap.Peak()
 			case raw == "s":

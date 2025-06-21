@@ -7,18 +7,25 @@ import (
 )
 
 type FileHeap struct {
-	heap         dataStructures.Heap[commons.File]
+	heap         *dataStructures.Heap[commons.File]
 	hashRegistry *dataStructures.Flyweight[string]
 	sizeFilter   sync.Map
 }
 
-func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry *dataStructures.Flyweight[string]) *FileHeap {
+func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry *dataStructures.Flyweight[string]) (*FileHeap, error) {
 	fileHeap := FileHeap{}
 
-	fileHeap.heap = *dataStructures.NewHeap(sortFunction)
+	newHeap, err := dataStructures.NewHeap(sortFunction)
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	fileHeap.heap = newHeap
+
 	fileHeap.hashRegistry = registry
 
-	return &fileHeap
+	return &fileHeap, nil
 }
 
 func refineAndPushFileInHeap(file commons.File, file_chan chan<- commons.File, flyweight *dataStructures.Flyweight[string]) {
@@ -61,7 +68,12 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 	var current commons.File
 	var last commons.File
 
-	output := newFileHeap(commons.HashDescending, registry)
+	output, err := newFileHeap(commons.HashDescending, registry)
+	
+	if err != nil {
+		panic(err)
+	}
+	
 	output.hashRegistry = fh.hashRegistry
 
 	total := float64(fh.heap.Size())
@@ -79,18 +91,28 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 
 	outputWaitgroup := sync.WaitGroup{}
 	outputWaitgroup.Add(1)
-	go consumeFromFileChannel(fileChannel, &outputWaitgroup, &output.heap)
+	go consumeFromFileChannel(fileChannel, &outputWaitgroup, output.heap)
 
 	ui.AddNewNamedLine("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
 	if !fh.heap.Empty() {
-		current = fh.heap.Pop()
+		current, err = fh.heap.Pop()
+
+		if err != nil {
+			panic(err)
+		}
+		
 		processed += 1.0
 	}
 
 	for !fh.heap.Empty() {
 		last = current
-		current = fh.heap.Pop()
+		current,err = fh.heap.Pop()
+
+		if err != nil {
+			panic(err)
+		}
+
 		processed += 1.0
 
 		if filterFunction(current, last) {
@@ -121,16 +143,25 @@ func (fh *FileHeap) display_duplicate_file_info() {
 	var lastSeen commons.File
 	var current commons.File
 	var areEqual bool
+	var err error
 
 	isDuplicate := false
 
 	if !fh.heap.Empty() {
-		current = fh.heap.Pop()
+		current, err = fh.heap.Pop()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	for !fh.heap.Empty() {
 		lastSeen = current
-		current = fh.heap.Pop()
+		current, err = fh.heap.Pop()
+
+		if err != nil {
+			panic(err)
+		}
+
 		areEqual = commons.EqualByHash(current, lastSeen)
 
 		if areEqual {

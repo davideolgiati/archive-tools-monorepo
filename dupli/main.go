@@ -44,7 +44,11 @@ func main() {
 	var fileProcessorPool *commons.WriteOnlyThreadPool[File]
 
 	sharedRegistry := dataStructures.Flyweight[string]{}
-	outputFileHheap := newFileHeap(commons.HashDescending, &sharedRegistry)
+	outputFileHheap, err := newFileHeap(commons.HashDescending, &sharedRegistry)
+
+	if err != nil {
+		panic(err)
+	}
 
 	outputChannel := make(chan commons.File, 10000)
 	outputWg := sync.WaitGroup{}
@@ -72,7 +76,7 @@ func main() {
 	}
 
 	workerFn := getFileProcessWorker(outputFileHheap.hashRegistry, outputChannel, &outputFileHheap.sizeFilter)
-	fileProcessorPool, err := commons.NewWorkerPool(workerFn)
+	fileProcessorPool, err = commons.NewWorkerPool(workerFn)
 
 	if err != nil {
 		panic(err)

@@ -3,9 +3,6 @@ package fuzztests
 import (
 	"archive-tools-monorepo/dataStructures"
 	"container/heap"
-	"sync"
-
-	//"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -59,9 +56,13 @@ func FuzzHeap(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, tc string) {
 		// Create our heap with integer comparison (min heap)
-		ourHeap := dataStructures.NewHeap(func(a, b *int) bool {
+		ourHeap, err := dataStructures.NewHeap(func(a, b *int) bool {
 			return *a < *b
 		})
+
+		if err != nil {
+			panic(err)
+		}
 
 		// Reference heap for comparison
 		var refHeap IntHeap
@@ -93,7 +94,12 @@ func FuzzHeap(f *testing.F) {
 					continue
 				}
 
-				ourHeap.Push(val)
+				err = ourHeap.Push(val)
+
+				if err != nil {
+					panic(err)
+				}
+
 				heap.Push(&refHeap, val)
 				model = append(model, val)
 				sort.Ints(model) // Keep model sorted for min-heap comparison
@@ -108,14 +114,24 @@ func FuzzHeap(f *testing.F) {
 					}
 
 					// Test that popping from empty heap returns zero value
-					result := ourHeap.Pop()
+					result, err := ourHeap.Pop()
+
+					if err != nil {
+						panic(err)
+					}
+
 					var zeroVal int
 					if result != zeroVal {
 						t.Fatalf("Step %d: pop from empty heap should return zero value, got %v",
 							i, result)
 					}
 				} else {
-					ourVal := ourHeap.Pop()
+					ourVal, err := ourHeap.Pop()
+
+					if err != nil {
+						panic(err)
+					}
+
 					expectedVal := heap.Pop(&refHeap).(int)
 
 					if ourVal != expectedVal {
@@ -249,7 +265,11 @@ func FuzzHeap(f *testing.F) {
 		// Drain remaining elements and verify they come out in sorted order
 		var drainedElements []int
 		for !ourHeap.Empty() {
-			drainedElements = append(drainedElements, ourHeap.Pop())
+			data, err := ourHeap.Pop()
+			if err != nil {
+				panic(err)
+			}
+			drainedElements = append(drainedElements, data)
 		}
 
 		// Verify sorted order (min heap property)
@@ -260,134 +280,3 @@ func FuzzHeap(f *testing.F) {
 		}
 	})
 }
-
-// Additional fuzz test for concurrent safety
-func FuzzHeapConcurrency(f *testing.F) {
-	testCases := []string{
-		// Basic operations
-		"p:1;p:2;p:3;o;o;o",
-		"p:5;p:1;p:3;o;p:2;o;o;o",
-		// Size and empty checks
-		"p:10;s;e;o;s;e",
-		// Peak operations
-		"p:1;k;p:0;k;o;k",
-		// Large numbers to test overflow scenarios
-		"p:2147483647;p:-2147483648;o;o",
-		// Duplicate values
-		"p:5;p:5;p:5;o;o;o",
-		// Mixed operations
-		"p:3;p:1;k;p:4;o;k;p:2;o;o;o",
-		// Empty operations (should handle gracefully)
-		"o;k;s;e",
-		// Stress test with many operations
-		"p:1;p:2;p:3;p:4;p:5;o;o;p:6;p:7;o;o;o;o;o",
-	}
-
-	for _, testCase := range testCases {
-		f.Add(testCase)
-	}
-
-	ourHeap := dataStructures.NewHeap(func(a, b *int) bool {
-		return *a < *b
-	})
-
-	f.Fuzz(func(t *testing.T, tc string) {
-		operations := strings.Split(tc, ";")
-
-		// Test that operations don't panic under concurrent access
-		// Note: This is a basic test - full concurrency testing would require
-		// more sophisticated techniques
-		var wg sync.WaitGroup
-
-		for _, raw := range operations {
-			if raw == "" {
-				continue
-			}
-
-			switch {
-			case strings.HasPrefix(raw, "p:"):
-				valStr := strings.TrimPrefix(raw, "p:")
-				if val, err := strconv.Atoi(valStr); err == nil {
-					if ourHeap.Size() < 100000000 { // Prevent resource exhaustion
-						wg.Add(1)
-						go func() {
-							defer wg.Done()
-							ourHeap.Push(val)
-						}()
-					}
-				}
-			case raw == "o":
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					ourHeap.Pop()
-				}()
-			case raw == "s":
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					ourHeap.Size()
-				}()
-			case raw == "e":
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					ourHeap.Empty()
-				}()
-			case raw == "k":
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					ourHeap.Peak()
-				}()
-			default:
-				return
-			}
-		}
-		wg.Wait()
-	})
-}
-
-/*
-// Test for edge cases and error conditions
-func FuzzHeapEdgeCases(f *testing.F) {
-	f.Add("boundary_test")
-
-	f.Fuzz(func(t *testing.T, input string) {
-		// Test with nil comparison function should panic during creation
-		defer func() {
-			if r := recover(); r != nil {
-				// Expected panic for nil function
-				if !strings.Contains(fmt.Sprintf("%v", r), "nil pointer") {
-					t.Fatalf("Unexpected panic: %v", r)
-				}
-			}
-		}()
-
-		// This should panic
-		if input == "nil_test" {
-			_ = dataStructures.NewHeap[int](nil)
-			t.Fatal("Expected panic for nil comparison function")
-		}
-
-		// Test normal operations
-		h := dataStructures.NewHeap[int](func(a, b int) bool { return a < b })
-
-		// Test multiple peaks don't affect state
-		for i := 0; i < 5; i++ {
-			peak1 := h.Peak()
-			peak2 := h.Peak()
-			if peak1 != peak2 {
-				t.Fatal("Peak operations returned different results")
-			}
-		}
-
-		// Test pop on empty heap
-		emptyResult := h.Pop()
-		var zeroInt int
-		if emptyResult != zeroInt {
-			t.Fatalf("Pop on empty heap should return zero value, got %v", emptyResult)
-		}
-	})
-}
-*/
