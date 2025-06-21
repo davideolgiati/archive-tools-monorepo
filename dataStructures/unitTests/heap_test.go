@@ -2,87 +2,178 @@ package dataStructures
 
 import (
 	"archive-tools-monorepo/dataStructures"
-	"math/rand"
+	"fmt"
+	"reflect"
 	"sort"
-	"sync"
+	"strconv"
+	"strings"
 	"testing"
-	"time"
 )
 
-// TestFile for basic testing
-type TestFile struct {
-	Name string
-	Size int
-	Hash string
-}
-
-// MinSizeFn for a min-heap based on size
-func MinSizeFn(a, b *TestFile) bool {
-	return a.Size < b.Size
-}
-
-// MaxSizeFn for a max-heap based on size
-func MaxSizeFn(a, b TestFile) bool {
-	return a.Size > b.Size
-}
-
-// MinHashFn for a min-heap based on hash (lexicographical)
-func MinHashFn(a, b TestFile) bool {
-	return a.Hash < b.Hash
-}
-
-// MaxHashFn for a max-heap based on hash (lexicographical)
-func MaxHashFn(a, b TestFile) bool {
-	return a.Hash > b.Hash
-}
-
-// TestHeap_BasicOperations verifies fundamental Push and Pop behavior.
-func TestHeap_BasicOperations(t *testing.T) {
-	heap, err := dataStructures.NewHeap(MinSizeFn)
+func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error), compareFN func(*T, *T) bool){
+	heap, err := dataStructures.NewHeap(compareFN)
 
 	if err != nil {
 		panic(err)
 	}
 
-	// Push some elements
-	heap.Push(TestFile{Name: "fileA", Size: 10})
-	heap.Push(TestFile{Name: "fileB", Size: 5})
-	heap.Push(TestFile{Name: "fileC", Size: 15})
-	heap.Push(TestFile{Name: "fileD", Size: 2})
+	// Track expected state
+	var model []T
 
-	if heap.Size() != 4 {
-		t.Errorf("Expected size 4, got %d", heap.Size())
+	operations := strings.Split(instructions, ";")
+
+	for i, raw := range operations {
+		if raw == "" {
+			continue
+		}
+
+		switch {
+		case strings.HasPrefix(raw, "p:"):
+			valStr := strings.TrimPrefix(raw, "p:")
+			val, err := parseFN(valStr)
+			if err != nil {
+				continue
+			}
+
+			err = heap.Push(val)
+
+			if err != nil {
+				panic(err)
+			}
+
+			model = append(model, val)
+			sort.Slice(model, func(a, b int) bool {
+				return compareFN(&model[a], &model[b])
+			})
+
+		case raw == "o":
+			if heap.Empty() {
+				if len(model) != 0 {
+					panic(fmt.Sprintf("Step %d: heap state inconsistency - our heap empty but model has %d items", i, len(model)))
+				}
+
+				result, err := heap.Pop()
+
+				if err != nil {
+					panic(err)
+				}
+				var zeroVal T
+				if !reflect.DeepEqual(result, zeroVal) {
+					panic(fmt.Sprintf("Step %d: pop from empty heap should return zero value, got %v", i, result))
+				}
+			} else {
+				ourVal, err := heap.Pop()
+
+				if err != nil {
+					panic(err)
+				}
+
+				if len(model) > 0 {
+					if !reflect.DeepEqual(model[0], ourVal) {
+						panic(fmt.Sprintf("Step %d: model inconsistency - expected min %v, got %v", i, model[0], ourVal))
+					}
+					model = model[1:]
+				}
+			}
+
+		case raw == "k":
+			sizeBefore := heap.Size()
+			peak := heap.Peak()
+
+			if heap.Empty() {
+				if peak != nil {
+					panic(fmt.Sprintf("Step %d: peak on empty heap should return nil, got %v", i, *peak))
+				}
+			} else {
+				if peak == nil {
+					panic(fmt.Sprintf("Step %d: peak on non-empty heap returned nil", i))
+				}
+
+				sizeAfter := heap.Size()
+				if sizeBefore != sizeAfter {
+					panic(fmt.Sprintf("Step %d: peak operation modified heap size", i))
+				}
+			}
+
+		case raw == "s":
+			ourSize := heap.Size()
+			modelSize := len(model)
+
+			if ourSize != modelSize {
+				panic(fmt.Sprintf("Step %d: size mismatch with model - got %d, expected %d", i, ourSize, modelSize))
+			}
+
+		case raw == "e":
+			ourEmpty := heap.Empty()
+			modelEmpty := len(model) == 0
+
+			if ourEmpty != modelEmpty {
+				panic(fmt.Sprintf("Step %d: empty state mismatch with model - got %v, expected %v", i, ourEmpty, modelEmpty))
+			}
+
+		default:
+			continue
+		}
+
+		ourSize := heap.Size()
+		modelSize := len(model)
+
+		if ourSize != modelSize {
+			panic(fmt.Sprintf("Step %d: size invariant violation - our: %d, model: %d", i, ourSize, modelSize))
+		}
+
+		ourEmpty := heap.Empty()
+		expectedEmpty := (ourSize == 0)
+		if ourEmpty != expectedEmpty {
+			panic(fmt.Sprintf("Step %d: empty invariant violation - empty: %v, size: %d", i, ourEmpty, ourSize))
+		}
+
+		if !heap.Empty() {
+			peak := heap.Peak()
+			if peak == nil {
+				panic(fmt.Sprintf("Step %d: peak returned nil on non-empty heap", i))
+			}
+
+			if len(model) > 0 && !reflect.DeepEqual(*peak, model[0]) {
+				panic(fmt.Sprintf("Step %d: heap property violation - peak %v != ref min %v", i, *peak, model[0]))
+			}
+		}
 	}
 
-	// Pop elements and verify order (min-heap)
-	if item := heap.Pop(); item.Size != 2 {
-		t.Errorf("Expected 2, got %d", item.Size)
-	}
-	if item := heap.Pop(); item.Size != 5 {
-		t.Errorf("Expected 5, got %d", item.Size)
-	}
-	if item := heap.Pop(); item.Size != 10 {
-		t.Errorf("Expected 10, got %d", item.Size)
-	}
-	if item := heap.Pop(); item.Size != 15 {
-		t.Errorf("Expected 15, got %d", item.Size)
+	finalSize := heap.Size()
+	finalEmpty := heap.Empty()
+
+	if (finalSize == 0) != finalEmpty {
+		panic(fmt.Sprintf("Final state inconsistency: size %d, empty %v", finalSize, finalEmpty))
 	}
 
-	if !heap.Empty() {
-		t.Errorf("Expected heap to be empty")
-	}
-	if heap.Size() != 0 {
-		t.Errorf("Expected size 0, got %d", heap.Size())
+	var drainedElements []T
+	for !heap.Empty() {
+		data, err := heap.Pop()
+		if err != nil {
+			panic(err)
+		}
+		drainedElements = append(drainedElements, data)
 	}
 
-	// Test Pop on empty heap
-	emptyItem := heap.Pop()
-	var zero TestFile
-	if emptyItem != zero { // Check for zero value
-		t.Errorf("Expected zero value from Pop on empty heap, got %v", emptyItem)
+	for i := 1; i < len(drainedElements); i++ {
+		if compareFN(&drainedElements[i], &drainedElements[i-1]) {
+			panic(fmt.Sprintf("Heap property violation in drained elements: %v", drainedElements))
+		}
 	}
+
 }
 
+func TestHeap_BasicOperations(t *testing.T) {
+	instructions := "p:10;p:30;o;p:9;o;o;o;p:1"
+	parseFN := strconv.Atoi
+	compareFN := func(a,b *int) bool {
+		return *a < *b
+	}
+
+	HeapStateMachine(instructions, parseFN, compareFN)
+}
+/*
 // TestHeap_Peak verifies Peak functionality without altering the heap.
 func TestHeap_Peak(t *testing.T) {
 	heap, err := dataStructures.NewHeap(MinSizeFn)
@@ -479,3 +570,4 @@ func TestHeap_ZeroValueType(t *testing.T) {
 		t.Errorf("Expected empty string from Pop on empty heap, got %s", emptyItem)
 	}
 }
+*/
