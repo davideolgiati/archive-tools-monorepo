@@ -21,7 +21,7 @@ func TestFile_ToString(t *testing.T) {
 		Hash: hashConstant,
 		FormattedataStructuresize: FileSize{
 			Value: 123,
-			Unit:  &sizes_array[1], // Kb
+			Unit:  &sizesArray[1], // Kb
 		},
 		Size: 123456,
 	}
@@ -39,7 +39,7 @@ func TestFile_ToString(t *testing.T) {
 		Hash: hashConstant,
 		FormattedataStructuresize: FileSize{
 			Value: 5,
-			Unit:  &sizes_array[0], // b
+			Unit:  &sizesArray[0], // b
 		},
 		Size: 50,
 	}
@@ -253,16 +253,16 @@ func TestFormat_file_size_Deterministic(t *testing.T) {
 		input    int64
 		expected FileSize
 	}{
-		{0, FileSize{Value: 0, Unit: &sizes_array[0]}},
-		{500, FileSize{Value: 500, Unit: &sizes_array[0]}},
-		{1000, FileSize{Value: 1, Unit: &sizes_array[1]}},
-		{1023, FileSize{Value: 1, Unit: &sizes_array[1]}}, // Still 1Kb
-		{1234, FileSize{Value: 1, Unit: &sizes_array[1]}},
-		{999999, FileSize{Value: 999, Unit: &sizes_array[1]}},
-		{1000 * 1000, FileSize{Value: 1, Unit: &sizes_array[2]}},
-		{1500 * 1000, FileSize{Value: 1, Unit: &sizes_array[2]}},
-		{1000 * 1000 * 1000, FileSize{Value: 1, Unit: &sizes_array[3]}},
-		{5 * 1000 * 1000 * 1000, FileSize{Value: 5, Unit: &sizes_array[3]}},
+		{0, FileSize{Value: 0, Unit: &sizesArray[0]}},
+		{500, FileSize{Value: 500, Unit: &sizesArray[0]}},
+		{1000, FileSize{Value: 1, Unit: &sizesArray[1]}},
+		{1023, FileSize{Value: 1, Unit: &sizesArray[1]}}, // Still 1Kb
+		{1234, FileSize{Value: 1, Unit: &sizesArray[1]}},
+		{999999, FileSize{Value: 999, Unit: &sizesArray[1]}},
+		{1000 * 1000, FileSize{Value: 1, Unit: &sizesArray[2]}},
+		{1500 * 1000, FileSize{Value: 1, Unit: &sizesArray[2]}},
+		{1000 * 1000 * 1000, FileSize{Value: 1, Unit: &sizesArray[3]}},
+		{5 * 1000 * 1000 * 1000, FileSize{Value: 5, Unit: &sizesArray[3]}},
 	}
 
 	for _, tt := range tests {

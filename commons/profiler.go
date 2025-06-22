@@ -9,84 +9,84 @@ import (
 	"unsafe"
 )
 
-const target_sampling_population = 5000
+const targetSamplingPopulation = 5000
 
 type Profiler struct {
-	memory_used    []uint64
-	quit_channel   chan bool
+	memoryUsed    []uint64
+	quitChannel   chan bool
 	wg             sync.WaitGroup
-	start_time     time.Time
-	memory_samples int
+	startTime     time.Time
+	memorySamples int
 }
 
 func (pf *Profiler) size() uint64 {
-	return uint64(unsafe.Sizeof(*pf)) + uint64(len(pf.memory_used)*8)
+	return uint64(unsafe.Sizeof(*pf)) + uint64(len(pf.memoryUsed)*8)
 }
 
 func (pf *Profiler) Start() {
-	pf.start_time = time.Now()
-	pf.quit_channel = make(chan bool)
-	pf.memory_used = make([]uint64, target_sampling_population)
+	pf.startTime = time.Now()
+	pf.quitChannel = make(chan bool)
+	pf.memoryUsed = make([]uint64, targetSamplingPopulation)
 
 	pf.wg.Add(1)
 
-	go func(wg *sync.WaitGroup, quit_channel chan bool) {
+	go func(wg *sync.WaitGroup, quitChannel chan bool) {
 		defer wg.Done()
 
 		sample := make([]metrics.Sample, 1)
 		sample[0].Name = "/memory/classes/total:bytes"
 		index := 0
-		pf.memory_samples = 0
+		pf.memorySamples = 0
 
 		for {
 			select {
-			case <-quit_channel:
+			case <-quitChannel:
 				return
 			default:
 				metrics.Read(sample)
 
 				if sample[0].Value.Kind() != metrics.KindBad {
-					pf.memory_used[index] = (sample[0].Value.Uint64() - pf.size())
-					index = (index + 1) % target_sampling_population
-					if pf.memory_samples < target_sampling_population {
-						pf.memory_samples++
+					pf.memoryUsed[index] = (sample[0].Value.Uint64() - pf.size())
+					index = (index + 1) % targetSamplingPopulation
+					if pf.memorySamples < targetSamplingPopulation {
+						pf.memorySamples++
 					}
 				}
 			}
 		}
-	}(&pf.wg, pf.quit_channel)
+	}(&pf.wg, pf.quitChannel)
 }
 
 func (pf *Profiler) Collect() {
-	pf.quit_channel <- true
+	pf.quitChannel <- true
 
-	fmt.Printf("Duration : %v\n", time.Since(pf.start_time))
+	fmt.Printf("Duration : %v\n", time.Since(pf.startTime))
 
 	pf.wg.Wait()
 
 	// Memory
 
-	if pf.memory_samples < target_sampling_population {
-		pf.memory_used = pf.memory_used[:pf.memory_samples]
+	if pf.memorySamples < targetSamplingPopulation {
+		pf.memoryUsed = pf.memoryUsed[:pf.memorySamples]
 	}
 
-	sort.Slice(pf.memory_used, func(i, j int) bool { return pf.memory_used[i] < pf.memory_used[j] })
+	sort.Slice(pf.memoryUsed, func(i, j int) bool { return pf.memoryUsed[i] < pf.memoryUsed[j] })
 
-	p50index := pf.memory_samples / 2
-	p90index := (pf.memory_samples * 90) / 100
-	p99index := (pf.memory_samples * 99) / 100
+	p50index := pf.memorySamples / 2
+	p90index := (pf.memorySamples * 90) / 100
+	p99index := (pf.memorySamples * 99) / 100
 
-	p50, err := FormatFileSize(int64(pf.memory_used[p50index]))
+	p50, err := FormatFileSize(int64(pf.memoryUsed[p50index]))
 	if err != nil {
 		panic(err)
 	}
 
-	p90, err := FormatFileSize(int64(pf.memory_used[p90index]))
+	p90, err := FormatFileSize(int64(pf.memoryUsed[p90index]))
 	if err != nil {
 		panic(err)
 	}
 
-	p99, err := FormatFileSize(int64(pf.memory_used[p99index]))
+	p99, err := FormatFileSize(int64(pf.memoryUsed[p99index]))
 	if err != nil {
 		panic(err)
 	}

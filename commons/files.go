@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-var sizes_array = [...]string{"b", "Kb", "Mb", "Gb"}
+var sizesArray = [...]string{"b", "Kb", "Mb", "Gb"}
 
 type FileSize struct {
 	Unit  *string
@@ -30,21 +30,21 @@ func (file File) Format(f fmt.State, c rune) {
 	f.Write([]byte(file.ToString()))
 }
 
-func (f File) ToString() string {
+func (file File) ToString() string {
 	var b strings.Builder
 
-	if f.Hash.Ptr() == nil {
+	if file.Hash.Ptr() == nil {
 		panic("Hash is a nil pointer")
 	}
 
-	b.WriteString(f.Hash.Value())
-	for i := 0; i < 40-len(f.Hash.Value()); i++ {
+	b.WriteString(file.Hash.Value())
+	for i := 0; i < 40-len(file.Hash.Value()); i++ {
 		b.WriteByte(' ')
 	}
 	b.WriteByte(' ')
 
 	// Right-align integer in 4-char space
-	valStr := strconv.Itoa(int(f.FormattedataStructuresize.Value))
+	valStr := strconv.Itoa(int(file.FormattedataStructuresize.Value))
 	for i := 0; i < 4-len(valStr); i++ {
 		b.WriteByte(' ')
 	}
@@ -53,14 +53,14 @@ func (f File) ToString() string {
 	b.WriteByte(' ')
 
 	// Right-align unit in 2-char space
-	unitStr := *f.FormattedataStructuresize.Unit
+	unitStr := *file.FormattedataStructuresize.Unit
 	for i := 0; i < 2-len(unitStr); i++ {
 		b.WriteByte(' ')
 	}
 	b.WriteString(unitStr)
 
 	b.WriteByte(' ')
-	b.WriteString(f.Name)
+	b.WriteString(file.Name)
 
 	return b.String()
 }
@@ -146,19 +146,19 @@ func CalculateHash(filepath string) (string, error) {
 		return "", fmt.Errorf("empty filepath")
 	}
 
-	file_pointer, err := os.Open(filepath)
+	filePointer, err := os.Open(filepath)
 
 	if err != nil {
 		return "", err
 	}
 
-	if file_pointer == nil {
-		return "", fmt.Errorf("file_pointer is nil")
+	if filePointer == nil {
+		return "", fmt.Errorf("filePointer is nil")
 	}
 
-	defer file_pointer.Close()
+	defer filePointer.Close()
 
-	stats, err := file_pointer.Stat()
+	stats, err := filePointer.Stat()
 
 	if err != nil {
 		return "", err
@@ -171,7 +171,7 @@ func CalculateHash(filepath string) (string, error) {
 	}
 
 	sha1h := sha1.New()
-	_, err = io.Copy(sha1h, file_pointer)
+	_, err = io.Copy(sha1h, filePointer)
 
 	if err != nil {
 		return "", err
@@ -185,22 +185,22 @@ func FormatFileSize(size int64) (FileSize, error) {
 		return FileSize{}, fmt.Errorf("size is negative")
 	}
 
-	file_size := float64(size)
-	size_index := 0
+	fileSize := float64(size)
+	sizeIndex := 0
 
-	for size_index < 3 && file_size >= 1000 {
-		file_size /= 1000
-		size_index++
+	for sizeIndex < 3 && fileSize >= 1000 {
+		fileSize /= 1000
+		sizeIndex++
 	}
 
-	if file_size >= 1000 && size_index != 3 {
+	if fileSize >= 1000 && sizeIndex != 3 {
 		return FileSize{}, fmt.Errorf(
-			"file_size is > 1000 and unit is  %s",
-			sizes_array[size_index],
+			"fileSize is > 1000 and unit is  %s",
+			sizesArray[sizeIndex],
 		)
 	}
 
-	output := FileSize{Value: int16(file_size), Unit: &sizes_array[size_index]}
+	output := FileSize{Value: int16(fileSize), Unit: &sizesArray[sizeIndex]}
 
 	return output, nil
 }
@@ -210,13 +210,13 @@ func HasReadPermission(info *fs.FileInfo) bool {
 		panic("obj is nil")
 	}
 
-	file_permission_bits := (*info).Mode().Perm()
+	filePermissionsBits := (*info).Mode().Perm()
 
-	user_read_ok := file_permission_bits&fs.FileMode(0400) != fs.FileMode(0000)
-	group_read_ok := file_permission_bits&fs.FileMode(0040) != fs.FileMode(0000)
-	others_read_ok := file_permission_bits&fs.FileMode(0004) != fs.FileMode(0000)
+	userReadOk := filePermissionsBits&fs.FileMode(0400) != fs.FileMode(0000)
+	groupReadOk := filePermissionsBits&fs.FileMode(0040) != fs.FileMode(0000)
+	othersReadOk := filePermissionsBits&fs.FileMode(0004) != fs.FileMode(0000)
 
-	return user_read_ok || group_read_ok || others_read_ok
+	return userReadOk || groupReadOk || othersReadOk
 }
 
 func IsSymbolicLink(info *fs.FileInfo) bool {
