@@ -16,11 +16,11 @@ func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry 
 	fileHeap := FileHeap{}
 
 	newHeap, err := dataStructures.NewHeap(sortFunction)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	fileHeap.heap = newHeap
 
 	fileHeap.hashRegistry = registry
@@ -69,11 +69,11 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 	var last commons.File
 
 	output, err := newFileHeap(commons.HashDescending, registry)
-	
+
 	if err != nil {
 		panic(err)
 	}
-	
+
 	output.hashRegistry = fh.hashRegistry
 
 	total := float64(fh.heap.Size())
@@ -101,13 +101,13 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 		if err != nil {
 			panic(err)
 		}
-		
+
 		processed += 1.0
 	}
 
 	for !fh.heap.Empty() {
 		last = current
-		current,err = fh.heap.Pop()
+		current, err = fh.heap.Pop()
 
 		if err != nil {
 			panic(err)

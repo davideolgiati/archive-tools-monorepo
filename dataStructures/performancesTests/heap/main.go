@@ -56,7 +56,7 @@ func main() {
 				}
 			case raw == "o":
 				_, err = ourHeap.Pop()
-				
+
 				if err != nil {
 					panic(err)
 				}

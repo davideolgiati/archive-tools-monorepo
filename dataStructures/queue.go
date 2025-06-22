@@ -4,13 +4,13 @@ import "fmt"
 
 type node[T any] struct {
 	value T
-	next *node[T]
+	next  *node[T]
 }
 
 type Queue[T any] struct {
-	head  *node[T]
-	tail  *node[T]
-	size  int
+	head *node[T]
+	tail *node[T]
+	size int
 }
 
 func (queue *Queue[T]) Init() {
@@ -22,7 +22,7 @@ func (queue *Queue[T]) Init() {
 func (queue *Queue[T]) Push(value T) {
 	newNode := node[T]{
 		value: value,
-		next: nil,
+		next:  nil,
 	}
 
 	if queue.head == nil {
@@ -38,7 +38,7 @@ func (queue *Queue[T]) Push(value T) {
 func (queue *Queue[T]) Pop() (T, error) {
 	var value T
 
-	switch{
+	switch {
 	case queue.size == 0:
 		return value, fmt.Errorf("Pop on empty queue")
 	case queue.size == 1:

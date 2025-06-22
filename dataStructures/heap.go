@@ -66,11 +66,10 @@ func (heap *Heap[T]) Push(data T) error {
 
 func (heap *Heap[T]) Pop() (T, error) {
 	var item T
-	
+
 	if heap.minFunction == nil {
 		return item, fmt.Errorf("comapre function not set")
 	}
-
 
 	heap.mutex.Lock()
 	defer heap.mutex.Unlock()

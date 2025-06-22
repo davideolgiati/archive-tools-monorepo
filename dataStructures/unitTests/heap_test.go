@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error), compareFN func(*T, *T) bool){
+func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error), compareFN func(*T, *T) bool) {
 	heap, err := dataStructures.NewHeap(compareFN)
 
 	if err != nil {
@@ -167,12 +167,13 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 func TestHeap_BasicOperations(t *testing.T) {
 	instructions := "p:10;p:30;o;p:9;o;o;o;p:1"
 	parseFN := strconv.Atoi
-	compareFN := func(a,b *int) bool {
+	compareFN := func(a, b *int) bool {
 		return *a < *b
 	}
 
 	HeapStateMachine(instructions, parseFN, compareFN)
 }
+
 /*
 // TestHeap_Peak verifies Peak functionality without altering the heap.
 func TestHeap_Peak(t *testing.T) {
