@@ -1,4 +1,4 @@
-package dataStructures
+package datastructures
 
 import (
 	"fmt"
@@ -101,14 +101,14 @@ func (heap *Heap[T]) Peak() *T {
 }
 
 func (heap *Heap[T]) heapifyBottomUp() {
-	current_index := heap.tail - 1
+	currentIndex := heap.tail - 1
 	parent := (heap.tail - 2) / 2
 
-	for current_index > 0 && heap.minFunction(heap.items[current_index], heap.items[parent]) {
-		heap.items[parent], heap.items[current_index] = heap.items[current_index], heap.items[parent]
+	for currentIndex > 0 && heap.minFunction(heap.items[currentIndex], heap.items[parent]) {
+		heap.items[parent], heap.items[currentIndex] = heap.items[currentIndex], heap.items[parent]
 
-		current_index = parent
-		parent = (current_index - 1) / 2
+		currentIndex = parent
+		parent = (currentIndex - 1) / 2
 	}
 }
 
@@ -126,14 +126,14 @@ func (heap *Heap[T]) getSmallestChild(current *int) int {
 }
 
 func (heap *Heap[T]) heapifyTopDown() {
-	current_index := 0
-	candidate := heap.getSmallestChild(&current_index)
+	currentIndex := 0
+	candidate := heap.getSmallestChild(&currentIndex)
 
-	for candidate < heap.tail && heap.minFunction(heap.items[candidate], heap.items[current_index]) {
-		heap.items[candidate], heap.items[current_index] = heap.items[current_index], heap.items[candidate]
-		current_index = candidate
+	for candidate < heap.tail && heap.minFunction(heap.items[candidate], heap.items[currentIndex]) {
+		heap.items[candidate], heap.items[currentIndex] = heap.items[currentIndex], heap.items[candidate]
+		currentIndex = candidate
 
-		if current_index*2 > heap.tail {
+		if currentIndex*2 > heap.tail {
 			break
 		}
 

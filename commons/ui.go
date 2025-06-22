@@ -7,7 +7,7 @@ import (
 )
 
 type line struct {
-	last_update      time.Time
+	lastUpdate       time.Time
 	format           string
 	lineNumber       int
 	currentLineValue string
@@ -35,7 +35,7 @@ func (ui *ui) ToggleSilence() {
 	ui.silent = !ui.silent
 }
 
-func (ui *ui) AddNewNamedLine(line_id string, format string) {
+func (ui *ui) AddNewNamedLine(lineID string, format string) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -43,8 +43,8 @@ func (ui *ui) AddNewNamedLine(line_id string, format string) {
 		return
 	}
 
-	new_line := &line{
-		last_update:      time.Now(),
+	newLine := &line{
+		lastUpdate:       time.Now(),
 		lineNumber:       ui.nextLineNumber,
 		format:           format,
 		currentLineValue: "",
@@ -53,11 +53,11 @@ func (ui *ui) AddNewNamedLine(line_id string, format string) {
 	ui.goToLine(ui.nextLineNumber)
 	fmt.Println("")
 
-	ui.lines[line_id] = new_line
+	ui.lines[lineID] = newLine
 	ui.nextLineNumber++
 }
 
-func (ui *ui) UpdateNamedLine(line_id string, a ...any) {
+func (ui *ui) UpdateNamedLine(lineID string, a ...any) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -65,24 +65,24 @@ func (ui *ui) UpdateNamedLine(line_id string, a ...any) {
 		return
 	}
 
-	current_line := ui.lines[line_id]
+	currentLine := ui.lines[lineID]
 
-	if time.Since(current_line.last_update).Milliseconds() < 16 {
+	if time.Since(currentLine.lastUpdate).Milliseconds() < 16 {
 		return
 	}
 
-	data := fmt.Sprintf(current_line.format, a...)
+	data := fmt.Sprintf(currentLine.format, a...)
 
-	if data == current_line.currentLineValue {
+	if data == currentLine.currentLineValue {
 		return
 	}
 
-	line_number := current_line.lineNumber
-	ui.printToNamedLine(data, line_number)
+	lineNumber := currentLine.lineNumber
+	ui.printToNamedLine(data, lineNumber)
 
-	current_line.last_update = time.Now()
-	current_line.currentLineValue = data
-	ui.lines[line_id] = current_line
+	currentLine.lastUpdate = time.Now()
+	currentLine.currentLineValue = data
+	ui.lines[lineID] = currentLine
 }
 
 func (ui *ui) Println(format string, a ...any) {
@@ -119,8 +119,8 @@ func (ui *ui) goToLine(line int) {
 	ui.currentLineNumber = line
 }
 
-func (ui *ui) printToNamedLine(data string, line_number int) {
-	ui.goToLine(line_number)
+func (ui *ui) printToNamedLine(data string, lineNumber int) {
+	ui.goToLine(lineNumber)
 	fmt.Printf("\033[2K\r%s", data)
 }
 

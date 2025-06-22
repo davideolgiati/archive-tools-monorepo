@@ -1,4 +1,4 @@
-package dataStructures
+package datastructures
 
 import (
 	"sync"
@@ -9,7 +9,7 @@ type AtomicCounter struct {
 	value int64
 }
 
-func Build_new_atomic_counter() *AtomicCounter {
+func BuildNewAtomicCounter() *AtomicCounter {
 	output := AtomicCounter{}
 	output.value = 0
 

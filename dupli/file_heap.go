@@ -2,20 +2,20 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	"sync"
 )
 
 type FileHeap struct {
-	heap         *dataStructures.Heap[commons.File]
-	hashRegistry *dataStructures.Flyweight[string]
+	heap         *datastructures.Heap[commons.File]
+	hashRegistry *datastructures.Flyweight[string]
 	sizeFilter   sync.Map
 }
 
-func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry *dataStructures.Flyweight[string]) (*FileHeap, error) {
+func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry *datastructures.Flyweight[string]) (*FileHeap, error) {
 	fileHeap := FileHeap{}
 
-	newHeap, err := dataStructures.NewHeap(sortFunction)
+	newHeap, err := datastructures.NewHeap(sortFunction)
 
 	if err != nil {
 		return nil, err
@@ -28,9 +28,9 @@ func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry 
 	return &fileHeap, nil
 }
 
-func refineAndPushFileInHeap(file commons.File, file_chan chan<- commons.File, flyweight *dataStructures.Flyweight[string]) {
+func refineAndPushFileInHeap(file commons.File, fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) {
 	if file.Hash.Value() == "" {
-		file_chan <- file
+		fileChannel <- file
 		return
 	}
 
@@ -48,23 +48,23 @@ func refineAndPushFileInHeap(file commons.File, file_chan chan<- commons.File, f
 		//panic(err)
 	}
 
-	file_chan <- file
+	fileChannel <- file
 }
 
-func getFileHashGoruotine(file_chan chan<- commons.File, flyweight *dataStructures.Flyweight[string]) func(commons.File) {
+func getFileHashGoruotine(fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) func(commons.File) {
 	return func(obj commons.File) {
-		refineAndPushFileInHeap(obj, file_chan, flyweight)
+		refineAndPushFileInHeap(obj, fileChannel, flyweight)
 	}
 }
 
-func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup, heap *dataStructures.Heap[commons.File]) {
+func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup, heap *datastructures.Heap[commons.File]) {
 	defer waitgroup.Done()
 	for data := range channel {
 		heap.Push(data)
 	}
 }
 
-func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) bool, registry *dataStructures.Flyweight[string]) *FileHeap {
+func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) bool, registry *datastructures.Flyweight[string]) *FileHeap {
 	var current commons.File
 	var last commons.File
 
@@ -139,7 +139,7 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 	return output
 }
 
-func (fh *FileHeap) display_duplicate_file_info() {
+func (fh *FileHeap) displayDuplicateFileInfo() {
 	var lastSeen commons.File
 	var current commons.File
 	var areEqual bool

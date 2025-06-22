@@ -1,11 +1,10 @@
 package commons
 
 import (
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -15,11 +14,11 @@ import (
 // TestFile_ToString verifies the formatting of the File struct.
 func TestFile_ToString(t *testing.T) {
 	hash := "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
-	hashConstant, _ := dataStructures.NewConstant(&hash)
+	hashConstant, _ := datastructures.NewConstant(&hash)
 	file := File{
 		Name: "test_document.txt",
 		Hash: hashConstant,
-		FormattedataStructuresize: FileSize{
+		Formattedatastructuresize: FileSize{
 			Value: 123,
 			Unit:  &sizesArray[1], // Kb
 		},
@@ -33,11 +32,11 @@ func TestFile_ToString(t *testing.T) {
 
 	// Test with different unit and hash length
 	hash2 := "short"
-	hashConstant, _ = dataStructures.NewConstant(&hash2)
+	hashConstant, _ = datastructures.NewConstant(&hash2)
 	file2 := File{
 		Name: "another_file.log",
 		Hash: hashConstant,
-		FormattedataStructuresize: FileSize{
+		Formattedatastructuresize: FileSize{
 			Value: 5,
 			Unit:  &sizesArray[0], // b
 		},
@@ -83,8 +82,8 @@ func TestSizeDescending_Deterministic(t *testing.T) {
 func TestHashDescending_Deterministic(t *testing.T) {
 	hash1 := "aaaa"
 	hash2 := "bbbb"
-	hashConstant1, _ := dataStructures.NewConstant(&hash1)
-	hashConstant2, _ := dataStructures.NewConstant(&hash2)
+	hashConstant1, _ := datastructures.NewConstant(&hash1)
+	hashConstant2, _ := datastructures.NewConstant(&hash2)
 
 	f1 := File{Hash: hashConstant1}
 	f2 := File{Hash: hashConstant2}
@@ -101,8 +100,8 @@ func TestHashDescending_Deterministic(t *testing.T) {
 
 	// Test with equal hashes, different names (similar stability issue as SizeDescending)
 	equalHash := "xyz"
-	hashConstant3, _ := dataStructures.NewConstant(&equalHash)
-	hashConstant4, _ := dataStructures.NewConstant(&equalHash)
+	hashConstant3, _ := datastructures.NewConstant(&equalHash)
+	hashConstant4, _ := datastructures.NewConstant(&equalHash)
 	f4 := File{Name: "f4", Hash: hashConstant3}
 	f5 := File{Name: "f5", Hash: hashConstant4}
 
@@ -118,7 +117,7 @@ func TestHashDescending_Deterministic(t *testing.T) {
 func TestHash_Deterministic(t *testing.T) {
 	// Create a temporary file with known content
 	content := "This is some test content."
-	tmpfile, err := ioutil.TempFile("", "test_hash_*.txt")
+	tmpfile, err := os.CreateTemp("", "test_hash_*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +147,7 @@ func TestHash_Deterministic(t *testing.T) {
 	}
 
 	// Test hashing an empty file
-	emptyFile, err := ioutil.TempFile("", "test_empty_*.txt")
+	emptyFile, err := os.CreateTemp("", "test_empty_*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,7 +185,7 @@ func TestHash_Concurrent(t *testing.T) {
 	// Create temporary files
 	for i := 0; i < numFiles; i++ {
 		content := fmt.Sprintf("content for file %d - %s", i, strings.Repeat("x", i))
-		tmpfile, err := ioutil.TempFile("", fmt.Sprintf("concurrent_test_file_%d_*.txt", i))
+		tmpfile, err := os.CreateTemp("", fmt.Sprintf("concurrent_test_file_%d_*.txt", i))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -232,7 +231,7 @@ func TestHash_Concurrent(t *testing.T) {
 
 	// Verify hashes by re-calculating them sequentially
 	for _, path := range filePaths {
-		contentBytes, err := ioutil.ReadFile(path)
+		contentBytes, err := os.ReadFile(path)
 		if err != nil {
 			t.Errorf("Failed to read file %s for verification: %v", path, err)
 			continue
@@ -292,7 +291,7 @@ func TestFormat_file_size_Deterministic(t *testing.T) {
 // TestCheck_read_rights_on_file verifies file permission checking.
 func TestCheck_read_rights_on_file(t *testing.T) {
 	// Create a dummy file
-	tmpfile, err := ioutil.TempFile("", "perms_test_*.txt")
+	tmpfile, err := os.CreateTemp("", "perms_test_*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,7 +325,7 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 // TestIs_symbolic_link verifies symbolic link detection.
 func TestIs_symbolic_link(t *testing.T) {
 	// Create a regular file
-	tmpfile, err := ioutil.TempFile("", "regular_file_*.txt")
+	tmpfile, err := os.CreateTemp("", "regular_file_*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}

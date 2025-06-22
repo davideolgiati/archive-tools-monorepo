@@ -15,7 +15,7 @@ type poolConfiguration[T any] struct {
 
 type poolStatus struct {
 	poolLoad                  []float64
-	activeThreadataStructures atomic.Int64
+	activeThreadatastructures atomic.Int64
 	isClosed                  bool
 }
 
@@ -49,13 +49,13 @@ func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
 	}
 
 	threadPool.status = poolStatus{}
-	threadPool.status.activeThreadataStructures.Store(0)
+	threadPool.status.activeThreadatastructures.Store(0)
 	threadPool.status.isClosed = false
 	threadPool.status.poolLoad = sampleArray
 
 	threadPool.configuration = poolConfiguration[T]{}
 	threadPool.configuration.maxWorkers = workersCount
-	threadPool.configuration.workerFunction = setupWorkerFunction(workerFn, &threadPool.status.activeThreadataStructures)
+	threadPool.configuration.workerFunction = setupWorkerFunction(workerFn, &threadPool.status.activeThreadatastructures)
 
 	threadPool.shared.inputChannel = inputChannel
 
@@ -73,7 +73,7 @@ func (tp *WriteOnlyThreadPool[T]) Submit(data T) error {
 
 	select {
 	case tp.shared.inputChannel <- data:
-		tp.status.activeThreadataStructures.Add(1)
+		tp.status.activeThreadatastructures.Add(1)
 		return nil
 	case <-time.After(time.Second * 3):
 		return fmt.Errorf("submit timeout - workers may be overloaded")
@@ -90,7 +90,7 @@ func (tp *WriteOnlyThreadPool[T]) Release() {
 }
 
 func (tp *WriteOnlyThreadPool[T]) Wait() {
-	for tp.status.activeThreadataStructures.Load() > 0 {
+	for tp.status.activeThreadatastructures.Load() > 0 {
 		time.Sleep(1 * time.Millisecond)
 	}
 }

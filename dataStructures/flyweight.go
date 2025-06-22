@@ -1,4 +1,4 @@
-package dataStructures
+package datastructures
 
 import "sync"
 
@@ -7,26 +7,26 @@ type Flyweight[T comparable] struct {
 }
 
 func (fw *Flyweight[T]) Instance(data T) (Constant[T], error) {
-	cache_reference, ok := fw.get(data)
+	cacheReference, ok := fw.get(data)
 
 	if ok {
-		return cache_reference, nil
+		return cacheReference, nil
 	}
 
-	new_entry, err := fw.set(data)
+	newEntry, err := fw.set(data)
 
-	return new_entry, err
+	return newEntry, err
 }
 
 func (fw *Flyweight[T]) get(data T) (Constant[T], bool) {
-	entry_pointer, ok := fw.cache.Load(data)
+	entryPointer, ok := fw.cache.Load(data)
 
 	if !ok {
-		default_entry := ""
-		entry_pointer = &default_entry
+		defaultEntry := ""
+		entryPointer = &defaultEntry
 	}
 
-	newConstant, err := NewConstant(entry_pointer.(*T))
+	newConstant, err := NewConstant(entryPointer.(*T))
 
 	if err != nil {
 		ok = false
@@ -36,8 +36,8 @@ func (fw *Flyweight[T]) get(data T) (Constant[T], bool) {
 }
 
 func (fw *Flyweight[T]) set(data T) (Constant[T], error) {
-	new_entry := data
-	ptr := &new_entry
+	newEntry := data
+	ptr := &newEntry
 
 	actual, loaded := fw.cache.LoadOrStore(data, ptr)
 

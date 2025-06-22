@@ -1,7 +1,7 @@
 package fuzztests
 
 import (
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	"strings"
 	"testing"
 )
@@ -18,7 +18,7 @@ func FuzzStack(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, tc string) {
-		var s dataStructures.Stack[string]
+		var s datastructures.Stack[string]
 
 		var model []string
 

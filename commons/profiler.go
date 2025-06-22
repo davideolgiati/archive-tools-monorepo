@@ -14,7 +14,7 @@ const targetSamplingPopulation = 5000
 type Profiler struct {
 	memoryUsed    []uint64
 	quitChannel   chan bool
-	wg             sync.WaitGroup
+	wg            sync.WaitGroup
 	startTime     time.Time
 	memorySamples int
 }

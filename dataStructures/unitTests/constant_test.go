@@ -1,7 +1,7 @@
-package dataStructures
+package datastructures
 
 import (
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	"fmt"
 	"strings"
 	"testing"
@@ -9,7 +9,7 @@ import (
 
 func TestConstant_NewConstant_WhenValueIsSet_ReturnOk(t *testing.T) {
 	data := "test"
-	constant, err := dataStructures.NewConstant(&data)
+	constant, err := datastructures.NewConstant(&data)
 
 	if err != nil {
 		t.Errorf("%v", err)
@@ -22,7 +22,7 @@ func TestConstant_NewConstant_WhenValueIsSet_ReturnOk(t *testing.T) {
 
 func TestConstant_NewConstant_WhenValueNotSet_Panic(t *testing.T) {
 	var data *string = nil
-	_, err := dataStructures.NewConstant(data)
+	_, err := datastructures.NewConstant(data)
 
 	if err == nil {
 		t.Error("Expected panic for nil pointer input, but got none")

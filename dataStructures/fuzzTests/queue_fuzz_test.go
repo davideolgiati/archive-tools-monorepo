@@ -1,7 +1,7 @@
 package fuzztests
 
 import (
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	"strings"
 	"testing"
 )
@@ -18,7 +18,7 @@ func FuzzQueue(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, tc string) {
-		var q dataStructures.Queue[string]
+		var q datastructures.Queue[string]
 		q.Init()
 
 		var model []string

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	"fmt"
 	"math/rand/v2"
 	"os"
@@ -35,7 +35,7 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 	for x := 0; x < 100; x++ {
-		ourHeap, err := dataStructures.NewHeap(func(a, b *string) bool {
+		ourHeap, err := datastructures.NewHeap(func(a, b *string) bool {
 			return *a < *b
 		})
 

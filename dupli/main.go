@@ -2,7 +2,7 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	_ "embed"
 	"flag"
 	"strings"
@@ -20,11 +20,11 @@ var buildts string
 
 var ui = commons.NewUI()
 
-func filter[T comparable](input []T, filter_value T) []T {
-	var output []T = make([]T, 0)
+func filter[T comparable](input []T, filterValue T) []T {
+	output := make([]T, 0)
 
 	for _, str := range input {
-		if str == filter_value {
+		if str == filterValue {
 			continue
 		}
 
@@ -43,7 +43,7 @@ func main() {
 
 	var fileProcessorPool *commons.WriteOnlyThreadPool[File]
 
-	sharedRegistry := dataStructures.Flyweight[string]{}
+	sharedRegistry := datastructures.Flyweight[string]{}
 	outputFileHheap, err := newFileHeap(commons.HashDescending, &sharedRegistry)
 
 	if err != nil {
@@ -98,8 +98,8 @@ func main() {
 	}()
 
 	walker.SetEntryPoint(startDirectory)
-	walker.SetDirectoryFilter(get_directory_filter_fn(&userDirectories))
-	walker.SetFileCallback(get_file_callback_fn(fileProcessorPool))
+	walker.SetDirectoryFilter(getDirectoryFilter(&userDirectories))
+	walker.SetFileCallback(getFileCallback(fileProcessorPool))
 	walker.SetDirectoryCallback(fileProcessorPool.Wait)
 
 	walker.Walk()
@@ -111,7 +111,7 @@ func main() {
 	outputWg.Wait()
 
 	cleanedHeap := outputFileHheap.filterHeap(commons.Equal, &sharedRegistry)
-	cleanedHeap.display_duplicate_file_info()
+	cleanedHeap.displayDuplicateFileInfo()
 
 	ui.Close()
 

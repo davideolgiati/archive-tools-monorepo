@@ -2,7 +2,7 @@ package main
 
 import (
 	"archive-tools-monorepo/commons"
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	"errors"
 	"os"
 	"path"
@@ -18,7 +18,7 @@ type dirWalkerConfiguration struct {
 type dirWalkerState struct {
 	currentDirectory string
 	currentFile      string
-	directoriesQueue dataStructures.Queue[string]
+	directoriesQueue datastructures.Queue[string]
 }
 
 type dirwalkerStatistics struct {
@@ -48,7 +48,7 @@ func NewWalker(skipEmpty bool) *dirWalker {
 	walker.configuration.fileCallback = nil
 
 	walker.state = dirWalkerState{}
-	walker.state.directoriesQueue = dataStructures.Queue[string]{}
+	walker.state.directoriesQueue = datastructures.Queue[string]{}
 	walker.state.directoriesQueue.Init()
 	walker.state.currentDirectory = ""
 	walker.state.currentFile = ""
@@ -60,8 +60,8 @@ func (walker *dirWalker) SetEntryPoint(directory string) {
 	walker.state.directoriesQueue.Push(directory)
 }
 
-func (walker *dirWalker) SetDirectoryFilter(filter_fn func(string) bool) {
-	walker.configuration.filterDirectory = filter_fn
+func (walker *dirWalker) SetDirectoryFilter(filterFn func(string) bool) {
+	walker.configuration.filterDirectory = filterFn
 }
 
 func (walker *dirWalker) SetFileCallback(callback func(File)) {
@@ -73,7 +73,8 @@ func (walker *dirWalker) SetDirectoryCallback(callback func()) {
 }
 
 func (walker *dirWalker) Walk() {
-	var formatted_size commons.FileSize
+	var formattedSize commons.FileSize
+	var objects []os.DirEntry
 	var err error
 
 	ui.AddNewNamedLine("directory-line", "Directories seen: %6d")
@@ -87,21 +88,21 @@ func (walker *dirWalker) Walk() {
 			panic(err)
 		}
 
-		objects, read_dir_err := os.ReadDir(walker.state.currentDirectory)
+		objects, err = os.ReadDir(walker.state.currentDirectory)
 
-		if read_dir_err == nil {
+		if err == nil {
 			walker.processDirectoryItems(&objects)
 
-			formatted_size, err = commons.FormatFileSize(walker.stats.sizeProcessed)
+			formattedSize, err = commons.FormatFileSize(walker.stats.sizeProcessed)
 			if err != nil {
 				panic(err)
 			}
 
 			ui.UpdateNamedLine("directory-line", walker.stats.directoriesSeen)
 			ui.UpdateNamedLine("file-line", walker.stats.fileSeen)
-			ui.UpdateNamedLine("size-line", formatted_size.Value, *formatted_size.Unit)
-		} else if !errors.Is(read_dir_err, os.ErrPermission) {
-			panic(read_dir_err)
+			ui.UpdateNamedLine("size-line", formattedSize.Value, *formattedSize.Unit)
+		} else if !errors.Is(err, os.ErrPermission) {
+			panic(err)
 		}
 
 		walker.configuration.directoryCallback()

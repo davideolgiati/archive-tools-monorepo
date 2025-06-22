@@ -1,9 +1,9 @@
-package dataStructures
+package datastructures
 
 type radixTreeNode[T any] struct {
 	data               *T
 	value              string
-	childataStructures []*radixTreeNode[T]
+	childatastructures []*radixTreeNode[T]
 }
 
 type RadixTree[T any] struct {
@@ -14,19 +14,19 @@ func (rt *RadixTree[T]) Add(value string, data T) {
 	current := &rt.head
 
 	for *current != nil {
-		if len((*current).childataStructures) == 0 {
-			(*current).childataStructures = append((*current).childataStructures, nil)
-			current = &(*current).childataStructures[0]
+		if len((*current).childatastructures) == 0 {
+			(*current).childatastructures = append((*current).childatastructures, nil)
+			current = &(*current).childatastructures[0]
 		} else {
 			currentChild := 0
-			for currentChild < len((*current).childataStructures) {
-				prefixMatch := comparePrefixWithValue((*current).childataStructures[currentChild].value, value)
+			for currentChild < len((*current).childatastructures) {
+				prefixMatch := comparePrefixWithValue((*current).childatastructures[currentChild].value, value)
 				if prefixMatch == 0 {
 					currentChild++
 					continue
 				}
 
-				if len((*current).childataStructures[currentChild].value) < prefixMatch {
+				if len((*current).childatastructures[currentChild].value) < prefixMatch {
 					// TODO: split prefix
 					break
 				} else {
@@ -45,7 +45,7 @@ func newRadixNode[T any](value string, data T) *radixTreeNode[T] {
 	node := radixTreeNode[T]{}
 	node.data = &data
 	node.value = value
-	node.childataStructures = make([]*radixTreeNode[T], 0)
+	node.childatastructures = make([]*radixTreeNode[T], 0)
 
 	return &node
 }
