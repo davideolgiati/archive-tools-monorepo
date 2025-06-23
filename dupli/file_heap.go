@@ -185,7 +185,6 @@ func (fh *FileHeap) displayDuplicateFileInfo() {
 		}
 
 		isDuplicate = areEqual
-
 	}
 
 	if isDuplicate {

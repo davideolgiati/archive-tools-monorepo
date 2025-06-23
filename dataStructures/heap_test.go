@@ -160,7 +160,6 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 			panic(fmt.Sprintf("Heap property violation in drained elements: %v", drainedElements))
 		}
 	}
-
 }
 
 func TestHeap_NewHeap_WhenFunctionNotSet_Panic(t *testing.T) {
@@ -196,7 +195,7 @@ func TestHeap_NewHeap_WhenFunctionNotSet_Panic(t *testing.T) {
 	}
 }
 
-func TestHeap_BasicOperations_OK(t *testing.T) {
+func TestHeap_BasicOperations_OK(_ *testing.T) {
 	instructions := "p:10;p:30;o;s;p:9;p:8;p:7;k;p:6;p:5;k;p:9;p:40;k;p:39;p:-1;o;o;o;p:1"
 	parseFN := strconv.Atoi
 	compareFN := func(a, b *int) bool {

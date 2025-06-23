@@ -8,19 +8,8 @@ import (
 
 func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 	// Create a temporary directory structure.
-	baseDir, err := os.MkdirTemp("", "dirwalker_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		err := os.RemoveAll(baseDir)
-
-		if err != nil {
-			panic(err)
-		}
-	}()
-
+	baseDir := t.TempDir()
+	
 	// Create a subdirectory.
 	subDir := filepath.Join(baseDir, "sub")
 	if err := os.Mkdir(subDir, 0755); err != nil {
@@ -44,7 +33,7 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 	walker := NewWalker(true)
 	walker.SetEntryPoint(baseDir)
 	// Directory filter: allow all directories.
-	walker.SetDirectoryFilter(func(dir string) bool {
+	walker.SetDirectoryFilter(func(_ string) bool {
 		return true
 	})
 
@@ -76,19 +65,7 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 
 func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 	// Temporary directory with one non-empty and one empty file.
-	baseDir, err := os.MkdirTemp("", "dirwalker_skipempty_test")
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		err := os.RemoveAll(baseDir)
-
-		if err != nil {
-			panic(err)
-		}
-	}()
+	baseDir := t.TempDir()
 
 	nonEmptyFile := filepath.Join(baseDir, "nonempty.txt")
 	emptyFile := filepath.Join(baseDir, "empty.txt")
@@ -101,7 +78,7 @@ func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 
 	walker := NewWalker(true)
 	walker.SetEntryPoint(baseDir)
-	walker.SetDirectoryFilter(func(dir string) bool {
+	walker.SetDirectoryFilter(func(_ string) bool {
 		return true
 	})
 
@@ -125,18 +102,7 @@ func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 
 func TestDirWalker_NoSkipEmptyFiles(t *testing.T) {
 	// Temporary directory with one non-empty and one empty file.
-	baseDir, err := os.MkdirTemp("", "dirwalker_noskipempty_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		err = os.RemoveAll(baseDir)
-
-		if err != nil {
-			panic(err)
-		}
-	}()
+	baseDir := t.TempDir()
 
 	nonEmptyFile := filepath.Join(baseDir, "nonempty.txt")
 	emptyFile := filepath.Join(baseDir, "empty.txt")
@@ -149,7 +115,7 @@ func TestDirWalker_NoSkipEmptyFiles(t *testing.T) {
 
 	walker := NewWalker(false) // Do not skip empty files.
 	walker.SetEntryPoint(baseDir)
-	walker.SetDirectoryFilter(func(dir string) bool {
+	walker.SetDirectoryFilter(func(_ string) bool {
 		return true
 	})
 

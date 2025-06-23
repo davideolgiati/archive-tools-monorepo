@@ -53,7 +53,6 @@ func (f *File) CanBeRead() bool {
 }
 
 func (f *File) Type() int {
-
 	if f.path == "" {
 		panic("Type - fullpath is empty")
 	}
@@ -95,39 +94,41 @@ func processFileEntry(file *File, fileChannel chan<- commons.File, flyweight *da
 		panic("flyweight is a nil pointer")
 	}
 
-	if file.CanBeRead() {
-		hash := ""
-		size := file.infos.Size()
-		_, loaded := sizeFilter.LoadOrStore(size, true)
-
-		if size < 5000000 && loaded {
-			hash, err = commons.CalculateHash(file.path)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		formattedSize, err := commons.FormatFileSize(file.infos.Size())
-
-		if err != nil {
-			panic(err)
-		}
-
-		hashPointer, err := flyweight.Instance(hash)
-
-		if err != nil {
-			panic(err)
-		}
-
-		fileStats := commons.File{
-			Name:                      file.path,
-			Size:                      size,
-			Hash:                      hashPointer,
-			Formattedatastructuresize: formattedSize,
-		}
-
-		fileChannel <- fileStats
+	if !file.CanBeRead() {
+		return
 	}
+
+	hash := ""
+	size := file.infos.Size()
+	_, loaded := sizeFilter.LoadOrStore(size, true)
+
+	if size < 5000000 && loaded {
+		hash, err = commons.CalculateHash(file.path)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	formattedSize, err := commons.FormatFileSize(file.infos.Size())
+
+	if err != nil {
+		panic(err)
+	}
+
+	hashPointer, err := flyweight.Instance(hash)
+
+	if err != nil {
+		panic(err)
+	}
+
+	fileStats := commons.File{
+		Name:                      file.path,
+		Size:                      size,
+		Hash:                      hashPointer,
+		Formattedatastructuresize: formattedSize,
+	}
+
+	fileChannel <- fileStats
 }
 
 func getFileProcessWorker(flyweight *datastructures.Flyweight[string], fileChannel chan<- commons.File, sizeFilter *sync.Map) func(File) {

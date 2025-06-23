@@ -24,7 +24,7 @@ func TestConstant_NewConstant_WhenValueIsSet_ReturnOk(t *testing.T) {
 }
 
 func TestConstant_NewConstant_WhenValueNotSet_Panic(t *testing.T) {
-	var data *string = nil
+	var data *string
 	_, err := NewConstant(data)
 
 	if err == nil {

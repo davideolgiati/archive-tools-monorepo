@@ -1,7 +1,7 @@
 package datastructures
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"sync"
 )
@@ -18,7 +18,7 @@ func NewHeap[T any](sortFunction func(*T, *T) bool) (*Heap[T], error) {
 	heap := Heap[T]{}
 
 	if sortFunction == nil {
-		return nil, fmt.Errorf("provided function is a nil pointer")
+		return nil, errors.New("provided function is a nil pointer")
 	}
 
 	heap.minFunction = sortFunction
@@ -45,7 +45,7 @@ func (heap *Heap[T]) Size() int {
 
 func (heap *Heap[T]) Push(data T) error {
 	if heap == nil || heap.minFunction == nil {
-		return fmt.Errorf("comapre function not set")
+		return errors.New("comapre function not set")
 	}
 
 	heap.mutex.Lock()
@@ -68,7 +68,7 @@ func (heap *Heap[T]) Pop() (T, error) {
 	var item T
 
 	if heap == nil || heap.minFunction == nil {
-		return item, fmt.Errorf("comapre function not set")
+		return item, errors.New("comapre function not set")
 	}
 
 	heap.mutex.Lock()

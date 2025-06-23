@@ -1,7 +1,7 @@
 package datastructures
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 )
 
@@ -40,7 +40,7 @@ func (stack *Stack[T]) Pop() (T, error) {
 		item = stack.items[len(stack.items)-1]
 		stack.items = stack.items[:len(stack.items)-1]
 	} else {
-		return item, fmt.Errorf("error while popping - popping empty stack")
+		return item, errors.New("error while popping - popping empty stack")
 	}
 
 	return item, nil

@@ -1,7 +1,7 @@
 package commons
 
 import (
-	"fmt"
+	"errors"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -41,11 +41,11 @@ func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
 	}
 
 	if workerFn == nil {
-		return threadPool, fmt.Errorf("target function for thread pool can't be null")
+		return threadPool, errors.New("target function for thread pool can't be null")
 	}
 
 	if workersCount < 1 {
-		return threadPool, fmt.Errorf("error while looking for CPU info in threadpool setup")
+		return threadPool, errors.New("error while looking for CPU info in threadpool setup")
 	}
 
 	threadPool.status = poolStatus{}
@@ -68,7 +68,7 @@ func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
 
 func (tp *WriteOnlyThreadPool[T]) Submit(data T) error {
 	if tp.status.isClosed {
-		return fmt.Errorf("send on closed thread pool")
+		return errors.New("send on closed thread pool")
 	}
 
 	select {
@@ -76,7 +76,7 @@ func (tp *WriteOnlyThreadPool[T]) Submit(data T) error {
 		tp.status.activeThreadatastructures.Add(1)
 		return nil
 	case <-time.After(time.Second * 3):
-		return fmt.Errorf("submit timeout - workers may be overloaded")
+		return errors.New("submit timeout - workers may be overloaded")
 	}
 }
 

@@ -1,6 +1,6 @@
 package datastructures
 
-import "fmt"
+import "errors"
 
 type Constant[T any] struct {
 	ptr *T
@@ -8,7 +8,7 @@ type Constant[T any] struct {
 
 func NewConstant[T any](data *T) (Constant[T], error) {
 	if data == nil {
-		return Constant[T]{}, fmt.Errorf("data pointer is nil")
+		return Constant[T]{}, errors.New("data pointer is nil")
 	}
 	return Constant[T]{ptr: data}, nil
 }

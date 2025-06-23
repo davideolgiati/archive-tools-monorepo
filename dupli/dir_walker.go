@@ -126,7 +126,7 @@ func (walker *dirWalker) processDirectoryEntry(directory *string) {
 		return
 	}
 
-	walker.stats.directoriesSeen += 1
+	walker.stats.directoriesSeen++
 	walker.state.directoriesQueue.Push(*directory)
 }
 
@@ -150,7 +150,7 @@ func (walker *dirWalker) processFileEntry(obj *os.DirEntry) {
 		return
 	}
 
-	walker.stats.fileSeen += 1
+	walker.stats.fileSeen++
 	walker.stats.sizeProcessed += file.infos.Size()
 	walker.configuration.fileCallback(file)
 }

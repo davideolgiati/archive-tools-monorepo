@@ -117,7 +117,7 @@ func TestHashDescending_Deterministic(t *testing.T) {
 func TestHash_Deterministic(t *testing.T) {
 	// Create a temporary file with known content
 	content := "This is some test content."
-	tmpfile, err := os.CreateTemp("", "test_hash_*.txt")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "test_hash_*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestHash_Deterministic(t *testing.T) {
 	}
 
 	// Test hashing an empty file
-	emptyFile, err := os.CreateTemp("", "test_empty_*.txt")
+	emptyFile, err := os.CreateTemp(t.TempDir(), "test_empty_*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func TestHash_Concurrent(t *testing.T) {
 	// Create temporary files
 	for i := 0; i < numFiles; i++ {
 		content := fmt.Sprintf("content for file %d - %s", i, strings.Repeat("x", i))
-		tmpfile, err := os.CreateTemp("", fmt.Sprintf("concurrent_test_file_%d_*.txt", i))
+		tmpfile, err := os.CreateTemp(t.TempDir(), fmt.Sprintf("concurrent_test_file_%d_*.txt", i))
 
 		if err != nil {
 			t.Fatal(err)
@@ -317,7 +317,7 @@ func TestFormat_file_size_Deterministic(t *testing.T) {
 // TestCheck_read_rights_on_file verifies file permission checking.
 func TestCheck_read_rights_on_file(t *testing.T) {
 	// Create a dummy file
-	tmpfile, err := os.CreateTemp("", "perms_test_*.txt")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "perms_test_*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -350,14 +350,14 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 			}
 		}
 	}()
-	var nilInfo *os.FileInfo = nil
+	var nilInfo *os.FileInfo
 	HasReadPermission(nilInfo)
 }
 
 // TestIs_symbolic_link verifies symbolic link detection.
 func TestIs_symbolic_link(t *testing.T) {
 	// Create a regular file
-	tmpfile, err := os.CreateTemp("", "regular_file_*.txt")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "regular_file_*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -416,6 +416,6 @@ func TestIs_symbolic_link(t *testing.T) {
 			}
 		}
 	}()
-	var nilInfo *os.FileInfo = nil
+	var nilInfo *os.FileInfo
 	IsSymbolicLink(nilInfo)
 }

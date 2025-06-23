@@ -4,6 +4,7 @@ import (
 	datastructures "archive-tools-monorepo/dataStructures"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -26,7 +27,7 @@ type File struct {
 	Size                      int64
 }
 
-func (file File) Format(f fmt.State, c rune) {
+func (file File) Format(f fmt.State, _ rune) {
 	data := []byte(file.ToString())
 	byteCount, err := f.Write(data)
 
@@ -152,7 +153,7 @@ func EqualBySize(a File, b File) bool {
 
 func CalculateHash(filepath string) (string, error) {
 	if filepath == "" {
-		return "", fmt.Errorf("empty filepath")
+		return "", errors.New("empty filepath")
 	}
 
 	filePointer, err := os.Open(filepath)
@@ -162,7 +163,7 @@ func CalculateHash(filepath string) (string, error) {
 	}
 
 	if filePointer == nil {
-		return "", fmt.Errorf("filePointer is nil")
+		return "", errors.New("filePointer is nil")
 	}
 
 	defer func() {
@@ -182,7 +183,7 @@ func CalculateHash(filepath string) (string, error) {
 	size := stats.Size()
 
 	if size < 0 {
-		return "", fmt.Errorf("size is not positive")
+		return "", errors.New("size is not positive")
 	}
 
 	sha1h := sha1.New()
@@ -197,7 +198,7 @@ func CalculateHash(filepath string) (string, error) {
 
 func FormatFileSize(size int64) (FileSize, error) {
 	if size < 0 {
-		return FileSize{}, fmt.Errorf("size is negative")
+		return FileSize{}, errors.New("size is negative")
 	}
 
 	fileSize := float64(size)

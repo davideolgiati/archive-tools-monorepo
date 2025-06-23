@@ -1,6 +1,8 @@
 package datastructures
 
-import "fmt"
+import (
+	"errors"
+)
 
 type node[T any] struct {
 	value T
@@ -40,7 +42,7 @@ func (queue *Queue[T]) Pop() (T, error) {
 
 	switch queue.size {
 	case 0:
-		return value, fmt.Errorf("Pop on empty queue")
+		return value, errors.New("Pop on empty queue")
 	case 1:
 		data := queue.tail.value
 		queue.head = nil
