@@ -27,7 +27,16 @@ type File struct {
 }
 
 func (file File) Format(f fmt.State, c rune) {
-	f.Write([]byte(file.ToString()))
+	data := []byte(file.ToString())
+	byteCount, err := f.Write(data)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if byteCount != len(data) {
+		panic("written data mismatch input data length")
+	}
 }
 
 func (file File) ToString() string {
@@ -156,7 +165,13 @@ func CalculateHash(filepath string) (string, error) {
 		return "", fmt.Errorf("filePointer is nil")
 	}
 
-	defer filePointer.Close()
+	defer func() {
+		err = filePointer.Close()
+
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	stats, err := filePointer.Stat()
 

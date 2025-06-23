@@ -38,10 +38,10 @@ func (queue *Queue[T]) Push(value T) {
 func (queue *Queue[T]) Pop() (T, error) {
 	var value T
 
-	switch {
-	case queue.size == 0:
+	switch queue.size {
+	case 0:
 		return value, fmt.Errorf("Pop on empty queue")
-	case queue.size == 1:
+	case 1:
 		data := queue.tail.value
 		queue.head = nil
 		queue.tail = nil

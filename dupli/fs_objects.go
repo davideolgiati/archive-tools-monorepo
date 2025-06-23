@@ -41,7 +41,13 @@ func (f *File) CanBeRead() bool {
 		return false
 	}
 
-	defer filePointer.Close()
+	defer func() {
+		err := filePointer.Close()
+
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	return true
 }
@@ -179,6 +185,10 @@ func getFileCallback(tp *commons.WriteOnlyThreadPool[File]) func(file File) {
 	}
 
 	return func(file File) {
-		tp.Submit(file)
+		err := tp.Submit(file)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 }

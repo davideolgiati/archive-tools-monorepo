@@ -60,7 +60,11 @@ func getFileHashGoruotine(fileChannel chan<- commons.File, flyweight *datastruct
 func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup, heap *datastructures.Heap[commons.File]) {
 	defer waitgroup.Done()
 	for data := range channel {
-		heap.Push(data)
+		err := heap.Push(data)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -117,19 +121,27 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 
 		if filterFunction(current, last) {
 			duplicateFlag = true
-			fileThreadPool.Submit(last)
+			err = fileThreadPool.Submit(last)
 		} else if duplicateFlag {
 			duplicateFlag = false
-			fileThreadPool.Submit(last)
+			err = fileThreadPool.Submit(last)
 		} else {
 			duplicateFlag = false
+		}
+
+		if err != nil {
+			panic(err)
 		}
 
 		ui.UpdateNamedLine("cleanup-stage", "cleanup-stage", (processed/total)*100)
 	}
 
 	if duplicateFlag {
-		fileThreadPool.Submit(current)
+		err = fileThreadPool.Submit(current)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	fileThreadPool.Release()

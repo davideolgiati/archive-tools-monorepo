@@ -12,14 +12,14 @@ import (
 func generateNextOp() string {
 	op := rand.Int() % 5
 
-	switch {
-	case op == 0:
+	switch op {
+	case 0:
 		return "o"
-	case op == 1:
+	case 1:
 		return "s"
-	case op == 2:
+	case 2:
 		return "e"
-	case op == 3:
+	case 3:
 		return "k"
 	default:
 		return fmt.Sprintf("p:%x", rand.Float64())
@@ -28,10 +28,17 @@ func generateNextOp() string {
 
 func main() {
 	f, err := os.Create("heap.prof")
+
 	if err != nil {
 		panic(err)
 	}
-	pprof.StartCPUProfile(f)
+
+	err = pprof.StartCPUProfile(f)
+
+	if err != nil {
+		panic(err)
+	}
+
 	defer pprof.StopCPUProfile()
 
 	for x := 0; x < 100; x++ {

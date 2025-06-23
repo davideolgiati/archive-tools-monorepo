@@ -121,7 +121,12 @@ func TestHash_Deterministic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name()) // Clean up
+	defer func() {
+		err := os.Remove(tmpfile.Name())
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	if _, err := tmpfile.WriteString(content); err != nil {
 		t.Fatal(err)
@@ -152,8 +157,19 @@ func TestHash_Deterministic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer os.Remove(emptyFile.Name())
-	emptyFile.Close()
+	defer func() {
+		err := os.Remove(emptyFile.Name())
+
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	err = emptyFile.Close()
+
+	if err != nil {
+		panic(err)
+	}
 
 	emptyHasher := sha1.New()
 	expectedEmptyHash := hex.EncodeToString(emptyHasher.Sum(nil))
@@ -186,16 +202,26 @@ func TestHash_Concurrent(t *testing.T) {
 	for i := 0; i < numFiles; i++ {
 		content := fmt.Sprintf("content for file %d - %s", i, strings.Repeat("x", i))
 		tmpfile, err := os.CreateTemp("", fmt.Sprintf("concurrent_test_file_%d_*.txt", i))
+
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(tmpfile.Name())
+
+		defer func() {
+			err := os.Remove(tmpfile.Name())
+			if err != nil {
+				panic(err)
+			}
+		}()
+
 		if _, err := tmpfile.WriteString(content); err != nil {
 			t.Fatal(err)
 		}
+
 		if err := tmpfile.Close(); err != nil {
 			t.Fatal(err)
 		}
+
 		filePaths = append(filePaths, tmpfile.Name())
 	}
 
@@ -295,7 +321,13 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name())
+	defer func() {
+		err := os.Remove(tmpfile.Name())
+
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	// Get FileInfo
 	info, err := os.Stat(tmpfile.Name())
@@ -329,8 +361,19 @@ func TestIs_symbolic_link(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name())
-	tmpfile.Close()
+	defer func() {
+		err := os.Remove(tmpfile.Name())
+
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	err = tmpfile.Close()
+
+	if err != nil {
+		panic(err)
+	}
 
 	info, err := os.Stat(tmpfile.Name())
 	if err != nil {
@@ -346,7 +389,13 @@ func TestIs_symbolic_link(t *testing.T) {
 	if err != nil {
 		t.Skipf("Could not create symlink (e.g., Windows without admin, or permissions): %v", err)
 	}
-	defer os.Remove(symlinkPath) // Clean up symlink
+	defer func() {
+		err := os.Remove(symlinkPath) // Clean up symlink
+
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	symlinkInfo, err := os.Lstat(symlinkPath) // Use Lstat for symlink info
 	if err != nil {

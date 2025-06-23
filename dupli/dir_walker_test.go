@@ -12,7 +12,14 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(baseDir)
+
+	defer func() {
+		err := os.RemoveAll(baseDir)
+
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	// Create a subdirectory.
 	subDir := filepath.Join(baseDir, "sub")
@@ -70,10 +77,18 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 	// Temporary directory with one non-empty and one empty file.
 	baseDir, err := os.MkdirTemp("", "dirwalker_skipempty_test")
+
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(baseDir)
+
+	defer func() {
+		err := os.RemoveAll(baseDir)
+
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	nonEmptyFile := filepath.Join(baseDir, "nonempty.txt")
 	emptyFile := filepath.Join(baseDir, "empty.txt")
@@ -114,7 +129,14 @@ func TestDirWalker_NoSkipEmptyFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(baseDir)
+
+	defer func() {
+		err = os.RemoveAll(baseDir)
+
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	nonEmptyFile := filepath.Join(baseDir, "nonempty.txt")
 	emptyFile := filepath.Join(baseDir, "empty.txt")
