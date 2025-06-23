@@ -44,7 +44,7 @@ func (heap *Heap[T]) Size() int {
 }
 
 func (heap *Heap[T]) Push(data T) error {
-	if heap.minFunction == nil {
+	if heap == nil || heap.minFunction == nil {
 		return fmt.Errorf("comapre function not set")
 	}
 
@@ -67,7 +67,7 @@ func (heap *Heap[T]) Push(data T) error {
 func (heap *Heap[T]) Pop() (T, error) {
 	var item T
 
-	if heap.minFunction == nil {
+	if heap == nil || heap.minFunction == nil {
 		return item, fmt.Errorf("comapre function not set")
 	}
 
