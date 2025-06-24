@@ -46,33 +46,22 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 			})
 
 		case raw == "o":
-			if heap.Empty() {
-				if len(model) != 0 {
-					panic(fmt.Sprintf("Step %d: heap state inconsistency - our heap empty but model has %d items", i, len(model)))
-				}
+			var expected T
+			result, err := heap.Pop()
 
-				result, err := heap.Pop()
+			if err != nil {
+				panic(err)
+			}
 
-				if err != nil {
-					panic(err)
-				}
-				var zeroVal T
-				if !reflect.DeepEqual(result, zeroVal) {
-					panic(fmt.Sprintf("Step %d: pop from empty heap should return zero value, got %v", i, result))
-				}
-			} else {
-				ourVal, err := heap.Pop()
+			if !heap.Empty() {
+				expected = model[0]
+				model = model[1:]
+			} else if len(model) != 0 {
+				panic(fmt.Sprintf("Step %d: heap state inconsistency - our heap empty but model has %d items", i, len(model)))
+			}
 
-				if err != nil {
-					panic(err)
-				}
-
-				if len(model) > 0 {
-					if !reflect.DeepEqual(model[0], ourVal) {
-						panic(fmt.Sprintf("Step %d: model inconsistency - expected min %v, got %v", i, model[0], ourVal))
-					}
-					model = model[1:]
-				}
+			if !reflect.DeepEqual(result, expected) {
+				panic(fmt.Sprintf("Step %d: pop heap should return %v value, got %v", i, expected, result))
 			}
 
 		case raw == "k":

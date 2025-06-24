@@ -105,81 +105,63 @@ func FuzzHeap(f *testing.F) {
 				sort.Ints(model) // Keep model sorted for min-heap comparison
 
 			case raw == "o":
-				// Pop operation
-				if ourHeap.Empty() {
-					// Verify both heaps are empty
-					if len(refHeap) != 0 {
-						t.Fatalf("Step %d: heap state inconsistency - our heap empty but ref heap has %d items",
-							i, len(refHeap))
-					}
+				var expected int
+				
+				if !ourHeap.Empty() {
+					expected = heap.Pop(&refHeap).(int)
+				}
+				
+				result, err := ourHeap.Pop()
 
-					// Test that popping from empty heap returns zero value
-					result, err := ourHeap.Pop()
+				if err != nil {
+					panic(err)
+				}
+				
+				if ourHeap.Empty() && len(refHeap) != 0 {
+					t.Fatalf("Step %d: heap state inconsistency - our heap empty but ref heap has %d items",
+						i, len(refHeap))
+				}
 
-					if err != nil {
-						panic(err)
-					}
 
-					var zeroVal int
-					if result != zeroVal {
-						t.Fatalf("Step %d: pop from empty heap should return zero value, got %v",
-							i, result)
-					}
-				} else {
-					ourVal, err := ourHeap.Pop()
+				if result != expected {
+					t.Fatalf("Step %d: pop mismatch - got %v, expected %v", i, result, expected)
+				}
+	
+				if len(model) > 0 && model[0] != result {
+					t.Fatalf("Step %d: model inconsistency - expected min %v, got %v",
+						i, model[0], result)
+				}
 
-					if err != nil {
-						panic(err)
-					}
-
-					expectedVal := heap.Pop(&refHeap).(int)
-
-					if ourVal != expectedVal {
-						t.Fatalf("Step %d: pop mismatch - got %v, expected %v",
-							i, ourVal, expectedVal)
-					}
-
-					// Remove from model (should be the minimum)
-					if len(model) > 0 {
-						if model[0] != ourVal {
-							t.Fatalf("Step %d: model inconsistency - expected min %v, got %v",
-								i, model[0], ourVal)
-						}
-						model = model[1:]
-					}
+				if len(model) > 0 {
+					model = model[1:]
 				}
 
 			case raw == "k":
-				// Peak operation
+				sizeBefore := ourHeap.Size()
 				peak := ourHeap.Peak()
+				sizeAfter := ourHeap.Size()
+
+				if sizeBefore != sizeAfter {
+					t.Fatalf("Step %d: peak operation modified heap size", i)
+				}
+
+				if ourHeap.Empty() && peak != nil {
+					t.Fatalf("Step %d: peak on empty heap should return nil, got %v", i, *peak)
+				} else if !ourHeap.Empty() && peak == nil {
+					t.Fatalf("Step %d: peak on non-empty heap returned nil", i)
+				}
 
 				if ourHeap.Empty() {
-					if peak != nil {
-						t.Fatalf("Step %d: peak on empty heap should return nil, got %v",
-							i, *peak)
-					}
-				} else {
-					if peak == nil {
-						t.Fatalf("Step %d: peak on non-empty heap returned nil", i)
-					}
+					continue
+				}
 
-					expectedPeak := refHeap[0] // Min element in reference heap
-					if *peak != expectedPeak {
-						t.Fatalf("Step %d: peak mismatch - got %v, expected %v",
-							i, *peak, expectedPeak)
-					}
-
-					// Verify peak doesn't modify heap
-					sizeBefore := ourHeap.Size()
-					_ = ourHeap.Peak()
-					sizeAfter := ourHeap.Size()
-					if sizeBefore != sizeAfter {
-						t.Fatalf("Step %d: peak operation modified heap size", i)
-					}
+				expectedPeak := refHeap[0]
+				if *peak != expectedPeak {
+					t.Fatalf("Step %d: peak mismatch - got %v, expected %v",
+						i, *peak, expectedPeak)
 				}
 
 			case raw == "s":
-				// Size check
 				ourSize := ourHeap.Size()
 				refSize := len(refHeap)
 				modelSize := len(model)
@@ -195,7 +177,6 @@ func FuzzHeap(f *testing.F) {
 				}
 
 			case raw == "e":
-				// Empty check
 				ourEmpty := ourHeap.Empty()
 				refEmpty := len(refHeap) == 0
 				modelEmpty := len(model) == 0
@@ -211,7 +192,6 @@ func FuzzHeap(f *testing.F) {
 				}
 
 			default:
-				// Unknown operation, skip
 				continue
 			}
 
