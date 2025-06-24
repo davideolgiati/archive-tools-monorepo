@@ -1,11 +1,12 @@
 package main
 
 import (
-	"archive-tools-monorepo/commons"
-	datastructures "archive-tools-monorepo/dataStructures"
 	"errors"
 	"os"
 	"path"
+
+	"archive-tools-monorepo/commons"
+	datastructures "archive-tools-monorepo/dataStructures"
 )
 
 type dirWalkerConfiguration struct {
@@ -27,14 +28,14 @@ type dirwalkerStatistics struct {
 	directoriesSeen int
 }
 
-type dirWalker struct {
+type DirWalker struct {
 	configuration dirWalkerConfiguration
 	state         dirWalkerState
 	stats         dirwalkerStatistics
 }
 
-func NewWalker(skipEmpty bool) *dirWalker {
-	walker := dirWalker{}
+func NewWalker(skipEmpty bool) *DirWalker {
+	walker := DirWalker{}
 
 	walker.stats = dirwalkerStatistics{}
 	walker.stats.fileSeen = 0
@@ -56,23 +57,23 @@ func NewWalker(skipEmpty bool) *dirWalker {
 	return &walker
 }
 
-func (walker *dirWalker) SetEntryPoint(directory string) {
+func (walker *DirWalker) SetEntryPoint(directory string) {
 	walker.state.directoriesQueue.Push(directory)
 }
 
-func (walker *dirWalker) SetDirectoryFilter(filterFn func(string) bool) {
+func (walker *DirWalker) SetDirectoryFilter(filterFn func(string) bool) {
 	walker.configuration.filterDirectory = filterFn
 }
 
-func (walker *dirWalker) SetFileCallback(callback func(File)) {
+func (walker *DirWalker) SetFileCallback(callback func(File)) {
 	walker.configuration.fileCallback = callback
 }
 
-func (walker *dirWalker) SetDirectoryCallback(callback func()) {
+func (walker *DirWalker) SetDirectoryCallback(callback func()) {
 	walker.configuration.directoryCallback = callback
 }
 
-func (walker *dirWalker) Walk() {
+func (walker *DirWalker) Walk() {
 	var formattedSize commons.FileSize
 	var objects []os.DirEntry
 	var err error
@@ -83,7 +84,6 @@ func (walker *dirWalker) Walk() {
 
 	for !walker.state.directoriesQueue.Empty() {
 		walker.state.currentDirectory, err = walker.state.directoriesQueue.Pop()
-
 		if err != nil {
 			panic(err)
 		}
@@ -109,7 +109,7 @@ func (walker *dirWalker) Walk() {
 	}
 }
 
-func (walker *dirWalker) processDirectoryItems(objects *[]os.DirEntry) {
+func (walker *DirWalker) processDirectoryItems(objects *[]os.DirEntry) {
 	for _, obj := range *objects {
 		walker.state.currentFile = path.Join(walker.state.currentDirectory, obj.Name())
 
@@ -121,7 +121,7 @@ func (walker *dirWalker) processDirectoryItems(objects *[]os.DirEntry) {
 	}
 }
 
-func (walker *dirWalker) processDirectoryEntry(directory *string) {
+func (walker *DirWalker) processDirectoryEntry(directory *string) {
 	if !walker.configuration.filterDirectory(*directory) {
 		return
 	}
@@ -130,9 +130,8 @@ func (walker *dirWalker) processDirectoryEntry(directory *string) {
 	walker.state.directoriesQueue.Push(*directory)
 }
 
-func (walker *dirWalker) processFileEntry(obj *os.DirEntry) {
+func (walker *DirWalker) processFileEntry(obj *os.DirEntry) {
 	infos, err := (*obj).Info()
-
 	if err != nil {
 		panic(err)
 	}

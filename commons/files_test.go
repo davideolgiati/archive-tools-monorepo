@@ -1,7 +1,6 @@
-package commons
+package commons_test
 
 import (
-	datastructures "archive-tools-monorepo/dataStructures"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
@@ -9,16 +8,21 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"archive-tools-monorepo/commons"
+	datastructures "archive-tools-monorepo/dataStructures"
 )
+
+var sizesArray = [...]string{"b", "Kb", "Mb", "Gb"}
 
 // TestFile_ToString verifies the formatting of the File struct.
 func TestFile_ToString(t *testing.T) {
 	hash := "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
 	hashConstant, _ := datastructures.NewConstant(&hash)
-	file := File{
+	file := commons.File{
 		Name: "test_document.txt",
 		Hash: hashConstant,
-		FormattedSize: FileSize{
+		FormattedSize: commons.FileSize{
 			Value: 123,
 			Unit:  &sizesArray[1], // Kb
 		},
@@ -33,10 +37,10 @@ func TestFile_ToString(t *testing.T) {
 	// Test with different unit and hash length
 	hash2 := "short"
 	hashConstant, _ = datastructures.NewConstant(&hash2)
-	file2 := File{
+	file2 := commons.File{
 		Name: "another_file.log",
 		Hash: hashConstant,
-		FormattedSize: FileSize{
+		FormattedSize: commons.FileSize{
 			Value: 5,
 			Unit:  &sizesArray[0], // b
 		},
@@ -50,30 +54,30 @@ func TestFile_ToString(t *testing.T) {
 
 // TestSizeDescending_Deterministic verifies comparison function for deterministic input.
 func TestSizeDescending_Deterministic(t *testing.T) {
-	f1 := File{Name: "small.txt", Size: 100}
-	f2 := File{Name: "large.txt", Size: 200}
+	f1 := commons.File{Name: "small.txt", Size: 100}
+	f2 := commons.File{Name: "large.txt", Size: 200}
 
-	if !SizeDescending(f1, f2) { // 100 <= 200 -> true
+	if !commons.SizeDescending(f1, f2) { // 100 <= 200 -> true
 		t.Errorf("Expected f1 to be <= f2")
 	}
-	if SizeDescending(f2, f1) { // 200 <= 100 -> false
+	if commons.SizeDescending(f2, f1) { // 200 <= 100 -> false
 		t.Errorf("Expected f2 not to be <= f1")
 	}
-	if !SizeDescending(f1, f1) { // 100 <= 100 -> true (crucial for equality)
+	if !commons.SizeDescending(f1, f1) { // 100 <= 100 -> true (crucial for equality)
 		t.Errorf("Expected f1 to be <= f1 (equality check failed)")
 	}
 
 	// Test with equal sizes, different names
-	f4 := File{Name: "equal1.txt", Size: 100}
-	f5 := File{Name: "equal2.txt", Size: 100}
+	f4 := commons.File{Name: "equal1.txt", Size: 100}
+	f5 := commons.File{Name: "equal2.txt", Size: 100}
 
 	// This function will return true for both SizeDescending(f4, f5) and SizeDescending(f5, f4)
 	// if it is used for 'is_lower_fn' in a heap context, it would mean that f4 is not 'strictly' lower than f5,
 	// and f5 is not 'strictly' lower than f4. This is where stability issues arise.
-	if !SizeDescending(f4, f5) {
+	if !commons.SizeDescending(f4, f5) {
 		t.Errorf("Expected f4 to be <= f5 when sizes are equal")
 	}
-	if !SizeDescending(f5, f4) {
+	if !commons.SizeDescending(f5, f4) {
 		t.Errorf("Expected f5 to be <= f4 when sizes are equal")
 	}
 }
@@ -85,16 +89,16 @@ func TestHashDescending_Deterministic(t *testing.T) {
 	hashConstant1, _ := datastructures.NewConstant(&hash1)
 	hashConstant2, _ := datastructures.NewConstant(&hash2)
 
-	f1 := File{Hash: hashConstant1}
-	f2 := File{Hash: hashConstant2}
+	f1 := commons.File{Hash: hashConstant1}
+	f2 := commons.File{Hash: hashConstant2}
 
-	if !HashDescending(&f1, &f2) { // "aaaa" <= "bbbb" -> true
+	if !commons.HashDescending(&f1, &f2) { // "aaaa" <= "bbbb" -> true
 		t.Errorf("Expected f1 to be <= f2")
 	}
-	if HashDescending(&f2, &f1) { // "bbbb" <= "aaaa" -> false
+	if commons.HashDescending(&f2, &f1) { // "bbbb" <= "aaaa" -> false
 		t.Errorf("Expected f2 not to be <= f1")
 	}
-	if !HashDescending(&f1, &f1) { // "aaaa" <= "aaaa" -> true
+	if !commons.HashDescending(&f1, &f1) { // "aaaa" <= "aaaa" -> true
 		t.Errorf("Expected f1 to be <= f1 (equality check failed)")
 	}
 
@@ -102,13 +106,13 @@ func TestHashDescending_Deterministic(t *testing.T) {
 	equalHash := "xyz"
 	hashConstant3, _ := datastructures.NewConstant(&equalHash)
 	hashConstant4, _ := datastructures.NewConstant(&equalHash)
-	f4 := File{Name: "f4", Hash: hashConstant3}
-	f5 := File{Name: "f5", Hash: hashConstant4}
+	f4 := commons.File{Name: "f4", Hash: hashConstant3}
+	f5 := commons.File{Name: "f5", Hash: hashConstant4}
 
-	if !HashDescending(&f4, &f5) {
+	if !commons.HashDescending(&f4, &f5) {
 		t.Errorf("Expected f4 to be <= f5 when hashes are equal")
 	}
-	if !HashDescending(&f5, &f4) {
+	if !commons.HashDescending(&f5, &f4) {
 		t.Errorf("Expected f5 to be <= f4 when hashes are equal")
 	}
 }
@@ -141,8 +145,7 @@ func TestHash_Deterministic(t *testing.T) {
 	expectedHash := hex.EncodeToString(hasher.Sum(nil))
 
 	// Get hash using the function
-	actualHash, err := CalculateHash(tmpfile.Name())
-
+	actualHash, err := commons.CalculateHash(tmpfile.Name())
 	if err != nil {
 		t.Fatalf("Hash returned error: %v", err)
 	}
@@ -159,14 +162,12 @@ func TestHash_Deterministic(t *testing.T) {
 
 	defer func() {
 		err := os.Remove(emptyFile.Name())
-
 		if err != nil {
 			panic(err)
 		}
 	}()
 
 	err = emptyFile.Close()
-
 	if err != nil {
 		panic(err)
 	}
@@ -174,8 +175,7 @@ func TestHash_Deterministic(t *testing.T) {
 	emptyHasher := sha1.New()
 	expectedEmptyHash := hex.EncodeToString(emptyHasher.Sum(nil))
 
-	actualEmptyHash, err := CalculateHash(emptyFile.Name())
-
+	actualEmptyHash, err := commons.CalculateHash(emptyFile.Name())
 	if err != nil {
 		t.Fatalf("Hash for empty file returned error: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestHash_Deterministic(t *testing.T) {
 	}
 
 	// Test non-existent file
-	_, err = CalculateHash("/path/to/non/existent/file.txt")
+	_, err = commons.CalculateHash("/path/to/non/existent/file.txt")
 
 	if err == nil {
 		t.Fatalf("Hash for unexistent file did not return error")
@@ -202,7 +202,6 @@ func TestHash_Concurrent(t *testing.T) {
 	for i := 0; i < numFiles; i++ {
 		content := fmt.Sprintf("content for file %d - %s", i, strings.Repeat("x", i))
 		tmpfile, err := os.CreateTemp(t.TempDir(), fmt.Sprintf("concurrent_test_file_%d_*.txt", i))
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -235,7 +234,7 @@ func TestHash_Concurrent(t *testing.T) {
 		wg.Add(1)
 		go func(p string) {
 			defer wg.Done()
-			hash, err := CalculateHash(p)
+			hash, err := commons.CalculateHash(p)
 			if err != nil {
 				panic(fmt.Sprintf("Hash for file returned error: %v", err))
 			}
@@ -276,23 +275,22 @@ func TestHash_Concurrent(t *testing.T) {
 func TestFormat_file_size_Deterministic(t *testing.T) {
 	tests := []struct {
 		input    int64
-		expected FileSize
+		expected commons.FileSize
 	}{
-		{0, FileSize{Value: 0, Unit: &sizesArray[0]}},
-		{500, FileSize{Value: 500, Unit: &sizesArray[0]}},
-		{1000, FileSize{Value: 1, Unit: &sizesArray[1]}},
-		{1023, FileSize{Value: 1, Unit: &sizesArray[1]}}, // Still 1Kb
-		{1234, FileSize{Value: 1, Unit: &sizesArray[1]}},
-		{999999, FileSize{Value: 999, Unit: &sizesArray[1]}},
-		{1000 * 1000, FileSize{Value: 1, Unit: &sizesArray[2]}},
-		{1500 * 1000, FileSize{Value: 1, Unit: &sizesArray[2]}},
-		{1000 * 1000 * 1000, FileSize{Value: 1, Unit: &sizesArray[3]}},
-		{5 * 1000 * 1000 * 1000, FileSize{Value: 5, Unit: &sizesArray[3]}},
+		{0, commons.FileSize{Value: 0, Unit: &sizesArray[0]}},
+		{500, commons.FileSize{Value: 500, Unit: &sizesArray[0]}},
+		{1000, commons.FileSize{Value: 1, Unit: &sizesArray[1]}},
+		{1023, commons.FileSize{Value: 1, Unit: &sizesArray[1]}}, // Still 1Kb
+		{1234, commons.FileSize{Value: 1, Unit: &sizesArray[1]}},
+		{999999, commons.FileSize{Value: 999, Unit: &sizesArray[1]}},
+		{1000 * 1000, commons.FileSize{Value: 1, Unit: &sizesArray[2]}},
+		{1500 * 1000, commons.FileSize{Value: 1, Unit: &sizesArray[2]}},
+		{1000 * 1000 * 1000, commons.FileSize{Value: 1, Unit: &sizesArray[3]}},
+		{5 * 1000 * 1000 * 1000, commons.FileSize{Value: 5, Unit: &sizesArray[3]}},
 	}
 
 	for _, tt := range tests {
-		actual, err := FormatFileSize(tt.input)
-
+		actual, err := commons.FormatFileSize(tt.input)
 		if err != nil {
 			t.Fatalf("Format file size returned error: %v", err)
 		}
@@ -303,7 +301,7 @@ func TestFormat_file_size_Deterministic(t *testing.T) {
 		}
 	}
 
-	_, err := FormatFileSize(-100)
+	_, err := commons.FormatFileSize(-100)
 
 	if err == nil {
 		t.Error("Expected panic for negative size input, but got none")
@@ -323,7 +321,6 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 	}
 	defer func() {
 		err := os.Remove(tmpfile.Name())
-
 		if err != nil {
 			panic(err)
 		}
@@ -336,7 +333,7 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 	}
 
 	// Test readable permissions (default for TempFile on Linux/macOS often includes read)
-	if !HasReadPermission(&info) {
+	if !commons.HasReadPermission(&info) {
 		t.Errorf("Expected file to be readable by default, got false")
 	}
 
@@ -351,7 +348,7 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 		}
 	}()
 	var nilInfo *os.FileInfo
-	HasReadPermission(nilInfo)
+	commons.HasReadPermission(nilInfo)
 }
 
 // TestIs_symbolic_link verifies symbolic link detection.
@@ -363,14 +360,12 @@ func TestIs_symbolic_link(t *testing.T) {
 	}
 	defer func() {
 		err := os.Remove(tmpfile.Name())
-
 		if err != nil {
 			panic(err)
 		}
 	}()
 
 	err = tmpfile.Close()
-
 	if err != nil {
 		panic(err)
 	}
@@ -379,7 +374,7 @@ func TestIs_symbolic_link(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if IsSymbolicLink(&info) {
+	if commons.IsSymbolicLink(&info) {
 		t.Errorf("Expected regular file not to be a symlink, but it is")
 	}
 
@@ -391,7 +386,6 @@ func TestIs_symbolic_link(t *testing.T) {
 	}
 	defer func() {
 		err := os.Remove(symlinkPath) // Clean up symlink
-
 		if err != nil {
 			panic(err)
 		}
@@ -402,7 +396,7 @@ func TestIs_symbolic_link(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !IsSymbolicLink(&symlinkInfo) {
+	if !commons.IsSymbolicLink(&symlinkInfo) {
 		t.Errorf("Expected symlink to be detected as symlink, but it is not")
 	}
 
@@ -417,5 +411,5 @@ func TestIs_symbolic_link(t *testing.T) {
 		}
 	}()
 	var nilInfo *os.FileInfo
-	IsSymbolicLink(nilInfo)
+	commons.IsSymbolicLink(nilInfo)
 }

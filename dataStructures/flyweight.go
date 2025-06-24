@@ -29,7 +29,6 @@ func (fw *Flyweight[T]) get(data T) (Constant[T], bool) {
 	}
 
 	newConstant, err := NewConstant(entryPointer.(*T))
-
 	if err != nil {
 		ok = false
 	}

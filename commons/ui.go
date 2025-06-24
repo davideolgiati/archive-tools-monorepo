@@ -13,7 +13,7 @@ type line struct {
 	currentLineValue string
 }
 
-type ui struct {
+type UI struct {
 	lines             map[string]*line
 	currentLineNumber int
 	nextLineNumber    int
@@ -21,8 +21,8 @@ type ui struct {
 	silent            bool
 }
 
-func NewUI() *ui {
-	output := ui{}
+func NewUI() *UI {
+	output := UI{}
 	output.currentLineNumber = 0
 	output.nextLineNumber = 1
 	output.lines = make(map[string]*line)
@@ -31,11 +31,11 @@ func NewUI() *ui {
 	return &output
 }
 
-func (ui *ui) ToggleSilence() {
+func (ui *UI) ToggleSilence() {
 	ui.silent = !ui.silent
 }
 
-func (ui *ui) AddNewNamedLine(lineID string, format string) {
+func (ui *UI) AddNewNamedLine(lineID string, format string) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -57,7 +57,7 @@ func (ui *ui) AddNewNamedLine(lineID string, format string) {
 	ui.nextLineNumber++
 }
 
-func (ui *ui) UpdateNamedLine(lineID string, a ...any) {
+func (ui *UI) UpdateNamedLine(lineID string, a ...any) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -85,7 +85,7 @@ func (ui *ui) UpdateNamedLine(lineID string, a ...any) {
 	ui.lines[lineID] = currentLine
 }
 
-func (ui *ui) Println(format string, a ...any) {
+func (ui *UI) Println(format string, a ...any) {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -100,7 +100,7 @@ func (ui *ui) Println(format string, a ...any) {
 	ui.nextLineNumber++
 }
 
-func (ui *ui) Close() {
+func (ui *UI) Close() {
 	ui.mutex.Lock()
 	defer ui.mutex.Unlock()
 
@@ -113,13 +113,13 @@ func (ui *ui) Close() {
 	moveCursor(offset)
 }
 
-func (ui *ui) goToLine(line int) {
+func (ui *UI) goToLine(line int) {
 	offset := line - ui.currentLineNumber
 	moveCursor(offset)
 	ui.currentLineNumber = line
 }
 
-func (ui *ui) printToNamedLine(data string, lineNumber int) {
+func (ui *UI) printToNamedLine(data string, lineNumber int) {
 	ui.goToLine(lineNumber)
 	fmt.Printf("\033[2K\r%s", data)
 }

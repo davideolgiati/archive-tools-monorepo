@@ -1,9 +1,10 @@
-package fuzztests
+package datastructures_fuzz_test
 
 import (
-	datastructures "archive-tools-monorepo/dataStructures"
 	"strings"
 	"testing"
+
+	datastructures "archive-tools-monorepo/dataStructures"
 )
 
 func FuzzQueue(f *testing.F) {

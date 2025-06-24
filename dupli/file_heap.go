@@ -1,9 +1,10 @@
 package main
 
 import (
+	"sync"
+
 	"archive-tools-monorepo/commons"
 	datastructures "archive-tools-monorepo/dataStructures"
-	"sync"
 )
 
 type FileHeap struct {
@@ -16,7 +17,6 @@ func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry 
 	fileHeap := FileHeap{}
 
 	newHeap, err := datastructures.NewHeap(sortFunction)
-
 	if err != nil {
 		return nil, err
 	}
@@ -35,13 +35,11 @@ func refineFile(file commons.File, fileChannel chan<- commons.File, flyweight *d
 	}
 
 	hash, err := commons.CalculateHash(file.Name)
-
 	if err != nil {
 		return
 	}
 
 	file.Hash, err = flyweight.Instance(hash)
-
 	if err != nil {
 		return
 	}
@@ -59,7 +57,6 @@ func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup
 	defer waitgroup.Done()
 	for data := range channel {
 		err := heap.Push(data)
-
 		if err != nil {
 			panic(err)
 		}
@@ -71,7 +68,6 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 	var last commons.File
 
 	output, err := newFileHeap(commons.HashDescending, registry)
-
 	if err != nil {
 		panic(err)
 	}
@@ -86,7 +82,6 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 	fileChannel := make(chan commons.File)
 	targetFunction := getFileHashGoruotine(fileChannel, output.hashRegistry)
 	fileThreadPool, err := commons.NewWorkerPool(targetFunction)
-
 	if err != nil {
 		panic(err)
 	}
@@ -99,7 +94,6 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 
 	if !fh.heap.Empty() {
 		current, err = fh.heap.Pop()
-
 		if err != nil {
 			panic(err)
 		}
@@ -110,7 +104,6 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 	for !fh.heap.Empty() {
 		last = current
 		current, err = fh.heap.Pop()
-
 		if err != nil {
 			panic(err)
 		}
@@ -137,7 +130,6 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 
 	if duplicateFlag {
 		err = fileThreadPool.Submit(current)
-
 		if err != nil {
 			panic(err)
 		}
@@ -168,7 +160,6 @@ func (fh *FileHeap) displayDuplicateFileInfo() {
 	for !fh.heap.Empty() {
 		lastSeen = current
 		current, err = fh.heap.Pop()
-
 		if err != nil {
 			panic(err)
 		}

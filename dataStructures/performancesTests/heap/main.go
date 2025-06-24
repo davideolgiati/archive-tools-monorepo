@@ -1,12 +1,13 @@
 package main
 
 import (
-	datastructures "archive-tools-monorepo/dataStructures"
 	"fmt"
 	"math/rand/v2"
 	"os"
 	"runtime/pprof"
 	"strings"
+
+	datastructures "archive-tools-monorepo/dataStructures"
 )
 
 func generateNextOp() string {
@@ -16,19 +17,17 @@ func generateNextOp() string {
 	if op >= len(operations) {
 		return fmt.Sprintf("p:%x", rand.Float64())
 	}
-	
+
 	return operations[op]
 }
 
 func main() {
 	f, err := os.Create("heap.prof")
-
 	if err != nil {
 		panic(err)
 	}
 
 	err = pprof.StartCPUProfile(f)
-
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +38,6 @@ func main() {
 		ourHeap, err := datastructures.NewHeap(func(a, b *string) bool {
 			return *a < *b
 		})
-
 		if err != nil {
 			panic(err)
 		}
@@ -51,13 +49,11 @@ func main() {
 			case strings.HasPrefix(raw, "p:"):
 				valStr := strings.TrimPrefix(raw, "p:")
 				err := ourHeap.Push(valStr)
-
 				if err != nil {
 					panic(err)
 				}
 			case raw == "o":
 				_, err = ourHeap.Pop()
-
 				if err != nil {
 					panic(err)
 				}

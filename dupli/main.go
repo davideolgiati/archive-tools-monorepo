@@ -1,12 +1,13 @@
 package main
 
 import (
-	"archive-tools-monorepo/commons"
-	datastructures "archive-tools-monorepo/dataStructures"
 	_ "embed"
 	"flag"
 	"strings"
 	"sync"
+
+	"archive-tools-monorepo/commons"
+	datastructures "archive-tools-monorepo/dataStructures"
 )
 
 //go:embed logo.txt
@@ -45,7 +46,6 @@ func main() {
 
 	sharedRegistry := datastructures.Flyweight[string]{}
 	outputFileHheap, err := newFileHeap(commons.HashDescending, &sharedRegistry)
-
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +77,6 @@ func main() {
 
 	workerFn := getFileProcessWorker(outputFileHheap.hashRegistry, outputChannel, &outputFileHheap.sizeFilter)
 	fileProcessorPool, err = commons.NewWorkerPool(workerFn)
-
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +93,6 @@ func main() {
 		var err error
 		for data := range outputChannel {
 			err = outputFileHheap.heap.Push(data)
-
 			if err != nil {
 				panic(err)
 			}

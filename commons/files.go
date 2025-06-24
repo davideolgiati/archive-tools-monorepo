@@ -1,7 +1,6 @@
 package commons
 
 import (
-	datastructures "archive-tools-monorepo/dataStructures"
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
@@ -11,6 +10,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	datastructures "archive-tools-monorepo/dataStructures"
 )
 
 var sizesArray = [...]string{"b", "Kb", "Mb", "Gb"}
@@ -30,7 +31,6 @@ type File struct {
 func (file File) Format(f fmt.State, _ rune) {
 	data := []byte(file.ToString())
 	byteCount, err := f.Write(data)
-
 	if err != nil {
 		panic(err)
 	}
@@ -157,7 +157,6 @@ func CalculateHash(filepath string) (string, error) {
 	}
 
 	filePointer, err := os.Open(filepath)
-
 	if err != nil {
 		return "", err
 	}
@@ -168,14 +167,12 @@ func CalculateHash(filepath string) (string, error) {
 
 	defer func() {
 		err = filePointer.Close()
-
 		if err != nil {
 			panic(err)
 		}
 	}()
 
 	stats, err := filePointer.Stat()
-
 	if err != nil {
 		return "", err
 	}
@@ -188,7 +185,6 @@ func CalculateHash(filepath string) (string, error) {
 
 	sha1h := sha1.New()
 	_, err = io.Copy(sha1h, filePointer)
-
 	if err != nil {
 		return "", err
 	}
@@ -228,9 +224,9 @@ func HasReadPermission(info *fs.FileInfo) bool {
 
 	filePermissionsBits := (*info).Mode().Perm()
 
-	userReadOk := filePermissionsBits&fs.FileMode(0400) != fs.FileMode(0000)
-	groupReadOk := filePermissionsBits&fs.FileMode(0040) != fs.FileMode(0000)
-	othersReadOk := filePermissionsBits&fs.FileMode(0004) != fs.FileMode(0000)
+	userReadOk := filePermissionsBits&fs.FileMode(0o400) != fs.FileMode(0o000)
+	groupReadOk := filePermissionsBits&fs.FileMode(0o040) != fs.FileMode(0o000)
+	othersReadOk := filePermissionsBits&fs.FileMode(0o004) != fs.FileMode(0o000)
 
 	return userReadOk || groupReadOk || othersReadOk
 }

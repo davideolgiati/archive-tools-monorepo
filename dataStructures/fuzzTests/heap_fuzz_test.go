@@ -1,12 +1,13 @@
-package fuzztests
+package datastructures_fuzz_test
 
 import (
-	datastructures "archive-tools-monorepo/dataStructures"
 	"container/heap"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
+
+	datastructures "archive-tools-monorepo/dataStructures"
 )
 
 // Reference implementation using Go's standard library for comparison.
@@ -59,7 +60,6 @@ func FuzzHeap(f *testing.F) {
 		ourHeap, err := datastructures.NewHeap(func(a, b *int) bool {
 			return *a < *b
 		})
-
 		if err != nil {
 			panic(err)
 		}
@@ -95,7 +95,6 @@ func FuzzHeap(f *testing.F) {
 				}
 
 				err = ourHeap.Push(val)
-
 				if err != nil {
 					panic(err)
 				}
@@ -112,7 +111,6 @@ func FuzzHeap(f *testing.F) {
 				}
 
 				result, err := ourHeap.Pop()
-
 				if err != nil {
 					panic(err)
 				}

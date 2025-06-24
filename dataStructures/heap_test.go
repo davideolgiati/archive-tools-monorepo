@@ -1,4 +1,4 @@
-package datastructures
+package datastructures_test
 
 import (
 	"fmt"
@@ -7,11 +7,12 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	datastructures "archive-tools-monorepo/dataStructures"
 )
 
 func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error), compareFN func(*T, *T) bool) {
-	heap, err := NewHeap(compareFN)
-
+	heap, err := datastructures.NewHeap(compareFN)
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +36,6 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 			}
 
 			err = heap.Push(val)
-
 			if err != nil {
 				panic(err)
 			}
@@ -48,7 +48,6 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 		case raw == "o":
 			var expected T
 			result, err := heap.Pop()
-
 			if err != nil {
 				panic(err)
 			}
@@ -153,7 +152,7 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 
 func TestHeap_NewHeap_WhenFunctionNotSet_Panic(t *testing.T) {
 	var testFn func(*int, *int) bool
-	heap, err := NewHeap(testFn)
+	heap, err := datastructures.NewHeap(testFn)
 
 	if err == nil {
 		t.Error("Expected panic on new for nil function input, but got none")

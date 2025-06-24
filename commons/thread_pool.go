@@ -14,9 +14,9 @@ type poolConfiguration[T any] struct {
 }
 
 type poolStatus struct {
-	poolLoad                  []float64
+	poolLoad      []float64
 	activeThreads atomic.Int64
-	isClosed                  bool
+	isClosed      bool
 }
 
 type poolSharedResources[T any] struct {

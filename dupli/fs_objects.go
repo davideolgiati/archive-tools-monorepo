@@ -1,12 +1,13 @@
 package main
 
 import (
-	"archive-tools-monorepo/commons"
-	datastructures "archive-tools-monorepo/dataStructures"
 	"io/fs"
 	"os"
 	"strings"
 	"sync"
+
+	"archive-tools-monorepo/commons"
+	datastructures "archive-tools-monorepo/dataStructures"
 )
 
 const (
@@ -43,7 +44,6 @@ func (f *File) CanBeRead() bool {
 
 	defer func() {
 		err := filePointer.Close()
-
 		if err != nil {
 			panic(err)
 		}
@@ -58,7 +58,6 @@ func (f *File) Type() int {
 	}
 
 	obj, err := os.Lstat(f.path)
-
 	if err != nil {
 		panic(err)
 	}
@@ -110,13 +109,11 @@ func processFileEntry(file *File, fileChannel chan<- commons.File, flyweight *da
 	}
 
 	formattedSize, err := commons.FormatFileSize(file.infos.Size())
-
 	if err != nil {
 		panic(err)
 	}
 
 	hashPointer, err := flyweight.Instance(hash)
-
 	if err != nil {
 		panic(err)
 	}
@@ -187,7 +184,6 @@ func getFileCallback(tp *commons.WriteOnlyThreadPool[File]) func(file File) {
 
 	return func(file File) {
 		err := tp.Submit(file)
-
 		if err != nil {
 			panic(err)
 		}
