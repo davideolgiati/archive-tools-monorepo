@@ -199,7 +199,7 @@ func TestHash_Concurrent(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Create temporary files
-	for i := 0; i < numFiles; i++ {
+	for i := range numFiles {
 		content := fmt.Sprintf("content for file %d - %s", i, strings.Repeat("x", i))
 		tmpfile, err := os.CreateTemp(t.TempDir(), fmt.Sprintf("concurrent_test_file_%d_*.txt", i))
 		if err != nil {

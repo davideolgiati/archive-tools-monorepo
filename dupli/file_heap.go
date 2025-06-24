@@ -125,7 +125,9 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 			panic(err)
 		}
 
-		ui.UpdateNamedLine("cleanup-stage", "cleanup-stage", (processed/total)*100)
+		processed *= 100
+
+		ui.UpdateNamedLine("cleanup-stage", "cleanup-stage", processed/total)
 	}
 
 	if duplicateFlag {

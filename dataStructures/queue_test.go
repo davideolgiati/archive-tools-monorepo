@@ -37,7 +37,7 @@ func QueueStateMachine[T any](instructions string, parseFN func(string) (T, erro
 			model = append(model, val)
 		case raw == "o":
 			var expected T
-			initialQueueState := queue.Empty() 
+			initialQueueState := queue.Empty()
 
 			if !queue.Empty() {
 				expected = model[0]

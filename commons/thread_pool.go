@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const defaultSampleSize = 10
+
 type poolConfiguration[T any] struct {
 	workerFunction func(*poolSharedResources[T])
 	maxWorkers     int
@@ -34,9 +36,9 @@ func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
 	threadPool := &WriteOnlyThreadPool[T]{}
 	workersCount := runtime.NumCPU()
 	inputChannel := make(chan T)
-	sampleArray := make([]float64, 10)
+	sampleArray := make([]float64, defaultSampleSize)
 
-	for i := 0; i < 10; i++ {
+	for i := range defaultSampleSize {
 		sampleArray[i] = 0.5
 	}
 
@@ -59,7 +61,7 @@ func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
 
 	threadPool.shared.inputChannel = inputChannel
 
-	for i := 0; i < threadPool.configuration.maxWorkers; i++ {
+	for range threadPool.configuration.maxWorkers {
 		threadPool.addNewWorker()
 	}
 

@@ -10,6 +10,11 @@ import (
 	datastructures "archive-tools-monorepo/dataStructures"
 )
 
+const (
+	targetRuns       = 100
+	targetOperations = 1000000
+)
+
 func generateNextOp() string {
 	op := rand.Int() % 5
 	operations := []string{"o", "s", "e", "k"}
@@ -34,7 +39,7 @@ func main() {
 
 	defer pprof.StopCPUProfile()
 
-	for x := 0; x < 100; x++ {
+	for range targetRuns {
 		ourHeap, err := datastructures.NewHeap(func(a, b *string) bool {
 			return *a < *b
 		})
@@ -42,7 +47,7 @@ func main() {
 			panic(err)
 		}
 
-		for i := 0; i < 10000000; i++ {
+		for range targetOperations {
 			raw := generateNextOp()
 
 			switch {

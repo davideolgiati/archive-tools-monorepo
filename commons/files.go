@@ -48,14 +48,14 @@ func (file File) ToString() string {
 	}
 
 	b.WriteString(file.Hash.Value())
-	for i := 0; i < 40-len(file.Hash.Value()); i++ {
+	for range 40 - len(file.Hash.Value()) {
 		b.WriteByte(' ')
 	}
 	b.WriteByte(' ')
 
 	// Right-align integer in 4-char space
 	valStr := strconv.Itoa(int(file.FormattedSize.Value))
-	for i := 0; i < 4-len(valStr); i++ {
+	for range 4 - len(valStr) {
 		b.WriteByte(' ')
 	}
 	b.WriteString(valStr)
@@ -64,7 +64,7 @@ func (file File) ToString() string {
 
 	// Right-align unit in 2-char space
 	unitStr := *file.FormattedSize.Unit
-	for i := 0; i < 2-len(unitStr); i++ {
+	for range 2 - len(unitStr) {
 		b.WriteByte(' ')
 	}
 	b.WriteString(unitStr)
