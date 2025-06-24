@@ -57,6 +57,17 @@ func (queue *Queue[T]) Pop() (T, error) {
 	}
 }
 
+func (queue *Queue[T]) Peak() *T {
+	var value *T
+
+	switch queue.size {
+	case 0:
+		return value
+	default:
+		return &queue.head.value
+	}
+}
+
 func (queue *Queue[T]) Empty() bool {
 	return queue.size == 0
 }

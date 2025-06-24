@@ -37,6 +37,7 @@ test: setup-env
 .PHONY: test/cover
 test/cover: setup-env
 	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
+	sed -i '/[main|ui].go/d' /tmp/coverage.out
 	go tool cover -func /tmp/coverage.out
 
 # ==================================================================================== #
