@@ -1,7 +1,7 @@
 package fuzztests
 
 import (
-	"archive-tools-monorepo/dataStructures"
+	datastructures "archive-tools-monorepo/dataStructures"
 	"container/heap"
 	"sort"
 	"strconv"
@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// Reference implementation using Go's standard library for comparison
+// Reference implementation using Go's standard library for comparison.
 type IntHeap []int
 
 func (h *IntHeap) Len() int           { return len(*h) }
@@ -106,27 +106,26 @@ func FuzzHeap(f *testing.F) {
 
 			case raw == "o":
 				var expected int
-				
+
 				if !ourHeap.Empty() {
 					expected = heap.Pop(&refHeap).(int)
 				}
-				
+
 				result, err := ourHeap.Pop()
 
 				if err != nil {
 					panic(err)
 				}
-				
+
 				if ourHeap.Empty() && len(refHeap) != 0 {
 					t.Fatalf("Step %d: heap state inconsistency - our heap empty but ref heap has %d items",
 						i, len(refHeap))
 				}
 
-
 				if result != expected {
 					t.Fatalf("Step %d: pop mismatch - got %v, expected %v", i, result, expected)
 				}
-	
+
 				if len(model) > 0 && model[0] != result {
 					t.Fatalf("Step %d: model inconsistency - expected min %v, got %v",
 						i, model[0], result)

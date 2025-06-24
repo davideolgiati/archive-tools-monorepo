@@ -11,19 +11,13 @@ import (
 
 func generateNextOp() string {
 	op := rand.Int() % 5
+	operations := []string{"o", "s", "e", "k"}
 
-	switch op {
-	case 0:
-		return "o"
-	case 1:
-		return "s"
-	case 2:
-		return "e"
-	case 3:
-		return "k"
-	default:
+	if op >= len(operations) {
 		return fmt.Sprintf("p:%x", rand.Float64())
 	}
+	
+	return operations[op]
 }
 
 func main() {

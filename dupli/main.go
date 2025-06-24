@@ -50,7 +50,7 @@ func main() {
 		panic(err)
 	}
 
-	outputChannel := make(chan commons.File, 10000)
+	outputChannel := make(chan commons.File)
 	outputWg := sync.WaitGroup{}
 
 	flag.StringVar(&startDirectory, "dir", "", "Scan starting point  directory")

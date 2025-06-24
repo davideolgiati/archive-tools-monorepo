@@ -157,30 +157,24 @@ func TestHeap_NewHeap_WhenFunctionNotSet_Panic(t *testing.T) {
 
 	if err == nil {
 		t.Error("Expected panic on new for nil function input, but got none")
-	} else {
-		if !strings.Contains(fmt.Sprintf("%v", err), "provided function is a nil pointer") {
-			t.Errorf("Unexpected panic message: %v", err)
-		}
+	} else if !strings.Contains(fmt.Sprintf("%v", err), "provided function is a nil pointer") {
+		t.Errorf("Unexpected panic message: %v", err)
 	}
 
 	err = heap.Push(2)
 
 	if err == nil {
 		t.Error("Expected panic on push for nil function input, but got none")
-	} else {
-		if !strings.Contains(fmt.Sprintf("%v", err), "comapre function not set") {
-			t.Errorf("Unexpected panic message: %v", err)
-		}
+	} else if !strings.Contains(fmt.Sprintf("%v", err), "comapre function not set") {
+		t.Errorf("Unexpected panic message: %v", err)
 	}
 
 	_, err = heap.Pop()
 
 	if err == nil {
 		t.Error("Expected panic on pop for nil function input, but got none")
-	} else {
-		if !strings.Contains(fmt.Sprintf("%v", err), "comapre function not set") {
-			t.Errorf("Unexpected panic message: %v", err)
-		}
+	} else if !strings.Contains(fmt.Sprintf("%v", err), "comapre function not set") {
+		t.Errorf("Unexpected panic message: %v", err)
 	}
 }
 

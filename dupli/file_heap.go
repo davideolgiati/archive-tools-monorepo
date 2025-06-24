@@ -28,7 +28,7 @@ func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry 
 	return &fileHeap, nil
 }
 
-func refineAndPushFileInHeap(file commons.File, fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) {
+func refineFile(file commons.File, fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) {
 	if file.Hash.Value() == "" {
 		fileChannel <- file
 		return
@@ -38,14 +38,12 @@ func refineAndPushFileInHeap(file commons.File, fileChannel chan<- commons.File,
 
 	if err != nil {
 		return
-		//panic(err)
 	}
 
 	file.Hash, err = flyweight.Instance(hash)
 
 	if err != nil {
 		return
-		//panic(err)
 	}
 
 	fileChannel <- file
@@ -53,7 +51,7 @@ func refineAndPushFileInHeap(file commons.File, fileChannel chan<- commons.File,
 
 func getFileHashGoruotine(fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) func(commons.File) {
 	return func(obj commons.File) {
-		refineAndPushFileInHeap(obj, fileChannel, flyweight)
+		refineFile(obj, fileChannel, flyweight)
 	}
 }
 
@@ -119,13 +117,14 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 
 		processed += 1.0
 
-		if filterFunction(current, last) {
+		switch {
+		case filterFunction(current, last):
 			duplicateFlag = true
 			err = fileThreadPool.Submit(last)
-		} else if duplicateFlag {
+		case duplicateFlag:
 			duplicateFlag = false
 			err = fileThreadPool.Submit(last)
-		} else {
+		default:
 			duplicateFlag = false
 		}
 
@@ -178,10 +177,8 @@ func (fh *FileHeap) displayDuplicateFileInfo() {
 
 		if areEqual {
 			ui.Println("file: %s", lastSeen)
-		} else {
-			if isDuplicate {
-				ui.Println("file: %s", lastSeen)
-			}
+		} else if isDuplicate {
+			ui.Println("file: %s", lastSeen)
 		}
 
 		isDuplicate = areEqual

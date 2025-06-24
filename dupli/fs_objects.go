@@ -122,10 +122,10 @@ func processFileEntry(file *File, fileChannel chan<- commons.File, flyweight *da
 	}
 
 	fileStats := commons.File{
-		Name:                      file.path,
-		Size:                      size,
-		Hash:                      hashPointer,
-		Formattedatastructuresize: formattedSize,
+		Name:          file.path,
+		Size:          size,
+		Hash:          hashPointer,
+		FormattedSize: formattedSize,
 	}
 
 	fileChannel <- fileStats

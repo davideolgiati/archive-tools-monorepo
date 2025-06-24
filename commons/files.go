@@ -21,10 +21,10 @@ type FileSize struct {
 }
 
 type File struct {
-	Name                      string
-	Hash                      datastructures.Constant[string]
-	Formattedatastructuresize FileSize
-	Size                      int64
+	Name          string
+	Hash          datastructures.Constant[string]
+	FormattedSize FileSize
+	Size          int64
 }
 
 func (file File) Format(f fmt.State, _ rune) {
@@ -54,7 +54,7 @@ func (file File) ToString() string {
 	b.WriteByte(' ')
 
 	// Right-align integer in 4-char space
-	valStr := strconv.Itoa(int(file.Formattedatastructuresize.Value))
+	valStr := strconv.Itoa(int(file.FormattedSize.Value))
 	for i := 0; i < 4-len(valStr); i++ {
 		b.WriteByte(' ')
 	}
@@ -63,7 +63,7 @@ func (file File) ToString() string {
 	b.WriteByte(' ')
 
 	// Right-align unit in 2-char space
-	unitStr := *file.Formattedatastructuresize.Unit
+	unitStr := *file.FormattedSize.Unit
 	for i := 0; i < 2-len(unitStr); i++ {
 		b.WriteByte(' ')
 	}

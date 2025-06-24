@@ -1,6 +1,8 @@
 package datastructures
 
-import "sync"
+import (
+	"sync"
+)
 
 type Flyweight[T comparable] struct {
 	cache sync.Map

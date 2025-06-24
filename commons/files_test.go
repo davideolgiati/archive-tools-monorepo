@@ -18,7 +18,7 @@ func TestFile_ToString(t *testing.T) {
 	file := File{
 		Name: "test_document.txt",
 		Hash: hashConstant,
-		Formattedatastructuresize: FileSize{
+		FormattedSize: FileSize{
 			Value: 123,
 			Unit:  &sizesArray[1], // Kb
 		},
@@ -36,7 +36,7 @@ func TestFile_ToString(t *testing.T) {
 	file2 := File{
 		Name: "another_file.log",
 		Hash: hashConstant,
-		Formattedatastructuresize: FileSize{
+		FormattedSize: FileSize{
 			Value: 5,
 			Unit:  &sizesArray[0], // b
 		},
