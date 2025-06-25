@@ -82,8 +82,9 @@ func FuzzHeap(f *testing.F) {
 			switch {
 			case strings.HasPrefix(raw, "p:"):
 				// Push operation - extract integer value
+				var val int
 				valStr := strings.TrimPrefix(raw, "p:")
-				val, err := strconv.Atoi(valStr)
+				val, err = strconv.Atoi(valStr)
 				if err != nil {
 					// Skip invalid integers to avoid test failures on random input
 					continue
@@ -105,12 +106,13 @@ func FuzzHeap(f *testing.F) {
 
 			case raw == "o":
 				var expected int
+				var result int
 
 				if !ourHeap.Empty() {
 					expected = heap.Pop(&refHeap).(int)
 				}
 
-				result, err := ourHeap.Pop()
+				result, err = ourHeap.Pop()
 				if err != nil {
 					panic(err)
 				}
@@ -241,8 +243,9 @@ func FuzzHeap(f *testing.F) {
 
 		// Drain remaining elements and verify they come out in sorted order
 		var drainedElements []int
+		var data int
 		for !ourHeap.Empty() {
-			data, err := ourHeap.Pop()
+			data, err = ourHeap.Pop()
 			if err != nil {
 				panic(err)
 			}

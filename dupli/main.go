@@ -90,7 +90,6 @@ func main() {
 	outputWg.Add(1)
 
 	go func() {
-		var err error
 		for data := range outputChannel {
 			err = outputFileHheap.heap.Push(data)
 			if err != nil {

@@ -13,7 +13,10 @@ type FileHeap struct {
 	sizeFilter   sync.Map
 }
 
-func newFileHeap(sortFunction func(*commons.File, *commons.File) bool, registry *datastructures.Flyweight[string]) (*FileHeap, error) {
+func newFileHeap(
+	sortFunction func(*commons.File, *commons.File) bool,
+	registry *datastructures.Flyweight[string],
+) (*FileHeap, error) {
 	fileHeap := FileHeap{}
 
 	newHeap, err := datastructures.NewHeap(sortFunction)
@@ -47,13 +50,20 @@ func refineFile(file commons.File, fileChannel chan<- commons.File, flyweight *d
 	fileChannel <- file
 }
 
-func getFileHashGoruotine(fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) func(commons.File) {
+func getFileHashGoruotine(
+	fileChannel chan<- commons.File,
+	flyweight *datastructures.Flyweight[string],
+) func(commons.File) {
 	return func(obj commons.File) {
 		refineFile(obj, fileChannel, flyweight)
 	}
 }
 
-func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup, heap *datastructures.Heap[commons.File]) {
+func consumeFromFileChannel(
+	channel chan commons.File,
+	waitgroup *sync.WaitGroup,
+	heap *datastructures.Heap[commons.File],
+) {
 	defer waitgroup.Done()
 	for data := range channel {
 		err := heap.Push(data)
@@ -63,7 +73,10 @@ func consumeFromFileChannel(channel chan commons.File, waitgroup *sync.WaitGroup
 	}
 }
 
-func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) bool, registry *datastructures.Flyweight[string]) *FileHeap {
+func (fh *FileHeap) filterHeap(
+	filterFunction func(commons.File, commons.File) bool,
+	registry *datastructures.Flyweight[string],
+) *FileHeap {
 	var current commons.File
 	var last commons.File
 
@@ -125,9 +138,7 @@ func (fh *FileHeap) filterHeap(filterFunction func(commons.File, commons.File) b
 			panic(err)
 		}
 
-		processed *= 100
-
-		ui.UpdateNamedLine("cleanup-stage", "cleanup-stage", processed/total)
+		ui.UpdateNamedLine("cleanup-stage", "cleanup-stage", (processed/total)*100)
 	}
 
 	if duplicateFlag {

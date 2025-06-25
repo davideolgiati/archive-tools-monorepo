@@ -29,8 +29,9 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 
 		switch {
 		case strings.HasPrefix(raw, "p:"):
+			var val T
 			valStr := strings.TrimPrefix(raw, "p:")
-			val, err := parseFN(valStr)
+			val, err = parseFN(valStr)
 			if err != nil {
 				continue
 			}
@@ -47,7 +48,8 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 
 		case raw == "o":
 			var expected T
-			result, err := heap.Pop()
+			var result T
+			result, err = heap.Pop()
 			if err != nil {
 				panic(err)
 			}
@@ -95,7 +97,14 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 			modelEmpty := len(model) == 0
 
 			if ourEmpty != modelEmpty {
-				panic(fmt.Sprintf("Step %d: empty state mismatch with model - got %v, expected %v", i, ourEmpty, modelEmpty))
+				panic(
+					fmt.Sprintf(
+						"Step %d: empty state mismatch with model - got %v, expected %v",
+						i,
+						ourEmpty,
+						modelEmpty,
+					),
+				)
 			}
 
 		default:
@@ -135,8 +144,9 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 	}
 
 	var drainedElements []T
+	var data T
 	for !heap.Empty() {
-		data, err := heap.Pop()
+		data, err = heap.Pop()
 		if err != nil {
 			panic(err)
 		}

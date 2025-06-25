@@ -43,7 +43,7 @@ func (f *File) CanBeRead() bool {
 	}
 
 	defer func() {
-		err := filePointer.Close()
+		err = filePointer.Close()
 		if err != nil {
 			panic(err)
 		}
@@ -82,7 +82,12 @@ func (f *File) Type() int {
 	}
 }
 
-func processFileEntry(file *File, fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string], sizeFilter *sync.Map) {
+func processFileEntry(
+	file *File,
+	fileChannel chan<- commons.File,
+	flyweight *datastructures.Flyweight[string],
+	sizeFilter *sync.Map,
+) {
 	var err error
 
 	if file == nil {
@@ -128,7 +133,11 @@ func processFileEntry(file *File, fileChannel chan<- commons.File, flyweight *da
 	fileChannel <- fileStats
 }
 
-func getFileProcessWorker(flyweight *datastructures.Flyweight[string], fileChannel chan<- commons.File, sizeFilter *sync.Map) func(File) {
+func getFileProcessWorker(
+	flyweight *datastructures.Flyweight[string],
+	fileChannel chan<- commons.File,
+	sizeFilter *sync.Map,
+) func(File) {
 	if flyweight == nil {
 		panic("flyweight is a nil pointer")
 	}

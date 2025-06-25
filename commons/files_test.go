@@ -126,16 +126,16 @@ func TestHash_Deterministic(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		err := os.Remove(tmpfile.Name())
+		err = os.Remove(tmpfile.Name())
 		if err != nil {
 			panic(err)
 		}
 	}()
 
-	if _, err := tmpfile.WriteString(content); err != nil {
+	if _, err = tmpfile.WriteString(content); err != nil {
 		t.Fatal(err)
 	}
-	if err := tmpfile.Close(); err != nil {
+	if err = tmpfile.Close(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -161,7 +161,7 @@ func TestHash_Deterministic(t *testing.T) {
 	}
 
 	defer func() {
-		err := os.Remove(emptyFile.Name())
+		err = os.Remove(emptyFile.Name())
 		if err != nil {
 			panic(err)
 		}
@@ -207,17 +207,17 @@ func TestHash_Concurrent(t *testing.T) {
 		}
 
 		defer func() {
-			err := os.Remove(tmpfile.Name())
+			err = os.Remove(tmpfile.Name())
 			if err != nil {
 				panic(err)
 			}
 		}()
 
-		if _, err := tmpfile.WriteString(content); err != nil {
+		if _, err = tmpfile.WriteString(content); err != nil {
 			t.Fatal(err)
 		}
 
-		if err := tmpfile.Close(); err != nil {
+		if err = tmpfile.Close(); err != nil {
 			t.Fatal(err)
 		}
 
@@ -266,7 +266,12 @@ func TestHash_Concurrent(t *testing.T) {
 		expectedHash := hex.EncodeToString(hasher.Sum(nil))
 
 		if hashedFiles[path] != expectedHash {
-			t.Errorf("Concurrent hash mismatch for file %s.\nExpected: %s\nGot:      %s", path, expectedHash, hashedFiles[path])
+			t.Errorf(
+				"Concurrent hash mismatch for file %s.\nExpected: %s\nGot:      %s",
+				path,
+				expectedHash,
+				hashedFiles[path],
+			)
 		}
 	}
 }
@@ -305,10 +310,8 @@ func TestFormat_file_size_Deterministic(t *testing.T) {
 
 	if err == nil {
 		t.Error("Expected panic for negative size input, but got none")
-	} else {
-		if !strings.Contains(fmt.Sprintf("%v", err), "size is negative") {
-			t.Errorf("Unexpected panic message: %v", err)
-		}
+	} else if !strings.Contains(fmt.Sprintf("%v", err), "size is negative") {
+		t.Errorf("Unexpected panic message: %v", err)
 	}
 }
 
@@ -320,7 +323,7 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		err := os.Remove(tmpfile.Name())
+		err = os.Remove(tmpfile.Name())
 		if err != nil {
 			panic(err)
 		}
@@ -341,10 +344,8 @@ func TestCheck_read_rights_on_file(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("Expected panic for nil obj input, but got none")
-		} else {
-			if !strings.Contains(fmt.Sprintf("%v", r), "obj is nil") {
-				t.Errorf("Unexpected panic message: %v", r)
-			}
+		} else if !strings.Contains(fmt.Sprintf("%v", r), "obj is nil") {
+			t.Errorf("Unexpected panic message: %v", r)
 		}
 	}()
 	var nilInfo *os.FileInfo
@@ -359,7 +360,7 @@ func TestIs_symbolic_link(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		err := os.Remove(tmpfile.Name())
+		err = os.Remove(tmpfile.Name())
 		if err != nil {
 			panic(err)
 		}
@@ -385,7 +386,7 @@ func TestIs_symbolic_link(t *testing.T) {
 		t.Skipf("Could not create symlink (e.g., Windows without admin, or permissions): %v", err)
 	}
 	defer func() {
-		err := os.Remove(symlinkPath) // Clean up symlink
+		err = os.Remove(symlinkPath) // Clean up symlink
 		if err != nil {
 			panic(err)
 		}
@@ -404,10 +405,8 @@ func TestIs_symbolic_link(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("Expected panic for nil obj input, but got none")
-		} else {
-			if !strings.Contains(fmt.Sprintf("%v", r), "obj is nil") {
-				t.Errorf("Unexpected panic message: %v", r)
-			}
+		} else if !strings.Contains(fmt.Sprintf("%v", r), "obj is nil") {
+			t.Errorf("Unexpected panic message: %v", r)
 		}
 	}()
 	var nilInfo *os.FileInfo

@@ -125,11 +125,12 @@ func (ui *UI) printToNamedLine(data string, lineNumber int) {
 }
 
 func moveCursor(n int) {
-	if n == 0 {
+	switch {
+	case n == 0:
 		return
-	} else if n < 0 {
+	case n < 0:
 		fmt.Printf("\033[%dA", -n)
-	} else {
+	default:
 		fmt.Printf("\033[%dB", n)
 	}
 }

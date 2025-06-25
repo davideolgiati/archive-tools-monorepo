@@ -30,9 +30,7 @@ func TestConstant_NewConstant_WhenValueNotSet_Panic(t *testing.T) {
 
 	if err == nil {
 		t.Error("Expected panic for nil pointer input, but got none")
-	} else {
-		if !strings.Contains(fmt.Sprintf("%v", err), "data pointer is nil") {
-			t.Errorf("Unexpected panic message: %v", err)
-		}
+	} else if !strings.Contains(fmt.Sprintf("%v", err), "data pointer is nil") {
+		t.Errorf("Unexpected panic message: %v", err)
 	}
 }

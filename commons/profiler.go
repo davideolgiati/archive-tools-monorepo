@@ -20,7 +20,28 @@ type Profiler struct {
 }
 
 func (pf *Profiler) size() uint64 {
-	return uint64(unsafe.Sizeof(*pf)) + uint64(len(pf.memoryUsed)*8)
+	var profilerNominalSize interface{} = unsafe.Sizeof(*pf)
+	var memorySamplesSize interface{} = len(pf.memoryUsed)
+
+	var totalMemoryUsed uint64
+
+	temp, ok := profilerNominalSize.(uint64)
+
+	if ok {
+		totalMemoryUsed += temp
+	} else {
+		panic("error while converting profilerNominalSize to uint64")
+	}
+
+	temp, ok = memorySamplesSize.(uint64)
+
+	if ok {
+		totalMemoryUsed += (temp * 8)
+	} else {
+		panic("error while converting totalMemoryUsed to uint64")
+	}
+
+	return totalMemoryUsed
 }
 
 func (pf *Profiler) Start() {
@@ -76,17 +97,38 @@ func (pf *Profiler) Collect() {
 	p90index := (pf.memorySamples * 90) / 100
 	p99index := (pf.memorySamples * 99) / 100
 
-	p50, err := FormatFileSize(int64(pf.memoryUsed[p50index]))
+	var p50value interface{} = pf.memoryUsed[p50index]
+	p50memoryUsed, ok := p50value.(int64)
+
+	if !ok {
+		panic("can't safely cast p50value memrory used")
+	}
+
+	var p90value interface{} = pf.memoryUsed[p90index]
+	p90memoryUsed, ok := p90value.(int64)
+
+	if !ok {
+		panic("can't safely cast p90value memrory used")
+	}
+
+	var p99value interface{} = pf.memoryUsed[p99index]
+	p99memoryUsed, ok := p99value.(int64)
+
+	if !ok {
+		panic("can't safely cast p99value memrory used")
+	}
+
+	p50, err := FormatFileSize(p50memoryUsed)
 	if err != nil {
 		panic(err)
 	}
 
-	p90, err := FormatFileSize(int64(pf.memoryUsed[p90index]))
+	p90, err := FormatFileSize(p90memoryUsed)
 	if err != nil {
 		panic(err)
 	}
 
-	p99, err := FormatFileSize(int64(pf.memoryUsed[p99index]))
+	p99, err := FormatFileSize(p99memoryUsed)
 	if err != nil {
 		panic(err)
 	}

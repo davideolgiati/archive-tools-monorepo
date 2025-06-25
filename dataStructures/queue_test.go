@@ -55,7 +55,13 @@ func QueueStateMachine[T any](instructions string, parseFN func(string) (T, erro
 			}
 
 			if queue.Empty() && len(model) != 0 {
-				panic(fmt.Sprintf("Step %d: queue state inconsistency - our queue empty but model has %d items", i, len(model)))
+				panic(
+					fmt.Sprintf(
+						"Step %d: queue state inconsistency - our queue empty but model has %d items",
+						i,
+						len(model),
+					),
+				)
 			}
 
 			if !reflect.DeepEqual(result, expected) {
@@ -94,7 +100,14 @@ func QueueStateMachine[T any](instructions string, parseFN func(string) (T, erro
 			modelEmpty := len(model) == 0
 
 			if ourEmpty != modelEmpty {
-				panic(fmt.Sprintf("Step %d: empty state mismatch with model - got %v, expected %v", i, ourEmpty, modelEmpty))
+				panic(
+					fmt.Sprintf(
+						"Step %d: empty state mismatch with model - got %v, expected %v",
+						i,
+						ourEmpty,
+						modelEmpty,
+					),
+				)
 			}
 
 		default:

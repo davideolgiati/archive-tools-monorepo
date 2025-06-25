@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"fmt"
-	"math/rand/v2"
+	"math/big"
 	"os"
 	"runtime/pprof"
 	"strings"
@@ -15,15 +17,28 @@ const (
 	targetOperations = 1000000
 )
 
-func generateNextOp() string {
-	op := rand.Int() % 5
-	operations := []string{"o", "s", "e", "k"}
-
-	if op >= len(operations) {
-		return fmt.Sprintf("p:%x", rand.Float64())
+func randomFloat64() float64 {
+	var b [8]byte
+	_, err := rand.Read(b[:])
+	if err != nil {
+		panic(err)
 	}
 
-	return operations[op]
+	return float64(binary.LittleEndian.Uint64(b[:])) / (1 << 64)
+}
+
+func generateNextOp() string {
+	operations := []string{"o", "s", "e", "k"}
+	n, err := rand.Int(rand.Reader, big.NewInt(5))
+	if err != nil {
+		panic(err)
+	}
+
+	if n.Int64() >= int64(len(operations)) {
+		return fmt.Sprintf("p:%x", randomFloat64())
+	}
+
+	return operations[n.Int64()]
 }
 
 func main() {
@@ -40,7 +55,8 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 	for range targetRuns {
-		ourHeap, err := datastructures.NewHeap(func(a, b *string) bool {
+		var ourHeap *datastructures.Heap[string]
+		ourHeap, err = datastructures.NewHeap(func(a, b *string) bool {
 			return *a < *b
 		})
 		if err != nil {
@@ -53,7 +69,7 @@ func main() {
 			switch {
 			case strings.HasPrefix(raw, "p:"):
 				valStr := strings.TrimPrefix(raw, "p:")
-				err := ourHeap.Push(valStr)
+				err = ourHeap.Push(valStr)
 				if err != nil {
 					panic(err)
 				}
