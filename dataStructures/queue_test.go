@@ -10,6 +10,72 @@ import (
 	datastructures "archive-tools-monorepo/dataStructures"
 )
 
+func push[T any](value T, queue *datastructures.Queue[T], model *[]T) {
+	queue.Push(value)
+	*model = append(*model, value)
+}
+
+func pop[T any](queue *datastructures.Queue[T], model *[]T, step int) {
+	var expected T
+	initialQueueState := queue.Empty()
+
+	if !queue.Empty() {
+		expected = (*model)[0]
+		*model = (*model)[1:]
+	}
+
+	result, err := queue.Pop()
+
+	if !initialQueueState && err != nil {
+		panic(fmt.Sprintf("Step %d: queue state inconsistency - expected nil got error: %v", step, err))
+	}
+
+	if initialQueueState && err == nil {
+		panic(fmt.Sprintf("Step %d: queue state inconsistency - expected error got nil", step))
+	}
+
+	if queue.Empty() && len(*model) != 0 {
+		panic(
+			fmt.Sprintf(
+				"Step %d: queue state inconsistency - our queue empty but model has %d items",
+				step,
+				len(*model),
+			),
+		)
+	}
+
+	if !reflect.DeepEqual(result, expected) {
+		panic(fmt.Sprintf("Step %d: pop queue should return %v value, got %v", step, expected, result))
+	}
+}
+
+func peak[T any](queue *datastructures.Queue[T], model *[]T, step int) {
+	var expected T
+	sizeBefore := queue.Size()
+	peak := queue.Peak()
+
+	if queue.Empty() {
+		if peak != nil {
+			panic(fmt.Sprintf("Step %d: peak on empty queue should return nil, got %v", step, *peak))
+		}
+	} else {
+		if peak == nil {
+			panic(fmt.Sprintf("Step %d: peak on non-empty queue returned nil", step))
+		}
+
+		sizeAfter := queue.Size()
+		if sizeBefore != sizeAfter {
+			panic(fmt.Sprintf("Step %d: peak operation modified queue size", step))
+		}
+
+		expected = (*model)[0]
+
+		if !reflect.DeepEqual(*peak, expected) {
+			panic(fmt.Sprintf("Step %d: peak value inconsistency - expected %v, got %v", step, expected, *peak))
+		}
+	}
+}
+
 func QueueStateMachine[T any](instructions string, parseFN func(string) (T, error), compareFN func(*T, *T) bool) {
 	queue := datastructures.Queue[T]{}
 	queue.Init()
@@ -31,61 +97,13 @@ func QueueStateMachine[T any](instructions string, parseFN func(string) (T, erro
 			if err != nil {
 				continue
 			}
+			push(val, &queue, &model)
 
-			queue.Push(val)
-
-			model = append(model, val)
 		case raw == "o":
-			var expected T
-			initialQueueState := queue.Empty()
-
-			if !queue.Empty() {
-				expected = model[0]
-				model = model[1:]
-			}
-
-			result, err := queue.Pop()
-
-			if !initialQueueState && err != nil {
-				panic(fmt.Sprintf("Step %d: queue state inconsistency - expected nil got error: %v", i, err))
-			}
-
-			if initialQueueState && err == nil {
-				panic(fmt.Sprintf("Step %d: queue state inconsistency - expected error got nil", i))
-			}
-
-			if queue.Empty() && len(model) != 0 {
-				panic(
-					fmt.Sprintf(
-						"Step %d: queue state inconsistency - our queue empty but model has %d items",
-						i,
-						len(model),
-					),
-				)
-			}
-
-			if !reflect.DeepEqual(result, expected) {
-				panic(fmt.Sprintf("Step %d: pop queue should return %v value, got %v", i, expected, result))
-			}
+			pop(&queue, &model, i)
 
 		case raw == "k":
-			sizeBefore := queue.Size()
-			peak := queue.Peak()
-
-			if queue.Empty() {
-				if peak != nil {
-					panic(fmt.Sprintf("Step %d: peak on empty queue should return nil, got %v", i, *peak))
-				}
-			} else {
-				if peak == nil {
-					panic(fmt.Sprintf("Step %d: peak on non-empty queue returned nil", i))
-				}
-
-				sizeAfter := queue.Size()
-				if sizeBefore != sizeAfter {
-					panic(fmt.Sprintf("Step %d: peak operation modified queue size", i))
-				}
-			}
+			peak(&queue, &model, i)
 
 		case raw == "s":
 			ourSize := queue.Size()
