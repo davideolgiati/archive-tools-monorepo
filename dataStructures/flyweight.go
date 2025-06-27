@@ -1,6 +1,7 @@
 package datastructures
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -22,18 +23,21 @@ func (fw *Flyweight[T]) Instance(data T) (Constant[T], error) {
 
 func (fw *Flyweight[T]) get(data T) (Constant[T], bool) {
 	entryPointer, ok := fw.cache.Load(data)
-
 	if !ok {
-		defaultEntry := ""
-		entryPointer = &defaultEntry
+		return Constant[T]{}, false
 	}
 
-	newConstant, err := NewConstant(entryPointer.(*T))
+	pointer, ok := entryPointer.(*T)
+	if !ok {
+		return Constant[T]{}, false
+	}
+
+	newConstant, err := NewConstant(pointer)
 	if err != nil {
-		ok = false
+		return Constant[T]{}, false
 	}
 
-	return newConstant, ok
+	return newConstant, true
 }
 
 func (fw *Flyweight[T]) set(data T) (Constant[T], error) {
@@ -46,5 +50,11 @@ func (fw *Flyweight[T]) set(data T) (Constant[T], error) {
 		return NewConstant(ptr)
 	}
 
-	return NewConstant(actual.(*T))
+	pointer, ok := actual.(*T)
+
+	if !ok {
+		return Constant[T]{}, errors.New("error while casting poinetr")
+	}
+
+	return NewConstant(pointer)
 }

@@ -18,8 +18,12 @@ func TestFlyweight_SameValue_ExpectToBeEqual(t *testing.T) {
 		t.Fatalf("Instance returned error: %v", err)
 	}
 
-	if constant1 != constant2 {
-		t.Errorf("Expected the same constant for identical inputs, got %v and %v", constant1, constant2)
+	if constant1.Value() != constant2.Value() {
+		t.Errorf("Expected the same constant for identical inputs, got %v and %v", constant1.Value(), constant2.Value())
+	}
+
+	if constant1.Ptr() != constant2.Ptr() {
+		t.Errorf("Expected the same pointer for identical inputs, got %v and %v", constant1.Ptr(), constant2.Ptr())
 	}
 }
 
