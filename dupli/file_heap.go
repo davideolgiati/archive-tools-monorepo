@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 
 	"archive-tools-monorepo/commons"
@@ -17,16 +18,15 @@ func newFileHeap(
 	sortFunction func(*commons.File, *commons.File) bool,
 	registry *datastructures.Flyweight[string],
 ) (*FileHeap, error) {
-	fileHeap := FileHeap{}
-
 	newHeap, err := datastructures.NewHeap(sortFunction)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while allocating Heap: \n%v", err)
 	}
 
-	fileHeap.heap = newHeap
-
-	fileHeap.hashRegistry = registry
+	fileHeap := FileHeap{
+		heap:         newHeap,
+		hashRegistry: registry,
+	}
 
 	return &fileHeap, nil
 }

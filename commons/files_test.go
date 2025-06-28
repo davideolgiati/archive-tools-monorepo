@@ -195,7 +195,7 @@ func TestHash_Deterministic(t *testing.T) {
 // TestHash_Concurrent verifies Hash is safe for concurrent calls on DIFFERENT files.
 func TestHash_Concurrent(t *testing.T) {
 	numFiles := 100
-	var filePaths []string
+	filePaths := make([]string, numFiles)
 	var wg sync.WaitGroup
 
 	// Create temporary files
@@ -221,7 +221,7 @@ func TestHash_Concurrent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		filePaths = append(filePaths, tmpfile.Name())
+		filePaths[i] = tmpfile.Name()
 	}
 
 	results := make(chan struct {

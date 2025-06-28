@@ -24,17 +24,17 @@ func (fw *Flyweight[T]) Instance(data T) (Constant[T], error) {
 func (fw *Flyweight[T]) get(data T) (Constant[T], bool) {
 	entryPointer, ok := fw.cache.Load(data)
 	if !ok {
-		return Constant[T]{}, false
+		return Constant[T]{nil}, false
 	}
 
 	pointer, ok := entryPointer.(*T)
 	if !ok {
-		return Constant[T]{}, false
+		return Constant[T]{nil}, false
 	}
 
 	newConstant, err := NewConstant(pointer)
 	if err != nil {
-		return Constant[T]{}, false
+		return Constant[T]{nil}, false
 	}
 
 	return newConstant, true

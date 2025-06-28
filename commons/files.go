@@ -3,7 +3,6 @@ package commons
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -153,16 +152,16 @@ func EqualBySize(a File, b File) bool {
 
 func CalculateHash(filepath string) (string, error) {
 	if filepath == "" {
-		return "", errors.New("empty filepath")
+		return "", fmt.Errorf("%w: empty filepath", os.ErrInvalid)
 	}
 
 	filePointer, err := os.Open(filepath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error while generating hash: %w", err)
 	}
 
 	if filePointer == nil {
-		return "", errors.New("filePointer is nil")
+		return "", fmt.Errorf("%w: filePointer is nil", os.ErrInvalid)
 	}
 
 	defer func() {
@@ -174,19 +173,19 @@ func CalculateHash(filepath string) (string, error) {
 
 	stats, err := filePointer.Stat()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error while generating hash: %w", err)
 	}
 
 	size := stats.Size()
 
 	if size < 0 {
-		return "", errors.New("size is not positive")
+		return "", fmt.Errorf("%w: file size is not positive", os.ErrInvalid)
 	}
 
 	sha1h := sha1.New()
 	_, err = io.Copy(sha1h, filePointer)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error while generating hash: %w", err)
 	}
 
 	return hex.EncodeToString(sha1h.Sum(nil)), nil
@@ -194,7 +193,7 @@ func CalculateHash(filepath string) (string, error) {
 
 func FormatFileSize(size int64) (FileSize, error) {
 	if size < 0 {
-		return FileSize{}, errors.New("size is negative")
+		return FileSize{}, fmt.Errorf("%w: size is negative", os.ErrInvalid)
 	}
 
 	fileSize := float64(size)
@@ -207,8 +206,8 @@ func FormatFileSize(size int64) (FileSize, error) {
 
 	if fileSize >= 1000 && sizeIndex != 3 {
 		return FileSize{}, fmt.Errorf(
-			"fileSize is > 1000 and unit is  %s",
-			sizesArray[sizeIndex],
+			"%w: fileSize is > 1000 and unit is  %s",
+			os.ErrInvalid, sizesArray[sizeIndex],
 		)
 	}
 
