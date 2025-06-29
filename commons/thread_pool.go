@@ -33,7 +33,6 @@ type WriteOnlyThreadPool[T any] struct {
 }
 
 func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
-	threadPool := &WriteOnlyThreadPool[T]{}
 	workersCount := runtime.NumCPU()
 	inputChannel := make(chan T)
 	sampleArray := make([]float64, defaultSampleSize)
@@ -43,23 +42,31 @@ func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
 	}
 
 	if workerFn == nil {
-		return threadPool, errors.New("target function for thread pool can't be null")
+		return nil, errors.New("target function for thread pool can't be null")
 	}
 
 	if workersCount < 1 {
-		return threadPool, errors.New("error while looking for CPU info in threadpool setup")
+		return nil, errors.New("error while looking for CPU info in threadpool setup")
 	}
 
-	threadPool.status = poolStatus{}
+	threadPool := &WriteOnlyThreadPool[T]{
+		status: poolStatus{
+			activeThreads: atomic.Int64{},
+			isClosed:      false,
+			poolLoad:      sampleArray,
+		},
+		configuration: poolConfiguration[T]{
+			maxWorkers:     workersCount,
+			workerFunction: nil,
+		},
+		shared: poolSharedResources[T]{
+			inputChannel: inputChannel,
+			waitingGroup: sync.WaitGroup{},
+		},
+	}
+
 	threadPool.status.activeThreads.Store(0)
-	threadPool.status.isClosed = false
-	threadPool.status.poolLoad = sampleArray
-
-	threadPool.configuration = poolConfiguration[T]{}
-	threadPool.configuration.maxWorkers = workersCount
 	threadPool.configuration.workerFunction = setupWorkerFunction(workerFn, &threadPool.status.activeThreads)
-
-	threadPool.shared.inputChannel = inputChannel
 
 	for range threadPool.configuration.maxWorkers {
 		threadPool.addNewWorker()

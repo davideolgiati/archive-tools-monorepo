@@ -35,24 +35,27 @@ type DirWalker struct {
 }
 
 func NewWalker(skipEmpty bool) *DirWalker {
-	walker := DirWalker{}
+	newQueue := datastructures.Queue[string]{}
+	newQueue.Init()
 
-	walker.stats = dirwalkerStatistics{}
-	walker.stats.fileSeen = 0
-	walker.stats.directoriesSeen = 0
-	walker.stats.sizeProcessed = 0
-
-	walker.configuration = dirWalkerConfiguration{}
-	walker.configuration.skipEmpty = skipEmpty
-	walker.configuration.directoryCallback = nil
-	walker.configuration.filterDirectory = nil
-	walker.configuration.fileCallback = nil
-
-	walker.state = dirWalkerState{}
-	walker.state.directoriesQueue = datastructures.Queue[string]{}
-	walker.state.directoriesQueue.Init()
-	walker.state.currentDirectory = ""
-	walker.state.currentFile = ""
+	walker := DirWalker{
+		stats: dirwalkerStatistics{
+			fileSeen:        0,
+			directoriesSeen: 0,
+			sizeProcessed:   0,
+		},
+		configuration: dirWalkerConfiguration{
+			skipEmpty:         skipEmpty,
+			directoryCallback: nil,
+			filterDirectory:   nil,
+			fileCallback:      nil,
+		},
+		state: dirWalkerState{
+			directoriesQueue: newQueue,
+			currentDirectory: "",
+			currentFile:      "",
+		},
+	}
 
 	return &walker
 }

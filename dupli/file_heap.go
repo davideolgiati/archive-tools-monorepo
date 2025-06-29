@@ -20,12 +20,13 @@ func newFileHeap(
 ) (*FileHeap, error) {
 	newHeap, err := datastructures.NewHeap(sortFunction)
 	if err != nil {
-		return nil, fmt.Errorf("error while allocating Heap: \n%v", err)
+		return nil, fmt.Errorf("error while allocating Heap: \n%w", err)
 	}
 
 	fileHeap := FileHeap{
 		heap:         newHeap,
 		hashRegistry: registry,
+		sizeFilter:   sync.Map{},
 	}
 
 	return &fileHeap, nil

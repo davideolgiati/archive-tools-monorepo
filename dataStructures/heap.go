@@ -15,16 +15,17 @@ type Heap[T any] struct {
 }
 
 func NewHeap[T any](sortFunction func(*T, *T) bool) (*Heap[T], error) {
-	heap := Heap[T]{}
-
 	if sortFunction == nil {
 		return nil, errors.New("provided function is a nil pointer")
 	}
 
-	heap.minFunction = sortFunction
-	heap.items = make([]*T, 0)
-	heap.tail = 0
-	heap.size = 0
+	heap := Heap[T]{
+		minFunction: sortFunction,
+		items:       make([]*T, 0),
+		tail:        0,
+		size:        0,
+		mutex:       sync.Mutex{},
+	}
 
 	return &heap, nil
 }

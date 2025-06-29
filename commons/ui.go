@@ -22,11 +22,13 @@ type UI struct {
 }
 
 func NewUI() *UI {
-	output := UI{}
-	output.currentLineNumber = 0
-	output.nextLineNumber = 1
-	output.lines = make(map[string]*line)
-	output.silent = false
+	output := UI{
+		currentLineNumber: 0,
+		nextLineNumber:    1,
+		lines:             make(map[string]*line),
+		mutex:             sync.Mutex{},
+		silent:            false,
+	}
 
 	return &output
 }
