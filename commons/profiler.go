@@ -12,10 +12,10 @@ import (
 const targetSamplingPopulation = 5000
 
 type Profiler struct {
-	memoryUsed    []uint64
-	quitChannel   chan bool
-	wg            sync.WaitGroup
 	startTime     time.Time
+	quitChannel   chan bool
+	memoryUsed    []uint64
+	wg            sync.WaitGroup
 	memorySamples int
 }
 

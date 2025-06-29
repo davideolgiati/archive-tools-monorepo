@@ -9,8 +9,8 @@ import (
 type line struct {
 	lastUpdate       time.Time
 	format           string
-	lineNumber       int
 	currentLineValue string
+	lineNumber       int
 }
 
 type UI struct {

@@ -28,8 +28,8 @@ type poolSharedResources[T any] struct {
 
 type WriteOnlyThreadPool[T any] struct {
 	configuration poolConfiguration[T]
-	status        poolStatus
 	shared        poolSharedResources[T]
+	status        poolStatus
 }
 
 func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {

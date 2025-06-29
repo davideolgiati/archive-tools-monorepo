@@ -7,10 +7,10 @@ import (
 )
 
 type Heap[T any] struct {
+	minFunction func(*T, *T) bool
 	items       []*T
 	tail        int
 	size        int
-	minFunction func(*T, *T) bool
 	mutex       sync.Mutex
 }
 
