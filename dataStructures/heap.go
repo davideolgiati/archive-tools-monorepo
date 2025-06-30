@@ -2,7 +2,6 @@ package datastructures
 
 import (
 	"errors"
-	"math"
 	"sync"
 )
 
@@ -143,7 +142,7 @@ func (heap *Heap[T]) heapifyTopDown() {
 }
 
 func (heap *Heap[T]) resize() {
-	newSize := math.Pow(float64(len(heap.items)), 2) + 1
+	newSize := len(heap.items)*2 + 1
 	newItems := make([]*T, uint(newSize))
 
 	copy(newItems[:len(heap.items)], heap.items)
