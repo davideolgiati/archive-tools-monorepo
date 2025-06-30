@@ -45,3 +45,15 @@ func (stack *Stack[T]) Pop() (T, error) {
 
 	return item, nil
 }
+
+func (stack *Stack[T]) Peak() *T {
+	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
+
+	var item *T
+	if len(stack.items) != 0 {
+		item = &stack.items[len(stack.items)-1]
+	}
+
+	return item
+}
