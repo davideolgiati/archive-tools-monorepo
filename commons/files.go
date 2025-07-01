@@ -74,20 +74,20 @@ func (file File) ToString() string {
 	return b.String()
 }
 
-func SizeDescending(a File, b File) bool {
+func SizeDescending(a File, b File) (bool, error) {
 	if a.Size < 0 {
-		panic("a.Size is negative")
+		return false, fmt.Errorf("%w: a.Size is negative", os.ErrInvalid)
 	}
 
 	if b.Size < 0 {
-		panic("b.Size is negative")
+		return false, fmt.Errorf("%w: b.Size is negative", os.ErrInvalid)
 	}
 
 	if a.Size == b.Size {
-		return true
+		return true, nil
 	}
 
-	return a.Size < b.Size
+	return a.Size < b.Size, nil
 }
 
 func HashDescending(a *File, b *File) bool {
