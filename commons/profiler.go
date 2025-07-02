@@ -2,6 +2,7 @@ package commons
 
 import (
 	"fmt"
+	"os"
 	"runtime/metrics"
 	"sort"
 	"sync"
@@ -19,7 +20,7 @@ type Profiler struct {
 	memorySamples int
 }
 
-func (pf *Profiler) size() uint64 {
+func (pf *Profiler) size() (uint64, error) {
 	var profilerNominalSize interface{} = unsafe.Sizeof(*pf)
 	var memorySamplesSize interface{} = len(pf.memoryUsed)
 
@@ -30,7 +31,7 @@ func (pf *Profiler) size() uint64 {
 	if ok {
 		totalMemoryUsed += temp
 	} else {
-		panic("error while converting profilerNominalSize to uint64")
+		return 0, fmt.Errorf("%w: error while converting profilerNominalSize to uint64", os.ErrInvalid)
 	}
 
 	temp, ok = memorySamplesSize.(uint64)
@@ -38,10 +39,10 @@ func (pf *Profiler) size() uint64 {
 	if ok {
 		totalMemoryUsed += (temp * 8)
 	} else {
-		panic("error while converting totalMemoryUsed to uint64")
+		return 0, fmt.Errorf("%w: error while converting totalMemoryUsed to uint64", os.ErrInvalid)
 	}
 
-	return totalMemoryUsed
+	return totalMemoryUsed, nil
 }
 
 func (pf *Profiler) Start() {
@@ -67,7 +68,12 @@ func (pf *Profiler) Start() {
 				metrics.Read(sample)
 
 				if sample[0].Value.Kind() != metrics.KindBad {
-					pf.memoryUsed[index] = (sample[0].Value.Uint64() - pf.size())
+					size, err := pf.size()
+					if err != nil {
+						panic(err)
+					}
+
+					pf.memoryUsed[index] = (sample[0].Value.Uint64() - size)
 					index = (index + 1) % targetSamplingPopulation
 					if pf.memorySamples < targetSamplingPopulation {
 						pf.memorySamples++

@@ -113,21 +113,15 @@ func processFileEntry(
 		}
 	}
 
-	formattedSize, err := commons.FormatFileSize(file.infos.Size())
-	if err != nil {
-		panic(err)
-	}
-
 	hashPointer, err := flyweight.Instance(hash)
 	if err != nil {
 		panic(err)
 	}
 
 	fileStats := commons.File{
-		Name:          file.path,
-		Size:          size,
-		Hash:          hashPointer,
-		FormattedSize: formattedSize,
+		Name: file.path,
+		Size: size,
+		Hash: hashPointer,
 	}
 
 	fileChannel <- fileStats

@@ -21,14 +21,18 @@ type FileSize struct {
 }
 
 type File struct {
-	Name          string
-	Hash          datastructures.Constant[string]
-	FormattedSize FileSize
-	Size          int64
+	Hash datastructures.Constant[string]
+	Name string
+	Size int64
 }
 
 func (file File) Format(f fmt.State, _ rune) {
-	data := []byte(file.ToString())
+	str, err := file.ToString()
+	if err != nil {
+		panic(err)
+	}
+
+	data := []byte(str)
 	byteCount, err := f.Write(data)
 	if err != nil {
 		panic(err)
@@ -39,11 +43,11 @@ func (file File) Format(f fmt.State, _ rune) {
 	}
 }
 
-func (file File) ToString() string {
+func (file File) ToString() (string, error) {
 	var b strings.Builder
 
 	if file.Hash.Ptr() == nil {
-		panic("Hash is a nil pointer")
+		return "", fmt.Errorf("%w: Hash is a nil pointer", os.ErrInvalid)
 	}
 
 	b.WriteString(file.Hash.Value())
@@ -53,7 +57,12 @@ func (file File) ToString() string {
 	b.WriteByte(' ')
 
 	// Right-align integer in 4-char space
-	valStr := strconv.Itoa(int(file.FormattedSize.Value))
+	formattedFileSize, err := FormatFileSize(file.Size)
+	if err != nil {
+		return "", err
+	}
+
+	valStr := strconv.Itoa(int(formattedFileSize.Value))
 	for range 4 - len(valStr) {
 		b.WriteByte(' ')
 	}
@@ -62,41 +71,24 @@ func (file File) ToString() string {
 	b.WriteByte(' ')
 
 	// Right-align unit in 2-char space
-	unitStr := *file.FormattedSize.Unit
-	for range 2 - len(unitStr) {
+	for range 2 - len(*formattedFileSize.Unit) {
 		b.WriteByte(' ')
 	}
-	b.WriteString(unitStr)
+	b.WriteString(*formattedFileSize.Unit)
 
 	b.WriteByte(' ')
 	b.WriteString(file.Name)
 
-	return b.String()
-}
-
-func SizeDescending(a File, b File) (bool, error) {
-	if a.Size < 0 {
-		return false, fmt.Errorf("%w: a.Size is negative", os.ErrInvalid)
-	}
-
-	if b.Size < 0 {
-		return false, fmt.Errorf("%w: b.Size is negative", os.ErrInvalid)
-	}
-
-	if a.Size == b.Size {
-		return true, nil
-	}
-
-	return a.Size < b.Size, nil
+	return b.String(), nil
 }
 
 func HashDescending(a *File, b *File) bool {
 	if a.Hash.Ptr() == nil {
-		panic("a.Hash is a nil pointer")
+		return false
 	}
 
 	if b.Hash.Ptr() == nil {
-		panic("b.Hash is a nil pointer")
+		return false
 	}
 
 	if a.Hash.Ptr() == b.Hash.Ptr() {
@@ -107,47 +99,19 @@ func HashDescending(a *File, b *File) bool {
 }
 
 func Equal(a File, b File) bool {
-	if a.Hash.Ptr() == nil {
-		panic("a.Hash is a nil pointer")
-	}
-
-	if b.Hash.Ptr() == nil {
-		panic("b.Hash is a nil pointer")
-	}
-
-	if a.Size < 0 {
-		panic("a.Size is negative")
-	}
-
-	if b.Size < 0 {
-		panic("b.Size is negative")
+	if a.Hash.Ptr() == nil || b.Hash.Ptr() == nil || a.Size < 0 || b.Size < 0 {
+		return false
 	}
 
 	return a.Hash.Ptr() == b.Hash.Ptr() && a.Size == b.Size
 }
 
 func EqualByHash(a File, b File) bool {
-	if a.Hash.Ptr() == nil {
-		panic("a.Hash is a nil pointer")
-	}
-
-	if b.Hash.Ptr() == nil {
-		panic("b.Hash is a nil pointer")
+	if a.Hash.Ptr() == nil || b.Hash.Ptr() == nil {
+		return false
 	}
 
 	return a.Hash.Ptr() == b.Hash.Ptr()
-}
-
-func EqualBySize(a File, b File) bool {
-	if a.Size < 0 {
-		panic("a.Size is negative")
-	}
-
-	if b.Size < 0 {
-		panic("b.Size is negative")
-	}
-
-	return a.Size == b.Size
 }
 
 func CalculateHash(filepath string) (string, error) {
@@ -218,7 +182,7 @@ func FormatFileSize(size int64) (FileSize, error) {
 
 func HasReadPermission(info *fs.FileInfo) bool {
 	if info == nil {
-		panic("obj is nil")
+		return false
 	}
 
 	filePermissionsBits := (*info).Mode().Perm()
@@ -232,7 +196,7 @@ func HasReadPermission(info *fs.FileInfo) bool {
 
 func IsSymbolicLink(info *fs.FileInfo) bool {
 	if info == nil {
-		panic("obj is nil")
+		return false
 	}
 
 	return (*info).Mode()&os.ModeSymlink != 0
@@ -240,7 +204,7 @@ func IsSymbolicLink(info *fs.FileInfo) bool {
 
 func IsDevice(info *fs.FileInfo) bool {
 	if info == nil {
-		panic("obj is nil")
+		return false
 	}
 
 	return (*info).Mode()&os.ModeDevice == os.ModeDevice
@@ -248,7 +212,7 @@ func IsDevice(info *fs.FileInfo) bool {
 
 func IsSocket(info *fs.FileInfo) bool {
 	if info == nil {
-		panic("obj is nil")
+		return false
 	}
 
 	return (*info).Mode()&os.ModeSocket == os.ModeSocket
@@ -256,7 +220,7 @@ func IsSocket(info *fs.FileInfo) bool {
 
 func IsPipe(info *fs.FileInfo) bool {
 	if info == nil {
-		panic("obj is nil")
+		return false
 	}
 
 	return (*info).Mode()&os.ModeNamedPipe == os.ModeNamedPipe
