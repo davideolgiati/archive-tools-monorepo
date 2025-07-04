@@ -32,31 +32,32 @@ func newFileHeap(
 	return &fileHeap, nil
 }
 
-func refineFile(file commons.File, fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) {
-	if file.Hash.Value() == "" {
+func refineFile(file commons.File, fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) error {
+	if file.Hash.Value() != "" {
 		fileChannel <- file
-		return
+		return nil
 	}
 
 	hash, err := commons.CalculateHash(file.Name)
 	if err != nil {
-		return
+		return fmt.Errorf("%w", err)
 	}
 
 	file.Hash, err = flyweight.Instance(hash)
 	if err != nil {
-		return
+		return fmt.Errorf("%w", err)
 	}
 
 	fileChannel <- file
+	return nil
 }
 
 func getFileHashGoruotine(
 	fileChannel chan<- commons.File,
 	flyweight *datastructures.Flyweight[string],
-) func(commons.File) {
-	return func(obj commons.File) {
-		refineFile(obj, fileChannel, flyweight)
+) func(commons.File) error {
+	return func(obj commons.File) error {
+		return refineFile(obj, fileChannel, flyweight)
 	}
 }
 
@@ -65,11 +66,12 @@ func consumeFromFileChannel(
 	waitgroup *sync.WaitGroup,
 	heap *datastructures.Heap[commons.File],
 ) {
+	var err error
 	defer waitgroup.Done()
 	for data := range channel {
-		err := heap.Push(data)
+		err = heap.Push(data)
 		if err != nil {
-			panic(err)
+			continue // TODO: this need to be fixed
 		}
 	}
 }

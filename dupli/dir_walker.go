@@ -144,7 +144,12 @@ func (walker *DirWalker) processFileEntry(obj *os.DirEntry) {
 		path:  walker.state.currentFile,
 	}
 
-	if !file.IsAllowed() {
+	isFileAlloewd, err := file.IsAllowed()
+	if err != nil {
+		panic(err)
+	}
+
+	if !isFileAlloewd {
 		return
 	}
 

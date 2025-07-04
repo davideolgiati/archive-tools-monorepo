@@ -75,7 +75,11 @@ func main() {
 		panic("error wile creating new file heap object")
 	}
 
-	workerFn := getFileProcessWorker(outputFileHheap.hashRegistry, outputChannel, &outputFileHheap.sizeFilter)
+	workerFn, err := getFileProcessWorker(outputFileHheap.hashRegistry, outputChannel, &outputFileHheap.sizeFilter)
+	if err != nil {
+		panic(err)
+	}
+
 	fileProcessorPool, err = commons.NewWorkerPool(workerFn)
 	if err != nil {
 		panic(err)

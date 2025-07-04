@@ -32,7 +32,7 @@ type WriteOnlyThreadPool[T any] struct {
 	status        poolStatus
 }
 
-func NewWorkerPool[T any](workerFn func(T)) (*WriteOnlyThreadPool[T], error) {
+func NewWorkerPool[T any](workerFn func(T) error) (*WriteOnlyThreadPool[T], error) {
 	workersCount := runtime.NumCPU()
 	inputChannel := make(chan T)
 	sampleArray := make([]float64, defaultSampleSize)
@@ -104,22 +104,27 @@ func (tp *WriteOnlyThreadPool[T]) Wait() {
 	}
 }
 
-func setupWorkerFunction[T any](fn func(T), activeTasks *atomic.Int64) func(*poolSharedResources[T]) {
+func setupWorkerFunction[T any](fn func(T) error, activeTasks *atomic.Int64) func(*poolSharedResources[T]) {
 	return func(shared *poolSharedResources[T]) {
+		var err error
 		if shared == nil {
-			panic("poolSharedResources pointer is nil")
+			return // TODO: this need to be fixed
 		}
 
 		defer shared.waitingGroup.Done()
 
 		for obj := range shared.inputChannel {
-			fn(obj)
+			err = fn(obj)
 			activeTasks.Add(-1)
+
+			if err != nil {
+				continue // TODO: this need to be fixed
+			}
 		}
 	}
 }
 
 func (tp *WriteOnlyThreadPool[T]) addNewWorker() {
 	tp.shared.waitingGroup.Add(1)
-	go tp.configuration.workerFunction(&tp.shared)
+	go tp.configuration.workerFunction(&tp.shared) // TODO: return error on an erro channel
 }
