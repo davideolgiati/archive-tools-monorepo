@@ -122,6 +122,9 @@ func main() {
 	ui.Close()
 
 	if profile {
-		profiler.Collect()
+		err = profiler.Collect()
+		if err != nil {
+			panic(err)
+		}
 	}
 }

@@ -66,13 +66,9 @@ func (pf *Profiler) Start() {
 				return
 			default:
 				metrics.Read(sample)
+				size, err := pf.size()
 
-				if sample[0].Value.Kind() != metrics.KindBad {
-					size, err := pf.size()
-					if err != nil {
-						panic(err)
-					}
-
+				if sample[0].Value.Kind() != metrics.KindBad && err != nil {
 					pf.memoryUsed[index] = (sample[0].Value.Uint64() - size)
 					index = (index + 1) % targetSamplingPopulation
 					if pf.memorySamples < targetSamplingPopulation {
@@ -84,7 +80,7 @@ func (pf *Profiler) Start() {
 	}(&pf.wg, pf.quitChannel)
 }
 
-func (pf *Profiler) Collect() {
+func (pf *Profiler) Collect() error {
 	pf.quitChannel <- true
 
 	fmt.Printf("Duration : %v\n", time.Since(pf.startTime))
@@ -107,36 +103,36 @@ func (pf *Profiler) Collect() {
 	p50memoryUsed, ok := p50value.(int64)
 
 	if !ok {
-		panic("can't safely cast p50value memrory used")
+		return fmt.Errorf("%w: can't safely cast p50memoryUsed value", os.ErrInvalid)
 	}
 
 	var p90value interface{} = pf.memoryUsed[p90index]
 	p90memoryUsed, ok := p90value.(int64)
 
 	if !ok {
-		panic("can't safely cast p90value memrory used")
+		return fmt.Errorf("%w: can't safely cast p90memroryUsed value", os.ErrInvalid)
 	}
 
 	var p99value interface{} = pf.memoryUsed[p99index]
 	p99memoryUsed, ok := p99value.(int64)
 
 	if !ok {
-		panic("can't safely cast p99value memrory used")
+		return fmt.Errorf("%w: can't safely cast p99memroryUsed value", os.ErrInvalid)
 	}
 
 	p50, err := FormatFileSize(p50memoryUsed)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("%w", err)
 	}
 
 	p90, err := FormatFileSize(p90memoryUsed)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("%w", err)
 	}
 
 	p99, err := FormatFileSize(p99memoryUsed)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("%w", err)
 	}
 
 	fmt.Printf(
@@ -145,4 +141,6 @@ func (pf *Profiler) Collect() {
 		p90.Value, *p90.Unit,
 		p99.Value, *p99.Unit,
 	)
+
+	return nil
 }

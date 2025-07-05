@@ -53,7 +53,7 @@ func (fw *Flyweight[T]) set(data T) (Constant[T], error) {
 	pointer, ok := actual.(*T)
 
 	if !ok {
-		return Constant[T]{}, errors.New("error while casting poinetr")
+		return Constant[T]{nil}, errors.New("error while casting poinetr")
 	}
 
 	return NewConstant(pointer)
