@@ -35,6 +35,21 @@ func filter[T comparable](input []T, filterValue T) []T {
 	return output
 }
 
+func processOutputChannelData(
+	outputChannel chan commons.File,
+	outputWg *sync.WaitGroup,
+	container *datastructures.Heap[commons.File],
+) {
+	var err error
+	for data := range outputChannel {
+		err = container.Push(data)
+		if err != nil {
+			panic(err)
+		}
+	}
+	outputWg.Done()
+}
+
 func main() {
 	startDirectory := ""
 	ignoredDirUser := ""
@@ -45,7 +60,7 @@ func main() {
 	var fileProcessorPool *commons.WriteOnlyThreadPool[File]
 
 	sharedRegistry := datastructures.Flyweight[string]{}
-	outputFileHheap, err := newFileHeap(commons.HashDescending, &sharedRegistry)
+	outputFileHeap, err := newFileHeap(commons.HashDescending, &sharedRegistry)
 	if err != nil {
 		panic(err)
 	}
@@ -71,11 +86,11 @@ func main() {
 	ui.Println("Running version: %s", version)
 	ui.Println("Build timestamp: %s", buildts)
 
-	if outputFileHheap == nil {
+	if outputFileHeap == nil {
 		panic("error wile creating new file heap object")
 	}
 
-	workerFn, err := getFileProcessWorker(outputFileHheap.hashRegistry, outputChannel, &outputFileHheap.sizeFilter)
+	workerFn, err := getFileProcessWorker(outputFileHeap.hashRegistry, outputChannel, &outputFileHeap.sizeFilter)
 	if err != nil {
 		panic(err)
 	}
@@ -93,15 +108,7 @@ func main() {
 
 	outputWg.Add(1)
 
-	go func() {
-		for data := range outputChannel {
-			err = outputFileHheap.heap.Push(data)
-			if err != nil {
-				panic(err)
-			}
-		}
-		outputWg.Done()
-	}()
+	go processOutputChannelData(outputChannel, &outputWg, outputFileHeap.heap)
 
 	walker.SetEntryPoint(startDirectory)
 	walker.SetDirectoryFilter(getDirectoryFilter(&userDirectories))
@@ -116,7 +123,7 @@ func main() {
 
 	outputWg.Wait()
 
-	cleanedHeap := outputFileHheap.filterHeap(commons.Equal, &sharedRegistry)
+	cleanedHeap := outputFileHeap.filterHeap(commons.Equal, &sharedRegistry)
 	cleanedHeap.displayDuplicateFileInfo()
 
 	ui.Close()
