@@ -14,8 +14,15 @@ type FileHeap struct {
 	sizeFilter   sync.Map
 }
 
+// TODO:
+// - rename FileHeap into DupliContext
+// - apply creational pattern to DupliContext like in Heap
+// - add WithNewHeap, WithExixtingHeap, WithNewHashRegistry, WithExixtingRegistry
+// - make sizeFilter optional
+// - convert the function running on heap to methods on context
+
 func newFileHeap(
-	sortFunction func(*commons.File, *commons.File) bool,
+	sortFunction datastructures.HeapCompareFn[commons.File],
 	registry *datastructures.Flyweight[string],
 ) (*FileHeap, error) {
 	newHeap, err := datastructures.NewHeap(
