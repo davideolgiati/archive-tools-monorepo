@@ -57,9 +57,11 @@ func FuzzHeap(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, tc string) {
 		// Create our heap with integer comparison (min heap)
-		ourHeap, err := datastructures.NewHeap(func(a, b *int) bool {
-			return *a < *b
-		})
+		ourHeap, err := datastructures.NewHeap(
+			datastructures.WithComapreFn(func(a, b *int) bool {
+				return *a < *b
+			}),
+		)
 		if err != nil {
 			panic(err)
 		}

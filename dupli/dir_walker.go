@@ -11,7 +11,7 @@ import (
 
 type dirWalkerConfiguration struct {
 	filterDirectory   func(string) bool
-	fileCallback      func(File)
+	fileCallback      func(FilesystemObject)
 	directoryCallback func()
 	skipEmpty         bool
 }
@@ -68,7 +68,7 @@ func (walker *DirWalker) SetDirectoryFilter(filterFn func(string) bool) {
 	walker.configuration.filterDirectory = filterFn
 }
 
-func (walker *DirWalker) SetFileCallback(callback func(File)) {
+func (walker *DirWalker) SetFileCallback(callback func(FilesystemObject)) {
 	walker.configuration.fileCallback = callback
 }
 
@@ -139,7 +139,7 @@ func (walker *DirWalker) processFileEntry(obj *os.DirEntry) {
 		panic(err)
 	}
 
-	file := File{
+	file := FilesystemObject{
 		infos: infos,
 		path:  walker.state.currentFile,
 	}

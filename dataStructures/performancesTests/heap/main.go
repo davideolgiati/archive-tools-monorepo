@@ -56,9 +56,11 @@ func main() {
 
 	for range targetRuns {
 		var ourHeap *datastructures.Heap[string]
-		ourHeap, err = datastructures.NewHeap(func(a, b *string) bool {
-			return *a < *b
-		})
+		ourHeap, err = datastructures.NewHeap(
+			datastructures.WithComapreFn(func(a, b *string) bool {
+				return *a < *b
+			}),
+		)
 		if err != nil {
 			panic(err)
 		}

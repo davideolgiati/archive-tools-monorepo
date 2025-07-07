@@ -57,7 +57,7 @@ func main() {
 	profile := false
 	profiler := commons.Profiler{}
 
-	var fileProcessorPool *commons.WriteOnlyThreadPool[File]
+	var fileProcessorPool *commons.WriteOnlyThreadPool[FilesystemObject]
 
 	sharedRegistry := datastructures.Flyweight[string]{}
 	outputFileHeap, err := newFileHeap(commons.HashDescending, &sharedRegistry)

@@ -37,8 +37,8 @@ func TestDirWalker_FileAndDirectoryFilters(t *testing.T) {
 		return true
 	})
 
-	processedFiles := []File{}
-	walker.SetFileCallback(func(info File) {
+	processedFiles := []FilesystemObject{}
+	walker.SetFileCallback(func(info FilesystemObject) {
 		processedFiles = append(processedFiles, info)
 	})
 
@@ -82,8 +82,8 @@ func TestDirWalker_SkipEmptyFiles(t *testing.T) {
 		return true
 	})
 
-	processedFiles := []File{}
-	walker.SetFileCallback(func(info File) {
+	processedFiles := []FilesystemObject{}
+	walker.SetFileCallback(func(info FilesystemObject) {
 		processedFiles = append(processedFiles, info)
 	})
 
@@ -119,8 +119,8 @@ func TestDirWalker_NoSkipEmptyFiles(t *testing.T) {
 		return true
 	})
 
-	processedFiles := []File{}
-	walker.SetFileCallback(func(info File) {
+	processedFiles := []FilesystemObject{}
+	walker.SetFileCallback(func(info FilesystemObject) {
 		processedFiles = append(processedFiles, info)
 	})
 

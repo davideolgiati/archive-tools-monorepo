@@ -23,17 +23,12 @@ const (
 
 var ignoredDir = [...]string{"/dev", "/run", "/proc", "/sys"}
 
-type FilesystemObject interface {
-	CanBeRead() bool
-	Type() int
-}
-
-type File struct {
+type FilesystemObject struct {
 	infos fs.FileInfo
 	path  string
 }
 
-func (f *File) CanBeRead() (bool, error) {
+func (f *FilesystemObject) CanBeRead() (bool, error) {
 	if f.path == "" {
 		return false, fmt.Errorf("%w: fullpath is empty", os.ErrInvalid)
 	}
@@ -53,7 +48,7 @@ func (f *File) CanBeRead() (bool, error) {
 	return true, nil
 }
 
-func (f *File) Type() (int, error) {
+func (f *FilesystemObject) Type() (int, error) {
 	if f.path == "" {
 		return invalid, fmt.Errorf("%w: fullpath is empty", os.ErrInvalid)
 	}
@@ -84,7 +79,7 @@ func (f *File) Type() (int, error) {
 }
 
 func processFileEntry(
-	file *File,
+	file *FilesystemObject,
 	fileChannel chan<- commons.File,
 	flyweight *datastructures.Flyweight[string],
 	sizeFilter *sync.Map,
@@ -138,12 +133,12 @@ func getFileProcessWorker(
 	flyweight *datastructures.Flyweight[string],
 	fileChannel chan<- commons.File,
 	sizeFilter *sync.Map,
-) (func(File) error, error) {
+) (func(FilesystemObject) error, error) {
 	if flyweight == nil {
 		return nil, fmt.Errorf("%w: flyweight is a nil pointer", os.ErrInvalid)
 	}
 
-	return func(file File) error {
+	return func(file FilesystemObject) error {
 		return processFileEntry(&file, fileChannel, flyweight, sizeFilter)
 	}, nil
 }
@@ -169,7 +164,7 @@ func checkIfDirIsAllowed(fullPath *string, userBlacklist *[]string) bool {
 	return allowed
 }
 
-func (f *File) IsAllowed() (bool, error) {
+func (f *FilesystemObject) IsAllowed() (bool, error) {
 	if f.path == "" {
 		return false, fmt.Errorf("%w: f.path is empty", os.ErrInvalid)
 	}
@@ -192,12 +187,12 @@ func getDirectoryFilter(userBlacklist *[]string) func(string) bool {
 	}
 }
 
-func getFileCallback(tp *commons.WriteOnlyThreadPool[File]) func(file File) {
+func getFileCallback(tp *commons.WriteOnlyThreadPool[FilesystemObject]) func(file FilesystemObject) {
 	if tp == nil {
 		panic("threadpool is nil")
 	}
 
-	return func(file File) {
+	return func(file FilesystemObject) {
 		err := tp.Submit(file)
 		if err != nil {
 			panic(err)

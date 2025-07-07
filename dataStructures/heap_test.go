@@ -12,7 +12,7 @@ import (
 )
 
 func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error), compareFN func(*T, *T) bool) {
-	heap, err := datastructures.NewHeap(compareFN)
+	heap, err := datastructures.NewHeap(datastructures.WithComapreFn(compareFN))
 	if err != nil {
 		panic(err)
 	}
@@ -162,7 +162,7 @@ func HeapStateMachine[T any](instructions string, parseFN func(string) (T, error
 
 func TestHeap_NewHeap_WhenFunctionNotSet_Panic(t *testing.T) {
 	var testFn func(*int, *int) bool
-	heap, err := datastructures.NewHeap(testFn)
+	heap, err := datastructures.NewHeap(datastructures.WithComapreFn(testFn))
 
 	if err == nil {
 		t.Error("Expected panic on new for nil function input, but got none")

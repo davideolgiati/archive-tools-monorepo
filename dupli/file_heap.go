@@ -18,7 +18,10 @@ func newFileHeap(
 	sortFunction func(*commons.File, *commons.File) bool,
 	registry *datastructures.Flyweight[string],
 ) (*FileHeap, error) {
-	newHeap, err := datastructures.NewHeap(sortFunction)
+	newHeap, err := datastructures.NewHeap(
+		datastructures.WithComapreFn(sortFunction),
+		datastructures.WithStartSize[commons.File](1000),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error while allocating Heap: \n%w", err)
 	}
