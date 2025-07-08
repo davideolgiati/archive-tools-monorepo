@@ -60,7 +60,10 @@ func main() {
 	var fileProcessorPool *commons.WriteOnlyThreadPool[FilesystemObject]
 
 	sharedRegistry := datastructures.Flyweight[string]{}
-	outputFileHeap, err := newFileHeap(commons.HashDescending, &sharedRegistry)
+	outputFileHeap, err := newDupliContext(
+		WithNewHeap(commons.HashDescending),
+		WithExistingRegistry(&sharedRegistry),
+	)
 	if err != nil {
 		panic(err)
 	}

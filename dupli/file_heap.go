@@ -8,38 +8,72 @@ import (
 	datastructures "archive-tools-monorepo/dataStructures"
 )
 
-type FileHeap struct {
+type DupliContext struct {
 	heap         *datastructures.Heap[commons.File]
 	hashRegistry *datastructures.Flyweight[string]
 	sizeFilter   sync.Map
 }
 
+type DupliContextFunction func(*DupliContext) error
+
 // TODO:
-// - rename FileHeap into DupliContext
-// - apply creational pattern to DupliContext like in Heap
-// - add WithNewHeap, WithExixtingHeap, WithNewHashRegistry, WithExixtingRegistry
 // - make sizeFilter optional
 // - convert the function running on heap to methods on context
 
-func newFileHeap(
-	sortFunction datastructures.HeapCompareFn[commons.File],
-	registry *datastructures.Flyweight[string],
-) (*FileHeap, error) {
+func WithExistingHeap(heap *datastructures.Heap[commons.File]) DupliContextFunction {
+	return func(dc *DupliContext) error {
+		dc.heap = heap
+		return nil
+	}
+}
+
+func WithExistingRegistry(registry *datastructures.Flyweight[string]) DupliContextFunction {
+	return func(dc *DupliContext) error {
+		dc.hashRegistry = registry
+		return nil
+	}
+}
+
+func WithNewHeap(sortFn datastructures.HeapCompareFn[commons.File]) DupliContextFunction {
 	newHeap, err := datastructures.NewHeap(
-		datastructures.WithComapreFn(sortFunction),
+		datastructures.WithComapreFn(sortFn),
 		datastructures.WithStartSize[commons.File](1000),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("error while allocating Heap: \n%w", err)
-	}
 
-	fileHeap := FileHeap{
-		heap:         newHeap,
-		hashRegistry: registry,
+	return func(dc *DupliContext) error {
+		if err != nil {
+			return fmt.Errorf("error while allocating Heap: \n%w", err)
+		}
+
+		dc.heap = newHeap
+		return nil
+	}
+}
+
+func defaultContext() DupliContext {
+	return DupliContext{
+		heap:         nil,
+		hashRegistry: nil,
 		sizeFilter:   sync.Map{},
 	}
+}
 
-	return &fileHeap, nil
+func newDupliContext(optsFn ...DupliContextFunction) (*DupliContext, error) {
+	var err error
+	dupliContext := defaultContext()
+
+	for _, fn := range optsFn {
+		err = fn(&dupliContext)
+		if err != nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return &dupliContext, nil
 }
 
 func refineFile(file commons.File, fileChannel chan<- commons.File, flyweight *datastructures.Flyweight[string]) error {
@@ -86,14 +120,17 @@ func consumeFromFileChannel(
 	}
 }
 
-func (fh *FileHeap) filterHeap(
+func (fh *DupliContext) filterHeap(
 	filterFunction func(commons.File, commons.File) bool,
 	registry *datastructures.Flyweight[string],
-) *FileHeap {
+) *DupliContext {
 	var current commons.File
 	var last commons.File
 
-	output, err := newFileHeap(commons.HashDescending, registry)
+	output, err := newDupliContext(
+		WithNewHeap(commons.HashDescending),
+		WithExistingRegistry(registry),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -168,7 +205,7 @@ func (fh *FileHeap) filterHeap(
 	return output
 }
 
-func (fh *FileHeap) displayDuplicateFileInfo() {
+func (fh *DupliContext) displayDuplicateFileInfo() {
 	var lastSeen commons.File
 	var current commons.File
 	var areEqual bool
