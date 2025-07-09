@@ -98,20 +98,20 @@ func HashDescending(a *File, b *File) bool {
 	return a.Hash.Value() <= b.Hash.Value() || (a.Size < b.Size || a.Name < b.Name)
 }
 
-func Equal(a File, b File) bool {
-	if a.Hash.Ptr() == nil || b.Hash.Ptr() == nil || a.Size < 0 || b.Size < 0 {
+func (file File) Equal(other File) bool {
+	if file.Hash.Ptr() == nil || other.Hash.Ptr() == nil || file.Size < 0 || other.Size < 0 {
 		return false
 	}
 
-	return a.Hash.Ptr() == b.Hash.Ptr() && a.Size == b.Size
+	return file.Hash.Ptr() == other.Hash.Ptr() && file.Size == other.Size
 }
 
-func EqualByHash(a File, b File) bool {
-	if a.Hash.Ptr() == nil || b.Hash.Ptr() == nil {
+func (file File) EqualByHash(other File) bool {
+	if file.Hash.Ptr() == nil || other.Hash.Ptr() == nil {
 		return false
 	}
 
-	return a.Hash.Ptr() == b.Hash.Ptr()
+	return file.Hash.Ptr() == other.Hash.Ptr()
 }
 
 func CalculateHash(filepath string) (string, error) {

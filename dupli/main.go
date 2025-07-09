@@ -126,8 +126,12 @@ func main() {
 
 	outputWg.Wait()
 
-	cleanedHeap := outputFileHeap.filterHeap(commons.Equal, &sharedRegistry)
-	cleanedHeap.displayDuplicateFileInfo()
+	filesAreEqual := func(a, b commons.File) bool {
+		return a.Equal(b)
+	}
+
+	cleanedHeap := outputFileHeap.filterHeap(filesAreEqual, &sharedRegistry)
+	cleanedHeap.Display()
 
 	ui.Close()
 
