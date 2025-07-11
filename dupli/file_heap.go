@@ -14,7 +14,7 @@ func refineFile(file commons.File, fileChannel chan<- commons.File, flyweight *d
 		return nil
 	}
 
-	hash, err := commons.CalculateHash(file.Name)
+	hash, err := commons.GetSHA1HashFromPath(file.Name)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}

@@ -58,18 +58,22 @@ func (f *FilesystemObject) Type() (int, error) {
 		return invalid, fmt.Errorf("%w", err)
 	}
 
+	casted := commons.Stats{
+		FileInfo: obj,
+	}
+
 	switch {
 	case obj.IsDir():
 		return directory, nil
-	case !commons.HasReadPermission(&obj):
+	case !casted.HasReadPermission():
 		return invalid, nil
-	case commons.IsDevice(&obj):
+	case casted.IsDevice():
 		return device, nil
-	case commons.IsSocket(&obj):
+	case casted.IsSocket():
 		return socket, nil
-	case commons.IsPipe(&obj):
+	case casted.IsPipe():
 		return pipe, nil
-	case commons.IsSymbolicLink(&obj):
+	case casted.IsSymbolicLink():
 		return symlink, nil
 	case obj.Mode().Perm().IsRegular():
 		return file, nil
@@ -108,7 +112,7 @@ func processFileEntry(
 	_, loaded := sizeFilter.LoadOrStore(size, true)
 
 	if size < 5000000 && loaded {
-		hash, err = commons.CalculateHash(file.path)
+		hash, err = commons.GetSHA1HashFromPath(file.path)
 		if err != nil {
 			return fmt.Errorf("%w", err)
 		}
