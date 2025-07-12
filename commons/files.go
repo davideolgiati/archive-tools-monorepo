@@ -22,7 +22,7 @@ type File struct {
 	Size int64
 }
 
-func (file File) Format(f fmt.State, _ rune) {
+func (file *File) Format(f fmt.State, _ rune) {
 	str, err := file.ToString()
 	if err != nil {
 		panic(err)
@@ -39,7 +39,7 @@ func (file File) Format(f fmt.State, _ rune) {
 	}
 }
 
-func (file File) ToString() (string, error) {
+func (file *File) ToString() (string, error) {
 	var b strings.Builder
 
 	if file.Hash.Ptr() == nil {
@@ -78,23 +78,19 @@ func (file File) ToString() (string, error) {
 	return b.String(), nil
 }
 
-func HashDescending(a *File, b *File) bool {
-	if a.Hash.Ptr() == nil {
+func (file *File) HashDescending(b *File) bool {
+	if file.Hash.Ptr() == nil || b.Hash.Ptr() == nil {
 		return false
 	}
 
-	if b.Hash.Ptr() == nil {
-		return false
-	}
-
-	if a.Hash.Ptr() == b.Hash.Ptr() {
+	if file.Hash.Ptr() == b.Hash.Ptr() {
 		return true
 	}
 
-	return a.Hash.Value() <= b.Hash.Value() || (a.Size < b.Size || a.Name < b.Name)
+	return file.Hash.Value() <= b.Hash.Value() || (file.Size < b.Size || file.Name < b.Name)
 }
 
-func (file File) Equal(other File) bool {
+func (file *File) Equal(other *File) bool {
 	if file.Hash.Ptr() == nil || other.Hash.Ptr() == nil || file.Size < 0 || other.Size < 0 {
 		return false
 	}
@@ -102,12 +98,24 @@ func (file File) Equal(other File) bool {
 	return file.Hash.Ptr() == other.Hash.Ptr() && file.Size == other.Size
 }
 
-func (file File) EqualByHash(other File) bool {
+func (file *File) EqualByHash(other *File) bool {
 	if file.Hash.Ptr() == nil || other.Hash.Ptr() == nil {
 		return false
 	}
 
 	return file.Hash.Ptr() == other.Hash.Ptr()
+}
+
+func StrongFileCompare(f1, f2 *File) bool {
+	return f1.HashDescending(f2)
+}
+
+func WeakFileEqulity(f1, f2 *File) bool {
+	return f1.EqualByHash(f2)
+}
+
+func StrongFileEquality(f1, f2 *File) bool {
+	return f1.Equal(f2)
 }
 
 func FormatFileSize(size int64) (FileSize, error) {

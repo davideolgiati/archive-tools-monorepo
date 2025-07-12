@@ -24,7 +24,7 @@ func TestFile_NewFile_InstanceAndFormat_Ok(t *testing.T) {
 
 	expected := "1234567890123                               1 Kb my/path/test"
 	actualToString, err := myFile.ToString()
-	actualFormat := fmt.Sprintf("%v", myFile)
+	actualFormat := fmt.Sprintf("%v", &myFile)
 
 	if err != nil {
 		panic(err)

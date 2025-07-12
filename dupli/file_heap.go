@@ -52,24 +52,24 @@ func consumeFromFileChannel(
 	}
 }
 
-func (fh *DupliContext) filterHeap(
-	filterFunction func(commons.File, commons.File) bool,
+func (dupliCtx *DupliContext) filterHeap(
+	filterFunction func(*commons.File, *commons.File) bool,
 	registry *datastructures.Flyweight[string],
 ) *DupliContext {
 	var current commons.File
 	var last commons.File
 
 	output, err := newDupliContext(
-		WithNewHeap(commons.HashDescending),
+		WithNewHeap(commons.StrongFileCompare),
 		WithExistingRegistry(registry),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	output.hashRegistry = fh.hashRegistry
+	output.hashRegistry = dupliCtx.hashRegistry
 
-	total := float64(fh.heap.Size())
+	total := float64(dupliCtx.heap.Size())
 	processed := 0.0
 
 	duplicateFlag := false
@@ -87,8 +87,8 @@ func (fh *DupliContext) filterHeap(
 
 	ui.AddNewNamedLine("cleanup-stage", "Removing unique entries %s ... %.1f %%")
 
-	if !fh.heap.Empty() {
-		current, err = fh.heap.Pop()
+	if !dupliCtx.heap.Empty() {
+		current, err = dupliCtx.heap.Pop()
 		if err != nil {
 			panic(err)
 		}
@@ -96,9 +96,9 @@ func (fh *DupliContext) filterHeap(
 		processed += 1.0
 	}
 
-	for !fh.heap.Empty() {
+	for !dupliCtx.heap.Empty() {
 		last = current
-		current, err = fh.heap.Pop()
+		current, err = dupliCtx.heap.Pop()
 		if err != nil {
 			panic(err)
 		}
@@ -106,7 +106,7 @@ func (fh *DupliContext) filterHeap(
 		processed += 1.0
 
 		switch {
-		case filterFunction(current, last):
+		case filterFunction(&current, &last):
 			duplicateFlag = true
 			err = fileThreadPool.Submit(last)
 		case duplicateFlag:
@@ -135,42 +135,4 @@ func (fh *DupliContext) filterHeap(
 	outputWaitgroup.Wait()
 
 	return output
-}
-
-func (fh *DupliContext) Display() {
-	var lastSeen commons.File
-	var current commons.File
-	var areEqual bool
-	var err error
-
-	isDuplicate := false
-
-	if !fh.heap.Empty() {
-		current, err = fh.heap.Pop()
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	for !fh.heap.Empty() {
-		lastSeen = current
-		current, err = fh.heap.Pop()
-		if err != nil {
-			panic(err)
-		}
-
-		areEqual = current.EqualByHash(lastSeen)
-
-		if areEqual {
-			ui.Println("file: %s", lastSeen)
-		} else if isDuplicate {
-			ui.Println("file: %s", lastSeen)
-		}
-
-		isDuplicate = areEqual
-	}
-
-	if isDuplicate {
-		ui.Println("file: %s", lastSeen)
-	}
 }

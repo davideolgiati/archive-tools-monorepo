@@ -75,3 +75,43 @@ func newDupliContext(optsFn ...DupliContextFunction) (*DupliContext, error) {
 
 	return &dupliContext, nil
 }
+
+func (dupliCtx *DupliContext) Display() error {
+	var lastSeen commons.File
+	var current commons.File
+	var areEqual bool
+	var err error
+
+	isDuplicate := false
+
+	if !dupliCtx.heap.Empty() {
+		current, err = dupliCtx.heap.Pop()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+	}
+
+	for !dupliCtx.heap.Empty() {
+		lastSeen = current
+		current, err = dupliCtx.heap.Pop()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+
+		areEqual = commons.WeakFileEqulity(&current, &lastSeen)
+
+		if areEqual {
+			ui.Println("file: %s", &lastSeen)
+		} else if isDuplicate {
+			ui.Println("file: %s", &lastSeen)
+		}
+
+		isDuplicate = areEqual
+	}
+
+	if isDuplicate {
+		ui.Println("file: %s", &lastSeen)
+	}
+
+	return nil
+}

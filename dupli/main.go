@@ -61,7 +61,7 @@ func main() {
 
 	sharedRegistry := datastructures.Flyweight[string]{}
 	outputFileHeap, err := newDupliContext(
-		WithNewHeap(commons.HashDescending),
+		WithNewHeap(commons.StrongFileCompare),
 		WithExistingRegistry(&sharedRegistry),
 	)
 	if err != nil {
@@ -126,14 +126,14 @@ func main() {
 
 	outputWg.Wait()
 
-	filesAreEqual := func(a, b commons.File) bool {
-		return a.Equal(b)
-	}
-
-	cleanedHeap := outputFileHeap.filterHeap(filesAreEqual, &sharedRegistry)
-	cleanedHeap.Display()
+	cleanedHeap := outputFileHeap.filterHeap(commons.StrongFileEquality, &sharedRegistry)
+	err = cleanedHeap.Display()
 
 	ui.Close()
+
+	if err != nil {
+		panic(err)
+	}
 
 	if profile {
 		err = profiler.Collect()
